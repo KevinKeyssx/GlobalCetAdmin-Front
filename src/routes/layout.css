@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+/* ─── Dark mode: class-based (Tailwind v4) ───────────────────────────────────── */
+@variant dark (&:where(.dark, .dark *));
+
+/* ─── Custom Theme Tokens (Tailwind v4 CSS-first config) ─────────────────────── */
+@theme {
+	/* Brand palette — premium, elegant emerald greens */
+	--color-brand        : #059669; /* Vibrant emerald green */
+	--color-brand-bright : #10b981; /* High-energy mint-emerald */
+	--color-brand-muted  : #34d399; /* Soft green for interactive badges */
+	--color-brand-dark   : #065f46; /* Deep, rich forest green */
+
+	/* Light mode surfaces — crisp, pristine whites and light grays */
+	--color-surface      : #f8fafc; /* Crisp, bright slate-white background */
+	--color-surface-dark : #0d1f15;
+	--color-sidebar      : #ffffff; /* Pure white sidebar */
+	--color-card         : #ffffff; /* Pure white cards */
+	--color-input        : #f1f5f9; /* Slate 100 — neat, modern inputs */
+
+	/* Text — clean, high-contrast Slate */
+	--color-text         : #0f172a; /* Slate 900 — crisp obsidian for titles/body */
+	--color-text-muted   : #475569; /* Slate 600 — clean dark slate for helper text */
+
+	/* Grid opacity variables to control density across modes */
+	--grid-opacity-line  : 3%;
+	--grid-opacity-glow  : 5%;
+
+	/* Card shadows — elegant multi-layered slate shadows */
+	--shadow-card        : 0 4px 16px rgba( 15, 23, 42, 0.05 );
+	--shadow-card-hover  : 0 12px 28px rgba( 15, 23, 42, 0.08 );
+	--shadow-sidebar     : 0 8px 30px rgba( 15, 23, 42, 0.04 );
+
+	/* Fonts */
+	--font-sans          : 'Lato', ui-sans-serif, system-ui, sans-serif;
+	--font-display       : 'Outfit', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ─── Dark Mode Override (class-based) ────────────────────────────────────────── */
+.dark {
+	--color-brand        : #00e676; /* Neon bright green — restored in dark mode */
+	--color-brand-bright : #69f0ae;
+	--color-brand-muted  : #00b564;
+	--color-brand-dark   : #004d26;
+	--color-surface      : #0d1f15;
+	--color-sidebar      : #111f18;
+	--color-card         : #162d20;
+	--color-input        : #0f2519;
+	--color-text         : #e8f5e9;
+	--color-text-muted   : #6aad82;
+	--grid-opacity-line  : 12%;
+	--grid-opacity-glow  : 15%;
+	--shadow-card        : 0 4px 16px rgba( 0, 230, 118, 0.05 );
+	--shadow-card-hover  : 0 12px 28px rgba( 0, 230, 118, 0.1 );
+	--shadow-sidebar     : 0 15px 35px rgba( 0, 0, 0, 0.4 );
+}
+
+/* ─── Base Styles ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+	box-sizing : border-box;
+}
+
+body {
+	font-family        : var( --font-sans );
+	background-color   : var( --color-surface );
+	/* Precision Scientific Grid Background with soft radial glows */
+	background-image   : 
+		linear-gradient( to right, color-mix( in srgb, var( --color-brand ) var( --grid-opacity-line ), transparent ) 1px, transparent 1px ),
+		linear-gradient( to bottom, color-mix( in srgb, var( --color-brand ) var( --grid-opacity-line ), transparent ) 1px, transparent 1px ),
+		radial-gradient( circle at 10% 20%, color-mix( in srgb, var( --color-brand-bright ) var( --grid-opacity-glow ), transparent ) 0%, transparent 40% ),
+		radial-gradient( circle at 90% 80%, color-mix( in srgb, var( --color-brand ) var( --grid-opacity-glow ), transparent ) 0%, transparent 40% );
+	background-size: 32px 32px, 32px 32px, 100% 100%, 100% 100%;
+	background-attachment: fixed;
+	color              : var( --color-text );
+	-webkit-font-smoothing  : antialiased;
+	-moz-osx-font-smoothing : grayscale;
+}
+
+/* ─── Scrollbar styling ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+	width : 6px;
+}
+
+::-webkit-scrollbar-track {
+	background : transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background    : color-mix( in srgb, var( --color-brand ) 30%, transparent );
+	border-radius : 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background : color-mix( in srgb, var( --color-brand ) 55%, transparent );
+}
