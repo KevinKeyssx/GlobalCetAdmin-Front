@@ -6,6 +6,7 @@
 	import { METHOD }                     from '$lib/services/http-codes';
 	import { globalLoadingStore }         from '$lib/state/loading';
 	import CategoryFormModal              from './components/CategoryFormModal.svelte';
+	import TableActions                   from '$lib/components/shared/TableActions.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Category {
@@ -121,9 +122,7 @@
 				return;
 			}
 
-			toast.success( 'Registro eliminado con éxito.', {
-				style : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
-			} );
+			toast.success( 'Registro eliminado con éxito.' );
 			loadCategories();
 		} catch ( err ) {
 			toast.error( 'Error de red al intentar eliminar.' );
@@ -138,11 +137,11 @@
 </svelte:head>
 
 <main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
-	<div class="mx-auto max-w-5xl space-y-8">
+	<div class="mx-auto max-w-6xl space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-6">
 			<div class="space-y-1">
-				<div class="flex items-center gap-2 text-xs text-text-muted">
+				<div class="flex items-center gap-2 text-text-muted">
 					<a href="/dashboard" class="hover:text-brand">Dashboard</a>
 					<span>/</span>
 					<span>Productos</span>
@@ -152,18 +151,14 @@
 				<h1 class="font-display text-3xl font-black text-text uppercase tracking-wide">
 					Categorías de Productos
 				</h1>
-				<p class="text-xs text-text-muted">
+				<p class="text-text-muted">
 					Administre las categorías analíticas y subcategorías estructuradas de sus productos científicos.
 				</p>
 			</div>
 
 			<button
 				onclick={ openCreateModal }
-				class="
-					inline-flex items-center justify-center gap-2 rounded-xl
-					bg-brand px-5 py-3 text-xs font-bold uppercase tracking-wider text-surface-dark
-					shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright
-				"
+				class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 					<line x1="12" y1="5" x2="12" y2="19" />
@@ -179,19 +174,13 @@
 			<div class="flex rounded-xl bg-input p-1 border border-brand/10 max-w-xs">
 				<button
 					onclick={ ( ) => { activeTab = 'categories'; } }
-					class="
-						flex-1 rounded-lg px-4 py-2 text-xs font-bold tracking-wider uppercase transition-all duration-200
-						{ activeTab === 'categories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }
-					"
+					class="flex-1 rounded-lg px-4 py-2 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'categories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
 				>
 					Categorías
 				</button>
 				<button
 					onclick={ ( ) => { activeTab = 'subcategories'; } }
-					class="
-						flex-1 rounded-lg px-4 py-2 text-xs font-bold tracking-wider uppercase transition-all duration-200
-						{ activeTab === 'subcategories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }
-					"
+					class="flex-1 rounded-lg px-4 py-2 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'subcategories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
 				>
 					Subcategorías
 				</button>
@@ -207,10 +196,7 @@
 					type="search"
 					placeholder="Buscar..."
 					bind:value={ search }
-					class="
-						w-full rounded-xl border border-brand/15 bg-input py-2 pl-10 pr-4 text-xs text-text
-						outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10
-					"
+					class="w-full rounded-xl border border-brand/15 bg-input py-2 pl-10 pr-4 text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
 				/>
 			</div>
 		</div>
@@ -228,7 +214,7 @@
 								<th class="px-6 py-4 text-right">Acciones</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-brand/10 text-xs font-semibold">
+						<tbody class="divide-y divide-brand/10 font-semibold">
 							{#each filteredCategories as cat ( cat.id ) }
 								<tr class="hover:bg-brand/5 transition-colors duration-150">
 									<td class="px-6 py-4 font-bold text-text">{ cat.name }</td>
@@ -244,20 +230,11 @@
 										</div>
 									</td>
 									<td class="px-6 py-4 text-right">
-										<div class="flex items-center justify-end gap-2">
-											<button
-												onclick={ ( ) => openEditModal( cat ) }
-												class="rounded-lg border border-brand/20 bg-brand/10 px-3 py-1.5 font-bold uppercase tracking-wider text-brand hover:bg-brand hover:text-surface-dark transition-all duration-200"
-											>
-												Editar
-											</button>
-											<button
-												onclick={ ( ) => deleteItem( cat.id ) }
-												class="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 font-bold uppercase tracking-wider text-red-400 hover:bg-red-500 hover:text-white transition-all duration-200"
-											>
-												Eliminar
-											</button>
-										</div>
+										<TableActions
+											item={ cat }
+											openEditModal={ openEditModal }
+											deleteItem={ ( c ) => deleteItem( c.id ) }
+										/>
 									</td>
 								</tr>
 							{:else}
@@ -283,7 +260,7 @@
 								<th class="px-6 py-4 text-right">Acciones</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-brand/10 text-xs font-semibold">
+						<tbody class="divide-y divide-brand/10 font-semibold">
 							{#each filteredSubcategories as sub ( sub.id ) }
 								<tr class="hover:bg-brand/5 transition-colors duration-150">
 									<td class="px-6 py-4 font-bold text-text">{ sub.name }</td>
@@ -291,20 +268,11 @@
 										{ sub.category.name }
 									</td>
 									<td class="px-6 py-4 text-right">
-										<div class="flex items-center justify-end gap-2">
-											<button
-												onclick={ ( ) => openEditModal( sub ) }
-												class="rounded-lg border border-brand/20 bg-brand/10 px-3 py-1.5 font-bold uppercase tracking-wider text-brand hover:bg-brand hover:text-surface-dark transition-all duration-200"
-											>
-												Editar
-											</button>
-											<button
-												onclick={ ( ) => deleteItem( sub.id ) }
-												class="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 font-bold uppercase tracking-wider text-red-400 hover:bg-red-500 hover:text-white transition-all duration-200"
-											>
-												Eliminar
-											</button>
-										</div>
+										<TableActions
+											item={ sub }
+											openEditModal={ openEditModal }
+											deleteItem={ ( s ) => deleteItem( s.id ) }
+										/>
 									</td>
 								</tr>
 							{:else}
