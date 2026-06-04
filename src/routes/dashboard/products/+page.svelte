@@ -39,7 +39,7 @@
 	interface CategoryInfo {
 		id            : string;
 		name          : string;
-		subcategories : Array<{ id : string; name : string }>;
+		subCategories : Array<{ id : string; name : string }>;
 	}
 
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
@@ -281,7 +281,7 @@
 				{ editingId }
 				initialData={ editingProduct }
 				{ materials }
-				{ categories }
+				{ categories } 
 				onSave={ () => {
 					showModal = false;
 					loadAllData();
