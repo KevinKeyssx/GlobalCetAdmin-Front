@@ -2,31 +2,35 @@
 	import { slide } from 'svelte/transition';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
-	interface OptionMeta {
-		autoclavable?       : boolean;
-		maxTemperature?     : number;
-		chemicalResistance? : {
-			acid     : string;
-			alkaline : string;
-		};
-	}
+	// interface OptionMeta {
+	// 	autoclavable?       : boolean;
+	// 	maxTemperature?     : number;
+	// 	chemicalResistance? : {
+	// 		acid     : string;
+	// 		alkaline : string;
+	// 	};
+	// }
 
 	interface Option {
 		id   : string;
 		name : string;
-		meta?: OptionMeta;
+		// meta?: OptionMeta;
 	}
 
 	interface Props {
-		options     : Option[];
-		selected    : Set<string>;
-		placeholder : string;
+		options      : Option[];
+		selected?    : Set<string>;
+		value?       : string;
+		placeholder? : string;
+		multiple?    : boolean;
 	}
 
 	let {
 		options     = [],
 		selected    = $bindable( new Set<string>() ),
+		value       = $bindable( '' ),
 		placeholder = 'Seleccionar...',
+		multiple    = true,
 	}: Props = $props();
 
 	// ─── Reactive States ──────────────────────────────────────────────────────────
@@ -43,39 +47,61 @@
 
 	// ─── Derived: Selected Items List ─────────────────────────────────────────────
 	const selectedItems = $derived.by( () => {
-		return options.filter( ( opt ) => selected.has( opt.id ) );
+		if ( multiple ) {
+			return options.filter( ( opt ) => selected.has( opt.id ) );
+		}
+		const found = options.find( ( opt ) => opt.id === value );
+		return found ? [ found ] : [];
+	} );
+
+	// ─── Derived: Check if option is checked ──────────────────────────────────────
+	const isChecked = $derived.by( () => {
+		return ( id: string ) => {
+			if ( multiple ) {
+				return selected.has( id );
+			}
+			return value === id;
+		};
 	} );
 
 	// ─── Actions ──────────────────────────────────────────────────────────────────
 	function toggleOption( id: string ) {
-		const next = new Set( selected );
-		if ( next.has( id ) ) {
-			next.delete( id );
+		if ( multiple ) {
+			const next = new Set( selected );
+			if ( next.has( id ) ) {
+				next.delete( id );
+			} else {
+				next.add( id );
+			}
+			selected = next;
 		} else {
-			next.add( id );
+			value  = id;
+			isOpen = false;
 		}
-		selected = next;
 	}
 
-
-    function removeOption( id: string, event: MouseEvent ) {
+	function removeOption( id: string, event: MouseEvent ) {
 		event.stopPropagation();
-		const next = new Set( selected );
-		next.delete( id );
-		selected = next;
+		if ( multiple ) {
+			const next = new Set( selected );
+			next.delete( id );
+			selected = next;
+		} else {
+			value = '';
+		}
 	}
 
-
-    function clearAll( event: MouseEvent ): void {
+	function clearAll( event: MouseEvent ): void {
 		event.stopPropagation();
-
-        const next: Set<string> = new Set( selected );
-
-        for ( const opt of options ) {
-			next.delete( opt.id );
+		if ( multiple ) {
+			const next: Set<string> = new Set( selected );
+			for ( const opt of options ) {
+				next.delete( opt.id );
+			}
+			selected = next;
+		} else {
+			value = '';
 		}
-
-        selected = next;
 	}
 
 	// ─── Click Outside Listener ───────────────────────────────────────────────────
@@ -104,15 +130,7 @@
 		tabindex="0"
 		onclick={ () => isOpen = !isOpen }
 		onkeydown={ ( e ) => { if ( e.key === ' ' || e.key === 'Enter' ) { e.preventDefault(); isOpen = !isOpen; } } }
-		class="
-			flex min-h-[46px] w-full items-center justify-between gap-2 rounded-xl cursor-pointer
-			border border-brand/20 dark:border-brand/10
-			bg-surface/40 hover:bg-surface/60 backdrop-blur-md
-			px-4 py-2.5 text-xs text-text
-			shadow-[0_2px_10px_rgba(0,0,0,0.02)]
-			outline-none transition-all duration-300 select-none
-			{isOpen ? 'ring-2 ring-brand border-brand/40 shadow-[0_0_12px_rgba(0,230,118,0.1)]' : ''}
-		"
+		class="flex min-h-[46px] w-full items-center justify-between gap-2 rounded-xl cursor-pointer border border-brand/20 dark:border-brand/10 bg-surface/40 hover:bg-surface/60 backdrop-blur-md px-4 py-2.5 text-text shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none transition-all duration-300 select-none {isOpen ? 'ring-2 ring-brand border-brand/40 shadow-[0_0_12px_rgba(0,230,118,0.1)]' : ''}"
 	>
 		<div class="flex flex-wrap gap-1.5 max-w-[90%] items-center">
 			{#if selectedItems.length === 0}
@@ -120,12 +138,7 @@
 			{:else}
 				{#each selectedItems.slice( 0, 2 ) as item}
 					<span
-						class="
-							flex items-center gap-1 rounded-lg
-							bg-brand/15 border border-brand/30
-							px-2 py-0.5 text-[10px] font-bold text-brand
-							transition-all duration-200 hover:bg-brand/20
-						"
+						class="flex items-center gap-1 rounded-lg bg-brand/15 border border-brand/30 px-2 py-0.5 text-[10px] font-bold text-brand transition-all duration-200 hover:bg-brand/20"
 					>
 						{item.name}
 						<button
@@ -183,12 +196,7 @@
 	{#if isOpen}
 		<div
 			transition:slide={{ duration: 250 }}
-			class="
-				absolute left-0 right-0 z-50 mt-2 flex flex-col gap-2 rounded-2xl
-				border border-brand/20 dark:border-brand/10
-				bg-surface/95 backdrop-blur-2xl p-3
-				shadow-[0_20px_50px_rgba(0,0,0,0.35)] ring-1 ring-white/5
-			"
+			class="absolute left-0 right-0 z-50 mt-2 flex flex-col gap-2 rounded-2xl border border-brand/20 dark:border-brand/10 bg-surface/95 backdrop-blur-2xl p-3 shadow-[0_20px_50px_rgba(0,0,0,0.35)] ring-1 ring-white/5"
 		>
 			<!-- Search Field -->
 			<div class="relative flex items-center">
@@ -200,12 +208,7 @@
 					type="text"
 					bind:value={searchVal}
 					placeholder="Buscar..."
-					class="
-						w-full rounded-xl border border-brand/10 bg-surface/50
-						py-2 pl-9 pr-4 text-xs text-text placeholder-text-muted/65
-						outline-none transition-all duration-300
-						focus:border-brand/40 focus:ring-1 focus:ring-brand/20
-					"
+					class="w-full rounded-xl border border-brand/10 bg-surface/50 py-2 pl-9 pr-4 text-text placeholder-text-muted/65 outline-none transition-all duration-300 focus:border-brand/40 focus:ring-1 focus:ring-brand/20"
 				/>
 			</div>
 
@@ -215,41 +218,31 @@
 					<p class="text-center text-[11px] text-text-muted py-3 italic">Sin resultados</p>
 				{:else}
 					{#each filteredOptions as opt}
-						{@const isChecked = selected.has( opt.id )}
+						{@const checked = isChecked( opt.id )}
 						<button
 							type="button"
 							onclick={ () => toggleOption( opt.id ) }
-							class="
-								w-full flex items-center justify-between rounded-xl px-3 py-2
-								transition-all duration-200 text-left
-								{isChecked
-									? 'bg-brand/10 text-brand font-semibold'
-									: 'hover:bg-brand/5 text-text-muted hover:text-text'
-								}
-							"
+							class="w-full flex items-center justify-between rounded-xl px-3 py-2 transition-all duration-200 text-left {checked ? 'bg-brand/10 text-brand font-semibold' : 'hover:bg-brand/5 text-text-muted hover:text-text' }"
 						>
 							<div class="flex items-center gap-3">
-								<!-- Checkbox Visualizer -->
+								<!-- Checkbox / Radio Visualizer -->
 								<div
-									class="
-										flex h-4 w-4 shrink-0 items-center justify-center rounded
-										border transition-all duration-300
-										{isChecked
-											? 'border-brand bg-brand text-surface-dark shadow-[0_0_8px_rgba(0,230,118,0.25)]'
-											: 'border-brand/20 bg-surface'
-										}
-									"
+									class="flex h-4 w-4 shrink-0 items-center justify-center transition-all duration-300 border {multiple ? 'rounded' : 'rounded-full'} {checked ? 'border-brand bg-brand text-surface-dark shadow-[0_0_8px_rgba(0,230,118,0.25)]' : 'border-brand/20 bg-surface' }"
 								>
-									{#if isChecked}
-										<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-											<polyline points="20 6 9 17 4 12"></polyline>
-										</svg>
+									{#if checked}
+										{#if multiple}
+											<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+												<polyline points="20 6 9 17 4 12"></polyline>
+											</svg>
+										{:else}
+											<div class="h-1.5 w-1.5 rounded-full bg-surface-dark"></div>
+										{/if}
 									{/if}
 								</div>
 								<div class="flex flex-col">
-									<span class="text-xs leading-tight">{opt.name}</span>
+									<span class="leading-tight">{opt.name}</span>
 									<!-- Detailed option meta details (Autoclave, Temperature, Chemical Resistance) -->
-									{#if opt.meta}
+									<!-- {#if opt.meta}
 										<div class="flex flex-wrap items-center gap-2 mt-1 text-[9px] font-bold text-text-muted/70 tracking-wider">
 											{#if opt.meta.autoclavable !== undefined}
 												<span class="flex items-center gap-0.5 bg-brand/5 px-1.5 py-0.5 rounded border border-brand/10">
@@ -267,7 +260,7 @@
 												</span>
 											{/if}
 										</div>
-									{/if}
+									{/if} -->
 								</div>
 							</div>
 						</button>
