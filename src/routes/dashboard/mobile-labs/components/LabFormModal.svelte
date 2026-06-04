@@ -4,6 +4,7 @@
 	import FileUploader, { type UploadedFileItem } from '$lib/components/shared/FileUploader.svelte';
 	import { globalLoadingStore }                   from '$lib/state/loading';
 	import DashboardModal                           from '../../components/DashboardModal.svelte';
+	import Select                                   from '$lib/components/shared/Select.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductRelation {
@@ -86,20 +87,56 @@
 	let formName        = $state( '' );
 	let formSku         = $state( '' );
 	let formDescription = $state( '' );
-	let formDimensions  = $state( '6m x 2.4m x 2.6m' );
 	let formCategoryId  = $state( '' );
 	let formActive      = $state( true );
 
-	// Relations list state (Selected products and kits in this lab)
-	let formProducts    = $state< LabProduct[] >( [] );
-	let formKits        = $state< LabKit[] >( [] );
-	
-	let selectedAddProd = $state( '' );
-	let selectedAddKit  = $state( '' );
+	// Dimensions sub-states
+	let dimLength = $state( 0 );
+	let dimWidth  = $state( 0 );
+	let dimHeight = $state( 0 );
 
-	// File Uploader state
-	let uploaderFiles     = $state< UploadedFileItem[] >( [] );
-	let uploaderFilesInfo = $state( '' );
+	const formDimensions = $derived( `${ dimLength }m x ${ dimWidth }m x ${ dimHeight }m` );
+
+	function parseDimensions( dimStr: string ): { length: number; width: number; height: number } {
+		const regex = /^\s*([0-9.]+)\s*m\s*x\s*([0-9.]+)\s*m\s*x\s*([0-9.]+)\s*m\s*$/i;
+		const match = dimStr.match( regex );
+
+        if ( match ) {
+			return {
+				length : parseFloat( match[ 1 ] ) || 0,
+				width  : parseFloat( match[ 2 ] ) || 0,
+				height : parseFloat( match[ 3 ] ) || 0,
+			};
+		}
+
+        return {
+			length : 0,
+			width  : 0,
+			height : 0,
+		};
+	}
+
+	// Relations list state (Selected products and kits in this lab)
+	let formProducts        = $state< LabProduct[] >( [] );
+	let formKits            = $state< LabKit[] >( [] );
+	let selectedAddProd     = $state( '' );
+	let selectedAddKit      = $state( '' );
+	let uploaderFiles       = $state< UploadedFileItem[] >( [] );// File Uploader state
+	let uploaderFilesInfo   = $state( '' );
+
+	const mappedProducts = $derived.by( () => {
+		return catalogProducts.map( ( prod ) => ( {
+			id   : prod.id,
+			name : `[${ prod.sku }] ${ prod.name }`,
+		} ) );
+	} );
+
+	const mappedKits = $derived.by( () => {
+		return catalogKits.map( ( kit ) => ( {
+			id   : kit.id,
+			name : `[${ kit.sku }] ${ kit.name }`,
+		} ) );
+	} );
 
 	// ─── Sync data on open ────────────────────────────────────────────────────────
 	$effect( () => {
@@ -107,7 +144,10 @@
 			formName          = initialData.name;
 			formSku           = initialData.sku;
 			formDescription   = initialData.description;
-			formDimensions    = initialData.dimensions || '6m x 2.4m x 2.6m';
+			const parsed      = parseDimensions( initialData.dimensions );
+			dimLength         = parsed.length;
+			dimWidth          = parsed.width;
+			dimHeight         = parsed.height;
 			formCategoryId    = initialData.categoryId || ( categories[ 0 ]?.id || '' );
 			formActive        = initialData.active;
 			formProducts      = initialData.products || [];
@@ -120,13 +160,16 @@
 			formName          = '';
 			formSku           = '';
 			formDescription   = '';
-			formDimensions    = '6m x 2.4m x 2.6m';
-			formCategoryId    = categories[ 0 ]?.id || '';
+			const parsed      = parseDimensions( '' );
+			dimLength         = parsed.length;
+			dimWidth          = parsed.width;
+			dimHeight         = parsed.height;
+			formCategoryId    = '';
 			formActive        = true;
 			formProducts      = [];
 			formKits          = [];
-			selectedAddProd   = catalogProducts[ 0 ]?.id || '';
-			selectedAddKit    = catalogKits[ 0 ]?.id || '';
+			selectedAddProd   = '';
+			selectedAddKit    = '';
 			uploaderFiles     = [];
 			uploaderFilesInfo = '';
 		}
@@ -246,9 +289,7 @@
 				return;
 			}
 
-			toast.success( isEditing ? 'Laboratorio editado con éxito.' : 'Laboratorio creado con éxito.', {
-				style : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
-			} );
+			toast.success( isEditing ? 'Laboratorio editado con éxito.' : 'Laboratorio creado con éxito.' );
 
 			onSave();
 		} catch ( err ) {
@@ -266,7 +307,7 @@
 	maxWidth="max-w-2xl"
 >
 	{#snippet body()}
-		<form onsubmit={ handleSubmit } class="space-y-4 text-xs font-bold text-text-muted">
+		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<!-- Name -->
 				<div class="space-y-1.5">
@@ -276,7 +317,7 @@
 						type="text"
 						bind:value={ formName }
 						placeholder="Ej: Laboratorio Móvil de Física"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
+						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 					/>
 				</div>
 
@@ -288,7 +329,7 @@
 						type="text"
 						bind:value={ formSku }
 						placeholder="Ej: CLAB-001"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
+						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 					/>
 				</div>
 			</div>
@@ -296,28 +337,47 @@
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<!-- Dimensions -->
 				<div class="space-y-1.5">
-					<label for="lab-dims">Dimensiones (Largo x Ancho x Alto)</label>
-					<input
-						id="lab-dims"
-						type="text"
-						bind:value={ formDimensions }
-						placeholder="Ej: 6m x 2.4m x 2.6m"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-					/>
+					<label for="dim-length">Dimensiones (Largo x Ancho x Alto en metros)</label>
+					<div class="grid grid-cols-3 gap-2">
+						<input
+							id="dim-length"
+							type="number"
+							step="0.1"
+							min="0"
+							bind:value={ dimLength }
+							placeholder="Largo"
+							class="w-full rounded-xl border border-brand/15 bg-input px-3 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
+						/>
+						<input
+							id="dim-width"
+							type="number"
+							step="0.1"
+							min="0"
+							bind:value={ dimWidth }
+							placeholder="Ancho"
+							class="w-full rounded-xl border border-brand/15 bg-input px-3 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
+						/>
+						<input
+							id="dim-height"
+							type="number"
+							step="0.1"
+							min="0"
+							bind:value={ dimHeight }
+							placeholder="Alto"
+							class="w-full rounded-xl border border-brand/15 bg-input px-3 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
+						/>
+					</div>
 				</div>
 
 				<!-- Category Select -->
 				<div class="space-y-1.5">
 					<label for="lab-cat">Categoría Científica</label>
-					<select
-						id="lab-cat"
+					<Select
+						options={ categories }
 						bind:value={ formCategoryId }
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-					>
-						{#each categories as cat ( cat.id )}
-							<option value={ cat.id }>{ cat.name }</option>
-						{/each}
-					</select>
+						multiple={ false }
+						placeholder="Seleccionar categoría..."
+					/>
 				</div>
 			</div>
 
@@ -329,7 +389,7 @@
 					bind:value={ formDescription }
 					placeholder="Describa la infraestructura técnica, conexiones eléctricas, suministro de agua, etc..."
 					rows="3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card resize-none"
+					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-none"
 				></textarea>
 			</div>
 
@@ -340,14 +400,12 @@
 					<span class="text-[10px] uppercase font-black tracking-wider text-brand">Productos / Insumos Individuales</span>
 
 					<div class="flex gap-1.5">
-						<select
+						<Select
+							options={ mappedProducts }
 							bind:value={ selectedAddProd }
-							class="flex-1 rounded-xl border border-brand/15 bg-input px-3 py-2 text-xs text-text outline-none focus:border-brand focus:bg-card min-w-0"
-						>
-							{#each catalogProducts as prod ( prod.id )}
-								<option value={ prod.id }>[{ prod.sku }] { prod.name }</option>
-							{/each}
-						</select>
+							multiple={ false }
+							placeholder="Seleccionar producto..."
+						/>
 						<button
 							type="button"
 							onclick={ addProductToForm }
@@ -368,7 +426,7 @@
 										type="number"
 										min="1"
 										bind:value={ item.quantity }
-										class="w-10 text-center rounded-lg border border-brand/15 bg-card py-0.5 text-xs text-text font-bold"
+										class="w-10 text-center rounded-lg border border-brand/15 bg-card py-0.5 text-text font-bold"
 									/>
 									<button
 										type="button"
@@ -390,14 +448,12 @@
 					<span class="text-[10px] uppercase font-black tracking-wider text-brand">Kits Pedagógicos Integrados</span>
 
 					<div class="flex gap-1.5">
-						<select
+						<Select
+							options={ mappedKits }
 							bind:value={ selectedAddKit }
-							class="flex-1 rounded-xl border border-brand/15 bg-input px-3 py-2 text-xs text-text outline-none focus:border-brand focus:bg-card min-w-0"
-						>
-							{#each catalogKits as kit ( kit.id )}
-								<option value={ kit.id }>[{ kit.sku }] { kit.name }</option>
-							{/each}
-						</select>
+							multiple={ false }
+							placeholder="Seleccionar kit..."
+						/>
 						<button
 							type="button"
 							onclick={ addKitToForm }
@@ -418,7 +474,7 @@
 										type="number"
 										min="1"
 										bind:value={ item.quantity }
-										class="w-10 text-center rounded-lg border border-brand/15 bg-card py-0.5 text-xs text-text font-bold"
+										class="w-10 text-center rounded-lg border border-brand/15 bg-card py-0.5 text-text font-bold"
 									/>
 									<button
 										type="button"
