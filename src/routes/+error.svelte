@@ -63,11 +63,7 @@
 		<div class="flex flex-wrap items-center justify-center gap-4 pt-4">
 			<a
 				href="/"
-				class="
-					relative flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3.5 text-xs font-black uppercase tracking-wider text-surface-dark
-					shadow-card transition-all duration-300 group overflow-hidden
-					hover:-translate-y-0.5 hover:bg-brand-bright hover:shadow-card-hover
-				"
+				class="relative flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3.5 font-black uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 group overflow-hidden hover:-translate-y-0.5 hover:bg-brand-bright hover:shadow-card-hover"
 			>
 				<span class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
 
@@ -81,11 +77,7 @@
 
 			<a
 				href="/catalog"
-				class="
-					flex items-center justify-center gap-2 rounded-xl bg-brand/10 border border-brand/20 px-6 py-3.5 text-xs font-black uppercase tracking-wider text-brand
-					shadow-xs transition-all duration-300
-					hover:bg-brand hover:text-surface-dark hover:border-brand
-				"
+				class="flex items-center justify-center gap-2 rounded-xl bg-brand/10 border border-brand/20 px-6 py-3.5 font-black uppercase tracking-wider text-brand shadow-xs transition-all duration-300 hover:bg-brand hover:text-surface-dark hover:border-brand"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 					<circle cx="11" cy="11" r="8" />
