@@ -17,6 +17,7 @@
 	import { searchStore }          from '$lib/state/search';
 	import { globalLoadingStore }   from '$lib/state/loading';
 	import FilterSidebar            from './components/FilterSidebar.svelte';
+	import Select                   from '$lib/components/shared/Select.svelte';
 
 	// ─── Constants ────────────────────────────────────────────────────────────────
 	const allTypes: ProductType[] = [ 'Producto', 'Kit', 'Laboratorio Móvil' ];
@@ -28,6 +29,12 @@
 	let selectedLabCategories = $state( new Set<string>() );
 	let activeTab             = $state( 'productos' );
 	let sortBy                = $state( 'relevance' );
+
+	const sortOptions = [
+		{ id : 'relevance', name : 'Relevancia' },
+		{ id : 'name',      name : 'Nombre A–Z' },
+		{ id : 'category',  name : 'Categoría' },
+	];
 
 	// ─── Pagination State (Svelte 5 Runes) ─────────────────────────────────────────
 	let page                  = $state( 1 );
@@ -309,7 +316,7 @@
 	<div class="pointer-events-none absolute bottom-0 left-1/2 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-linear-to-r from-brand/0 via-brand/10 to-brand/0 blur-3xl"></div>
 
 	<div class="relative mx-auto flex max-w-7xl flex-col items-center text-center px-6 space-y-2">
-		<span class="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-surface px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand backdrop-blur-md shadow-[0_0_15px_rgba(0,181,100,0.15)]">
+		<span class="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-surface px-4 py-1.5 font-bold uppercase tracking-widest text-brand backdrop-blur-md shadow-[0_0_15px_rgba(0,181,100,0.15)]">
 			<span class="relative flex h-2 w-2">
 				<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
 				<span class="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
@@ -360,22 +367,14 @@
 				resultado{ currentDisplayCount !== 1 ? 's' : '' }
 			</p>
 
-			<div class="flex items-center gap-2 text-xs text-text-muted">
+			<div class="flex items-center gap-2 text-text-muted">
 				<span class="hidden sm:inline">Ordenar por:</span>
-				<select
-					id="sort-select"
+				<Select
+					options={ sortOptions }
 					bind:value={ sortBy }
-					class="
-						rounded-lg border border-brand/20 bg-input
-						px-3 py-1.5 text-xs text-text
-						outline-none transition-colors duration-200
-						focus:border-brand focus:ring-1 focus:ring-brand/25
-					"
-				>
-					<option value="relevance">Relevancia</option>
-					<option value="name">Nombre A–Z</option>
-					<option value="category">Categoría</option>
-				</select>
+					multiple={ false }
+					placeholder="Ordenar por..."
+				/>
 			</div>
 		</div>
 
@@ -390,7 +389,7 @@
 				</div>
 				<div class="space-y-1 flex-1">
 					<p class="font-display text-base font-bold text-amber-400">No se encontraron resultados para "{ $searchStore }"</p>
-					<p class="text-xs text-text-muted leading-relaxed font-medium">
+					<p class="text-text-muted leading-relaxed font-medium">
 						No hemos encontrado ninguna coincidencia exacta para lo que estás buscando en nuestro catálogo actual. Para ayudarte a encontrar lo que necesitas, te sugerimos los siguientes equipos y materiales científicos relacionados:
 					</p>
 				</div>
@@ -442,13 +441,7 @@
 				{#snippet children( { pages } )}
 					<div class="flex items-center justify-center gap-2 mt-8">
 						<Pagination.PrevButton
-							class="
-								inline-flex h-9 w-9 items-center justify-center rounded-xl
-								border border-brand/10 bg-surface/30 text-text
-								transition-all duration-300
-								hover:bg-brand/10 hover:text-brand
-								disabled:pointer-events-none disabled:opacity-40
-							"
+							class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand/10 bg-surface/30 text-text transition-all duration-300 hover:bg-brand/10 hover:text-brand disabled:pointer-events-none disabled:opacity-40"
 						>
 							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
 								<polyline points="15 18 9 12 15 6"></polyline>
@@ -457,17 +450,11 @@
 
 						{#each pages as p ( p.key )}
 							{#if p.type === 'ellipsis'}
-								<span class="inline-flex h-9 w-9 items-center justify-center text-xs font-bold text-text-muted">...</span>
+								<span class="inline-flex h-9 w-9 items-center justify-center font-bold text-text-muted">...</span>
 							{:else}
 								<Pagination.Page
 									page={ p }
-									class="
-										inline-flex h-9 w-9 items-center justify-center rounded-xl
-										border border-brand/10 bg-surface/30 text-xs font-bold text-text-muted
-										transition-all duration-300
-										hover:bg-brand/10 hover:text-brand
-										data-selected:bg-brand data-selected:text-surface-dark data-selected:border-brand data-selected:shadow-md
-									"
+									class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand/10 bg-surface/30 font-bold text-text-muted transition-all duration-300 hover:bg-brand/10 hover:text-brand data-selected:bg-brand data-selected:text-surface-dark data-selected:border-brand data-selected:shadow-md"
 								>
 									{ p.value }
 								</Pagination.Page>
@@ -475,13 +462,7 @@
 						{/each}
 
 						<Pagination.NextButton
-							class="
-								inline-flex h-9 w-9 items-center justify-center rounded-xl
-								border border-brand/10 bg-surface/30 text-text
-								transition-all duration-300
-								hover:bg-brand/10 hover:text-brand
-								disabled:pointer-events-none disabled:opacity-40
-							"
+							class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand/10 bg-surface/30 text-text transition-all duration-300 hover:bg-brand/10 hover:text-brand disabled:pointer-events-none disabled:opacity-40"
 						>
 							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
 								<polyline points="9 18 15 12 9 6"></polyline>
@@ -501,13 +482,7 @@
 				{#snippet children( { pages } )}
 					<div class="flex items-center justify-center gap-2 mt-8">
 						<Pagination.PrevButton
-							class="
-								inline-flex h-9 w-9 items-center justify-center rounded-xl
-								border border-brand/10 bg-surface/30 text-text
-								transition-all duration-300
-								hover:bg-brand/10 hover:text-brand
-								disabled:pointer-events-none disabled:opacity-40
-							"
+							class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand/10 bg-surface/30 text-text transition-all duration-300 hover:bg-brand/10 hover:text-brand disabled:pointer-events-none disabled:opacity-40"
 						>
 							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
 								<polyline points="15 18 9 12 15 6"></polyline>
@@ -516,17 +491,11 @@
 
 						{#each pages as p ( p.key )}
 							{#if p.type === 'ellipsis'}
-								<span class="inline-flex h-9 w-9 items-center justify-center text-xs font-bold text-text-muted">...</span>
+								<span class="inline-flex h-9 w-9 items-center justify-center font-bold text-text-muted">...</span>
 							{:else}
 								<Pagination.Page
 									page={ p }
-									class="
-										inline-flex h-9 w-9 items-center justify-center rounded-xl
-										border border-brand/10 bg-surface/30 text-xs font-bold text-text-muted
-										transition-all duration-300
-										hover:bg-brand/10 hover:text-brand
-										data-selected:bg-brand data-selected:text-surface-dark data-selected:border-brand data-selected:shadow-md
-									"
+									class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand/10 bg-surface/30 font-bold text-text-muted transition-all duration-300 hover:bg-brand/10 hover:text-brand data-selected:bg-brand data-selected:text-surface-dark data-selected:border-brand data-selected:shadow-md"
 								>
 									{ p.value }
 								</Pagination.Page>
@@ -534,13 +503,7 @@
 						{/each}
 
 						<Pagination.NextButton
-							class="
-								inline-flex h-9 w-9 items-center justify-center rounded-xl
-								border border-brand/10 bg-surface/30 text-text
-								transition-all duration-300
-								hover:bg-brand/10 hover:text-brand
-								disabled:pointer-events-none disabled:opacity-40
-							"
+							class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand/10 bg-surface/30 text-text transition-all duration-300 hover:bg-brand/10 hover:text-brand disabled:pointer-events-none disabled:opacity-40"
 						>
 							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
 								<polyline points="9 18 15 12 9 6"></polyline>
@@ -560,13 +523,7 @@
 				{#snippet children( { pages } )}
 					<div class="flex items-center justify-center gap-2 mt-8">
 						<Pagination.PrevButton
-							class="
-								inline-flex h-9 w-9 items-center justify-center rounded-xl
-								border border-brand/10 bg-surface/30 text-text
-								transition-all duration-300
-								hover:bg-brand/10 hover:text-brand
-								disabled:pointer-events-none disabled:opacity-40
-							"
+							class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand/10 bg-surface/30 text-text transition-all duration-300 hover:bg-brand/10 hover:text-brand disabled:pointer-events-none disabled:opacity-40"
 						>
 							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
 								<polyline points="15 18 9 12 15 6"></polyline>
@@ -575,17 +532,11 @@
 
 						{#each pages as p ( p.key )}
 							{#if p.type === 'ellipsis'}
-								<span class="inline-flex h-9 w-9 items-center justify-center text-xs font-bold text-text-muted">...</span>
+								<span class="inline-flex h-9 w-9 items-center justify-center font-bold text-text-muted">...</span>
 							{:else}
 								<Pagination.Page
 									page={ p }
-									class="
-										inline-flex h-9 w-9 items-center justify-center rounded-xl
-										border border-brand/10 bg-surface/30 text-xs font-bold text-text-muted
-										transition-all duration-300
-										hover:bg-brand/10 hover:text-brand
-										data-selected:bg-brand data-selected:text-surface-dark data-selected:border-brand data-selected:shadow-md
-									"
+									class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand/10 bg-surface/30 font-bold text-text-muted transition-all duration-300 hover:bg-brand/10 hover:text-brand data-selected:bg-brand data-selected:text-surface-dark data-selected:border-brand data-selected:shadow-md"
 								>
 									{ p.value }
 								</Pagination.Page>
@@ -593,13 +544,7 @@
 						{/each}
 
 						<Pagination.NextButton
-							class="
-								inline-flex h-9 w-9 items-center justify-center rounded-xl
-								border border-brand/10 bg-surface/30 text-text
-								transition-all duration-300
-								hover:bg-brand/10 hover:text-brand
-								disabled:pointer-events-none disabled:opacity-40
-							"
+							class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand/10 bg-surface/30 text-text transition-all duration-300 hover:bg-brand/10 hover:text-brand disabled:pointer-events-none disabled:opacity-40"
 						>
 							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
 								<polyline points="9 18 15 12 9 6"></polyline>
