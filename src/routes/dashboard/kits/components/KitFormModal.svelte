@@ -1,9 +1,12 @@
 <script lang="ts">
 	import toast from 'svelte-french-toast';
 
-	import FileUploader, { type UploadedFileItem } from '$lib/components/shared/FileUploader.svelte';
-	import { globalLoadingStore }                   from '$lib/state/loading';
-	import DashboardModal                           from '../../components/DashboardModal.svelte';
+	import FileUploader, {
+        type UploadedFileItem
+    }                               from '$lib/components/shared/FileUploader.svelte';
+	import { globalLoadingStore }   from '$lib/state/loading';
+	import DashboardModal           from '../../components/DashboardModal.svelte';
+	import Select                   from '$lib/components/shared/Select.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductRelation {
@@ -70,6 +73,13 @@
 	// Relations list state (Selected products in this kit)
 	let formProducts    = $state< KitProduct[] >( [] );
 	let selectedAddProd = $state( '' );
+
+	const mappedProducts = $derived.by( () => {
+		return catalogProducts.map( ( prod ) => ( {
+			id   : prod.id,
+			name : `[${ prod.sku }] ${ prod.name }`,
+		} ) );
+	} );
 
 	// File Uploader state
 	let uploaderFiles     = $state< UploadedFileItem[] >( [] );
@@ -176,9 +186,7 @@
 				return;
 			}
 
-			toast.success( isEditing ? 'Kit editado con éxito.' : 'Kit creado con éxito.', {
-				style : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
-			} );
+			toast.success( isEditing ? 'Kit editado con éxito.' : 'Kit creado con éxito.' );
 
 			onSave();
 		} catch ( err ) {
@@ -196,7 +204,7 @@
 	maxWidth="max-w-2xl"
 >
 	{#snippet body()}
-		<form onsubmit={ handleSubmit } class="space-y-4 text-xs font-bold text-text-muted">
+		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<!-- Name -->
 				<div class="space-y-1.5">
@@ -206,7 +214,7 @@
 						type="text"
 						bind:value={ formName }
 						placeholder="Ej: Kit de Bioquímica Básica"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
+						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 					/>
 				</div>
 
@@ -218,7 +226,7 @@
 						type="text"
 						bind:value={ formSku }
 						placeholder="Ej: CKIT-001"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
+						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 					/>
 				</div>
 			</div>
@@ -231,22 +239,19 @@
 					bind:value={ formDescription }
 					placeholder="Indique los módulos pedagógicos, experimentos integrados o guías de laboratorio incluidas..."
 					rows="3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card resize-none"
+					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-none"
 				></textarea>
 			</div>
 
 			<!-- Category Select -->
 			<div class="space-y-1.5">
 				<label for="kit-category">Categoría Científica</label>
-				<select
-					id="kit-category"
+				<Select
+					options={ categories }
 					bind:value={ formCategoryId }
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-				>
-					{#each categories as cat ( cat.id )}
-						<option value={ cat.id }>{ cat.name }</option>
-					{/each}
-				</select>
+					multiple={ false }
+					placeholder="Seleccionar categoría..."
+				/>
 			</div>
 
 			<!-- PRODUCTS SELECTOR IN FORM -->
@@ -254,14 +259,12 @@
 				<span class="text-[10px] uppercase font-black tracking-wider text-brand">Productos Incluidos en este Kit</span>
 
 				<div class="flex items-center gap-2">
-					<select
+					<Select
+						options={ mappedProducts }
 						bind:value={ selectedAddProd }
-						class="flex-1 rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-					>
-						{#each catalogProducts as prod ( prod.id )}
-							<option value={ prod.id }>[{ prod.sku }] { prod.name }</option>
-						{/each}
-					</select>
+						multiple={ false }
+						placeholder="Seleccionar producto..."
+					/>
 					<button
 						type="button"
 						onclick={ addProductToForm }
@@ -287,7 +290,7 @@
 										type="number"
 										min="1"
 										bind:value={ item.quantity }
-										class="w-12 text-center rounded-lg border border-brand/15 bg-card py-1 text-xs text-text font-bold"
+										class="w-12 text-center rounded-lg border border-brand/15 bg-card py-1 text-text font-bold"
 									/>
 								</div>
 								<button
