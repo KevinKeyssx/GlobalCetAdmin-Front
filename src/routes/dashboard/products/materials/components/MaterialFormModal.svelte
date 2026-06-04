@@ -5,6 +5,7 @@
 	import { METHOD }                     from '$lib/services/http-codes';
 	import { globalLoadingStore }         from '$lib/state/loading';
 	import DashboardModal                 from '../../../components/DashboardModal.svelte';
+	import Select                         from '$lib/components/shared/Select.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface MaterialFormProps {
@@ -45,6 +46,13 @@
 	let formAcidResistance     = $state( 'excellent' );
 	let formAlkalineResistance = $state( 'good' );
 	let formActive             = $state( true );
+
+	const resistanceOptions = [
+		{ id : 'excellent', name : 'Excelente' },
+		{ id : 'good',      name : 'Buena' },
+		{ id : 'fair',      name : 'Aceptable' },
+		{ id : 'poor',      name : 'Baja' },
+	];
 
 	// ─── Sync initial data when modal opens ───────────────────────────────────────
 	$effect( () => {
@@ -104,21 +112,15 @@
 			} );
 
 			if ( isApiError( response ) ) {
-				toast.error( `Error: ${ response.message }`, {
-					style : 'background: #111f18; color: #ff5252; border: 1px solid rgba(255, 82, 82, 0.2); font-family: Outfit;',
-				} );
+				toast.error( `Error: ${ response.message }` );
 				return;
 			}
 
-			toast.success( isEditing ? 'Material modificado con éxito.' : 'Material agregado con éxito.', {
-				style : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
-			} );
+			toast.success( isEditing ? 'Material modificado con éxito.' : 'Material agregado con éxito.' );
 
 			onSave();
 		} catch ( err : any ) {
-			toast.error( 'Error de red al intentar guardar el material.', {
-				style : 'background: #111f18; color: #ff5252; border: 1px solid rgba(255, 82, 82, 0.2); font-family: Outfit;',
-			} );
+			toast.error( 'Error de red al intentar guardar el material.' );
 		} finally {
 			$globalLoadingStore = false;
 		}
@@ -131,7 +133,7 @@
 	onClose={ onCancel }
 >
 	{#snippet body()}
-		<form onsubmit={ handleSubmit } class="space-y-4 text-xs font-bold text-text-muted">
+		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
 			<!-- Name -->
 			<div class="space-y-1.5">
 				<label for="material-name">Nombre del Material</label>
@@ -140,7 +142,7 @@
 					type="text"
 					bind:value={ formName }
 					placeholder="Ej: Vidrio de Borosilicato 3.3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
+					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 				/>
 			</div>
 
@@ -152,7 +154,7 @@
 					type="text"
 					bind:value={ formSlug }
 					placeholder="Ej: borosilicato-3-3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
+					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 				/>
 			</div>
 
@@ -164,7 +166,7 @@
 					bind:value={ formDescription }
 					placeholder="Escriba las especificaciones o usos recomendados..."
 					rows="3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card resize-none"
+					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-none"
 				></textarea>
 			</div>
 
@@ -187,7 +189,7 @@
 						id="material-temp"
 						type="number"
 						bind:value={ formMaxTemp }
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
+						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 					/>
 				</div>
 			</div>
@@ -198,30 +200,22 @@
 				<div class="grid grid-cols-2 gap-4">
 					<div class="space-y-1.5">
 						<label for="acid-res">Frente a Ácidos</label>
-						<select
-							id="acid-res"
+						<Select
+							options={ resistanceOptions }
 							bind:value={ formAcidResistance }
-							class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-						>
-							<option value="excellent">Excelente</option>
-							<option value="good">Buena</option>
-							<option value="fair">Aceptable</option>
-							<option value="poor">Baja</option>
-						</select>
+							multiple={ false }
+							placeholder="Seleccionar resistencia..."
+						/>
 					</div>
 
 					<div class="space-y-1.5">
 						<label for="alkaline-res">Frente a Alcalinos</label>
-						<select
-							id="alkaline-res"
+						<Select
+							options={ resistanceOptions }
 							bind:value={ formAlkalineResistance }
-							class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-						>
-							<option value="excellent">Excelente</option>
-							<option value="good">Buena</option>
-							<option value="fair">Aceptable</option>
-							<option value="poor">Baja</option>
-						</select>
+							multiple={ false }
+							placeholder="Seleccionar resistencia..."
+						/>
 					</div>
 				</div>
 			</div>
