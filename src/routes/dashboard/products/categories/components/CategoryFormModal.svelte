@@ -5,6 +5,7 @@
 	import { METHOD }                     from '$lib/services/http-codes';
 	import { globalLoadingStore }         from '$lib/state/loading';
 	import DashboardModal                 from '../../../components/DashboardModal.svelte';
+	import Select                         from '$lib/components/shared/Select.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface CategoryFormProps {
@@ -86,9 +87,7 @@
 				return;
 			}
 
-			toast.success( isEditing ? 'Modificado con éxito.' : 'Creado con éxito.', {
-				style : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
-			} );
+			toast.success( isEditing ? 'Modificado con éxito.' : 'Creado con éxito.' );
 
 			onSave();
 		} catch ( err ) {
@@ -106,20 +105,17 @@
 	maxWidth="max-w-md"
 >
 	{#snippet body()}
-		<form onsubmit={ handleSubmit } class="space-y-4 text-xs font-bold text-text-muted">
+		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
 			<!-- Parent Category selector for Subcategories -->
 			{#if ( activeTab === 'subcategories' )}
 				<div class="space-y-1.5">
 					<label for="parent-cat-select">Categoría Padre</label>
-					<select
-						id="parent-cat-select"
+					<Select
+						options={ categories }
 						bind:value={ parentCatId }
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-					>
-						{#each categories as cat ( cat.id )}
-							<option value={ cat.id }>{ cat.name }</option>
-						{/each}
-					</select>
+						multiple={ false }
+						placeholder="Seleccionar categoría..."
+					/>
 				</div>
 			{/if}
 
@@ -131,7 +127,7 @@
 					type="text"
 					bind:value={ formName }
 					placeholder="Ej: Reactivos Técnicos"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
+					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 				/>
 			</div>
 
