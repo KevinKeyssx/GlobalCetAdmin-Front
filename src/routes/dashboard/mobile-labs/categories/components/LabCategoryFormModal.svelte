@@ -67,9 +67,7 @@
 				return;
 			}
 
-			toast.success( isEditing ? 'Categoría modificada con éxito.' : 'Categoría agregada con éxito.', {
-				style : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
-			} );
+			toast.success( isEditing ? 'Categoría modificada con éxito.' : 'Categoría agregada con éxito.' );
 
 			onSave();
 		} catch ( err ) {
@@ -87,7 +85,7 @@
 	maxWidth="max-w-md"
 >
 	{#snippet body()}
-		<form onsubmit={ handleSubmit } class="space-y-4 text-xs font-bold text-text-muted">
+		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
 			<!-- Name -->
 			<div class="space-y-1.5">
 				<label for="cat-name">Nombre de la Categoría</label>
@@ -96,7 +94,7 @@
 					type="text"
 					bind:value={ formName }
 					placeholder="Ej: Química e Insumos"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
+					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 				/>
 			</div>
 
