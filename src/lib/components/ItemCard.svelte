@@ -127,14 +127,9 @@
 
 
 <a
-	href  = "/products/{ itemType }/{ item.id }"
-	id    = "item-card-{ item.id }"
-	class = "
-		group relative flex h-full flex-col overflow-hidden rounded-2xl
-		border border-brand/10 bg-card shadow-card
-		transition-all duration-300
-		hover:border-brand/35 hover:shadow-card-hover hover:-translate-y-1
-	"
+	href    = "/products/{ itemType }/{ item.id }"
+	id      = "item-card-{ item.id }"
+	class   = "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-brand/10 bg-card shadow-card transition-all duration-300 hover:border-brand/35 hover:shadow-card-hover hover:-translate-y-1"
 >
 	<!-- Image Carousel Wrapper -->
 	<div class="relative h-48 overflow-hidden bg-surface">
@@ -148,23 +143,13 @@
 					src      = { imgUrl }
 					alt      = { name }
 					loading  = "lazy"
-					class    = "h-full w-full shrink-0 object-cover transition-transform duration-500 group-hover:scale-105"
+					class="h-full w-full shrink-0 object-cover transition-transform duration-500 group-hover:scale-105"
 				/>
 			{/each}
 		</div>
 
 		<!-- Single Top-Left Type Badge -->
-		<span class="
-			absolute left-3 top-3 z-30
-			rounded-full px-2.5 py-0.5
-			text-[9px] font-black uppercase tracking-wider backdrop-blur-md
-			{ itemType === 'lab'
-				? 'border border-blue-400/30 bg-blue-400/20 text-blue-300'
-				: itemType === 'kit'
-					? 'border border-emerald-400/30 bg-emerald-400/20 text-emerald-300'
-					: 'border border-brand/30 bg-brand/20 text-brand-bright'
-			}
-		">
+		<span class="absolute left-3 top-3 z-30 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider backdrop-blur-md { itemType === 'lab' ? 'border border-blue-400/30 bg-blue-400/20 text-blue-300' : itemType === 'kit' ? 'border border-emerald-400/30 bg-emerald-400/20 text-emerald-300' : 'border border-brand/30 bg-brand/20 text-brand-bright' }">
 			{ itemType === 'lab' ? 'Laboratorio Móvil' : itemType === 'kit' ? 'Kit Científico' : 'Producto' }
 		</span>
 
@@ -173,13 +158,7 @@
 			<button
 				onclick    = { prevImage }
 				aria-label = "Imagen anterior"
-				class      = "
-					absolute left-2.5 top-1/2 -translate-y-1/2 z-30
-					flex h-7.5 w-7.5 items-center justify-center rounded-full
-					bg-black/35 backdrop-blur-md text-white border border-white/10
-					opacity-0 group-hover:opacity-100 transition-all duration-300
-					hover:bg-black/60 hover:scale-105 cursor-pointer
-				"
+				class="absolute left-2.5 top-1/2 -translate-y-1/2 z-30 flex h-7.5 w-7.5 items-center justify-center rounded-full bg-black/35 backdrop-blur-md text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/60 hover:scale-105 cursor-pointer"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 					<polyline points="15 18 9 12 15 6"></polyline>
@@ -189,13 +168,7 @@
 			<button
 				onclick    = { nextImage }
 				aria-label = "Siguiente imagen"
-				class      = "
-					absolute right-2.5 top-1/2 -translate-y-1/2 z-30
-					flex h-7.5 w-7.5 items-center justify-center rounded-full
-					bg-black/35 backdrop-blur-md text-white border border-white/10
-					opacity-0 group-hover:opacity-100 transition-all duration-300
-					hover:bg-black/60 hover:scale-105 cursor-pointer
-				"
+				class="absolute right-2.5 top-1/2 -translate-y-1/2 z-30 flex h-7.5 w-7.5 items-center justify-center rounded-full bg-black/35 backdrop-blur-md text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/60 hover:scale-105 cursor-pointer"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 					<polyline points="9 18 15 12 9 6"></polyline>
@@ -208,13 +181,7 @@
 					<button
 						onclick    = { ( e ) => setImage( idx, e ) }
 						aria-label = "Ir a imagen { idx + 1 }"
-						class      = "
-							h-1.5 rounded-full transition-all duration-300 cursor-pointer
-							{ idx === activeIndex
-								? 'bg-brand w-3.5 shadow-[0_0_8px_var(--color-brand)]'
-								: 'bg-white/45 hover:bg-white/70 w-1.5'
-							}
-						"
+						class="h-1.5 rounded-full transition-all duration-300 cursor-pointer { idx === activeIndex ? 'bg-brand w-3.5 shadow-[0_0_8px_var(--color-brand)]' : 'bg-white/45 hover:bg-white/70 w-1.5' }"
 					></button>
 				{/each}
 			</div>
@@ -237,10 +204,7 @@
 
 		<!-- Title and description ( Space stabilized ) -->
 		<div class="flex-1 space-y-1">
-			<h3 class="
-				text-base font-semibold leading-snug text-text truncate
-				transition-colors duration-200 group-hover:text-brand
-			">
+			<h3 class="text-base font-semibold leading-snug text-text truncate transition-colors duration-200 group-hover:text-brand">
 				{ name }
 			</h3>
 
@@ -256,11 +220,11 @@
 				<div class="grid grid-cols-2 gap-3.5">
 					<div class="space-y-0.5 min-w-0">
 						<span class="block text-[9px] font-black uppercase tracking-wider text-brand">Material</span>
-						<span class="block text-xs font-semibold text-text truncate">{ material }</span>
+						<span class="block font-semibold text-text truncate">{ material }</span>
 					</div>
 					<div class="space-y-0.5 min-w-0">
 						<span class="block text-[9px] font-black uppercase tracking-wider text-brand">Subcategoría</span>
-						<span class="block text-xs font-semibold text-text truncate">{ subcategory }</span>
+						<span class="block font-semibold text-text truncate">{ subcategory }</span>
 					</div>
 				</div>
 
@@ -278,7 +242,7 @@
 							{/each}
 						</div>
 					{:else}
-						<span class="text-xs text-text-muted italic">Sin componentes asociados</span>
+						<span class="text-text-muted italic">Sin componentes asociados</span>
 					{/if}
 				</div>
 
@@ -293,7 +257,7 @@
 							<line x1="12" y1="22.08" x2="12" y2="12"></line>
 						</svg>
 						<span class="text-[10px] font-black uppercase tracking-wider text-brand">Dimensiones:</span>
-						<span class="text-xs font-semibold text-text truncate">{ dimensions }</span>
+						<span class="font-semibold text-text truncate">{ dimensions }</span>
 					</div>
 
 					<!-- Equipment details list -->
@@ -315,7 +279,7 @@
 								{/each}
 							</div>
 						{:else}
-							<span class="text-xs text-text-muted italic">Configuración base sin kits</span>
+							<span class="text-text-muted italic">Configuración base sin kits</span>
 						{/if}
 					</div>
 				</div>
