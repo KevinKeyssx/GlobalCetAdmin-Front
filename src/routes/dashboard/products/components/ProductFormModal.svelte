@@ -1,9 +1,13 @@
 <script lang="ts">
 	import toast from 'svelte-french-toast';
 
-	import FileUploader, { type UploadedFileItem } from '$lib/components/shared/FileUploader.svelte';
-	import { globalLoadingStore }                   from '$lib/state/loading';
-	import DashboardModal                           from '../../components/DashboardModal.svelte';
+	import FileUploader, {
+        type UploadedFileItem
+    }                               from '$lib/components/shared/FileUploader.svelte';
+	import { globalLoadingStore }   from '$lib/state/loading';
+	import DashboardModal           from '../../components/DashboardModal.svelte';
+	import Select                   from '$lib/components/shared/Select.svelte';
+	import KeyValueEditor           from '$lib/components/shared/KeyValueEditor.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductFormProps {
@@ -25,7 +29,7 @@
 	interface CategoryInfo {
 		id            : string;
 		name          : string;
-		subcategories : Array<{ id : string; name : string }>;
+		subCategories : Array<{ id : string; name : string }>;
 	}
 
 	interface ProductInitial {
@@ -56,40 +60,35 @@
 	let formMaterialId    = $state( '' );
 	let formSubcategoryId = $state( '' );
 	let formActive        = $state( true );
-	let formSpecs         = $state( '{"color":"verde"}' );
-	const specsPlaceholder = 'Ej: {"color":"rojo", "size":"L"}';
+	let formSpecs         = $state( '{}' );
 
 	// File Uploader state
 	let uploaderFiles     = $state< UploadedFileItem[] >( [] );
 	let uploaderFilesInfo = $state( '' );
 
-	// ─── Sync data on open ────────────────────────────────────────────────────────
-	$effect( () => {
-		if ( show && initialData ) {
-			formName          = initialData.name;
-			formSku           = initialData.sku;
-			formDescription   = initialData.description;
-			formMaterialId    = initialData.materialId || ( materials[ 0 ]?.id || '' );
-			formSubcategoryId = initialData.subcategoryId || '';
-			formActive        = initialData.active;
-			formSpecs         = initialData.technicalSpecs || '{"color":"verde"}';
-			uploaderFiles     = [];
-			uploaderFilesInfo = '';
-		} else if ( show && !initialData ) {
-			formName          = '';
-			formSku           = '';
-			formDescription   = '';
-			formMaterialId    = materials[ 0 ]?.id || '';
-			
-			const firstSub = categories.flatMap( ( c ) => c.subcategories || [] )[ 0 ];
-			formSubcategoryId = firstSub?.id || '';
+	const mappedSubcategories = $derived.by( () => {
+		return categories.flatMap(( cat ) => {
+			return ( cat.subCategories || [] ).map(( sub ) => ( {
+				id   : sub.id,
+				name : `${ cat.name }:${ sub.name }`,
+			}));
+		});
+	});
 
-			formActive        = true;
-			formSpecs         = '{"color":"verde"}';
+	// ─── Sync data on open ────────────────────────────────────────────────────────
+	$effect(() => {
+        if ( show ) {
+            formName          = initialData?.name           || '';
+			formSku           = initialData?.sku            || '';
+			formDescription   = initialData?.description    || '';
+			formMaterialId    = initialData?.materialId     || ( materials[ 0 ]?.id || '' );
+			formSubcategoryId = initialData?.subcategoryId  || '';
+			formActive        = initialData?.active         || true;
+			formSpecs         = initialData?.technicalSpecs || '{}';
 			uploaderFiles     = [];
 			uploaderFilesInfo = '';
-		}
-	} );
+        }
+	});
 
 	// ─── Submit Handler ───────────────────────────────────────────────────────────
 	async function handleSubmit( e : Event ) : Promise<void> {
@@ -101,9 +100,11 @@
 		}
 
 		$globalLoadingStore = true;
-		try {
+
+        try {
 			const formData = new FormData();
-			formData.append( 'name', formName );
+
+            formData.append( 'name', formName );
 			formData.append( 'sku', formSku );
 			formData.append( 'description', formDescription );
 			formData.append( 'materialId', formMaterialId );
@@ -119,7 +120,7 @@
 
 			uploaderFiles.forEach( ( u ) => {
 				formData.append( 'files', u.file );
-			} );
+			});
 
 			const endpoint = isEditing ? `products?id=${ editingId }` : 'products';
 			const method   = isEditing ? 'PUT' : 'POST';
@@ -127,7 +128,7 @@
 			const response = await fetch( `/api/${ endpoint }`, {
 				method,
 				body : formData,
-			} );
+			});
 
 			if ( !response.ok ) {
 				const err = await response.json().catch( () => ( { error : 'Error al guardar.' } ) );
@@ -135,9 +136,7 @@
 				return;
 			}
 
-			toast.success( isEditing ? 'Producto editado con éxito.' : 'Producto creado con éxito.', {
-				style : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
-			} );
+			toast.success( isEditing ? 'Producto editado con éxito.' : 'Producto creado con éxito.' );
 
 			onSave();
 		} catch ( err ) {
@@ -150,104 +149,97 @@
 
 <DashboardModal
 	{ show }
-	title={ isEditing ? 'Modificar Producto' : 'Crear Nuevo Producto' }
-	onClose={ onCancel }
-	maxWidth="max-w-2xl"
+	title       = { isEditing ? 'Modificar Producto' : 'Crear Nuevo Producto' }
+	onClose     = { onCancel }
+	maxWidth    = "max-w-6xl"
 >
 	{#snippet body()}
-		<form onsubmit={ handleSubmit } class="space-y-4 text-xs font-bold text-text-muted">
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<!-- Name -->
-				<div class="space-y-1.5">
-					<label for="prod-name">Nombre del Producto</label>
-					<input
-						id="prod-name"
-						type="text"
-						bind:value={ formName }
-						placeholder="Ej: Vaso de Precipitado 250ml"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-					/>
-				</div>
+		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
+            <div class="grid grid-cols-2 gap-4 items-start">
+                <div class="space-y-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Name -->
+                        <div class="space-y-1.5">
+                            <label class="font-bold text-brand" for="prod-name">Nombre del Producto</label>
 
-				<!-- SKU -->
-				<div class="space-y-1.5">
-					<label for="prod-sku">SKU Identificador</label>
-					<input
-						id="prod-sku"
-						type="text"
-						bind:value={ formSku }
-						placeholder="Ej: CPRODUCT-002"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-					/>
-				</div>
-			</div>
+                            <input
+                                id="prod-name"
+                                type="text"
+                                bind:value={ formName }
+                                placeholder="Ej: Vaso de Precipitado 250ml"
+                                class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
+                            />
+                        </div>
 
-			<!-- Description -->
-			<div class="space-y-1.5">
-				<label for="prod-desc">Descripción Completa</label>
-				<textarea
-					id="prod-desc"
-					bind:value={ formDescription }
-					placeholder="Describa el grado de pureza, dimensiones o aplicación pedagógica..."
-					rows="3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card resize-none"
-				></textarea>
-			</div>
+                        <!-- SKU -->
+                        <div class="space-y-1.5">
+                            <label class="font-bold text-brand" for="prod-sku">SKU Identificador</label>
 
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<!-- Material select -->
-				<div class="space-y-1.5">
-					<label for="prod-material">Material</label>
-					<select
-						id="prod-material"
-						bind:value={ formMaterialId }
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-					>
-						{#each materials as mat ( mat.id )}
-							<option value={ mat.id }>{ mat.name }</option>
-						{/each}
-					</select>
-				</div>
+                            <input
+                                id="prod-sku"
+                                type="text"
+                                bind:value={ formSku }
+                                placeholder="Ej: CPRODUCT-002"
+                                class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
+                            />
+                        </div>
+                    </div>
 
-				<!-- Subcategory select -->
-				<div class="space-y-1.5">
-					<label for="prod-subcat">Subcategoría</label>
-					<select
-						id="prod-subcat"
-						bind:value={ formSubcategoryId }
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs text-text outline-none focus:border-brand focus:bg-card"
-					>
-						{#each categories as cat ( cat.id )}
-							<optgroup label={ cat.name }>
-								{#each ( cat.subcategories || [] ) as sub ( sub.id )}
-									<option value={ sub.id }>{ sub.name }</option>
-								{/each}
-							</optgroup>
-						{/each}
-					</select>
-				</div>
-			</div>
+                    <!-- Description -->
+                    <div class="space-y-1.5">
+                        <label class="font-bold text-brand" for="prod-desc">Descripción Completa</label>
 
-			<!-- Technical specs (JSON format) -->
-			<div class="space-y-1.5">
-				<label for="prod-specs">Especificaciones Técnicas (Formato JSON)</label>
-				<textarea
-					id="prod-specs"
-					bind:value={ formSpecs }
-					placeholder={ specsPlaceholder }
-					rows="2"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-xs font-mono text-text outline-none focus:border-brand focus:bg-card"
-				></textarea>
-			</div>
+                        <textarea
+                            id="prod-desc"
+                            bind:value={ formDescription }
+                            placeholder="Describa el grado de pureza, dimensiones o aplicación pedagógica..."
+                            rows="3"
+                            class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-none"
+                        ></textarea>
+                    </div>
 
-			<!-- Custom Shared File Uploader (Dropzone area) -->
-			<div class="space-y-1.5 border-t border-brand/5 pt-3">
-				<span class="text-[10px] uppercase font-black tracking-wider text-brand">Carga de Imágenes Catálogo</span>
-				<FileUploader
-					bind:files={ uploaderFiles }
-					bind:filesInfo={ uploaderFilesInfo }
-				/>
-			</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Material select -->
+                        <div class="space-y-1.5">
+                            <label class="font-bold text-brand" for="prod-material">Material</label>
+
+                            <Select
+                                options={ materials }
+                                bind:value={ formMaterialId }
+                                multiple={ false }
+                                placeholder="Seleccionar material..."
+                            />
+                        </div>
+
+                        <!-- Subcategory select -->
+                        <div class="space-y-1.5">
+                            <label class="font-bold text-brand" for="prod-subcat">Subcategoría</label>
+
+                            <Select
+                                options     = { mappedSubcategories }
+                                bind:value  = { formSubcategoryId }
+                                multiple    = { false }
+                                placeholder = "Seleccionar subcategoría..."
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Technical specs (Visual Editor) -->
+                    <div class="space-y-1.5">
+                        <label for="prod-specs" class="font-bold text-brand">Especificaciones Técnicas (Clave : Valor)</label>
+                        <KeyValueEditor id="prod-specs" bind:value={ formSpecs } />
+                    </div>
+                </div>
+
+                <!-- Custom Shared File Uploader (Dropzone area) -->
+                <div class="space-y-1.5">
+                    <span class="text-[10px] uppercase font-black tracking-wider text-brand">Carga de Imágenes Catálogo</span>
+                    <FileUploader
+                        bind:files={ uploaderFiles }
+                        bind:filesInfo={ uploaderFilesInfo }
+                    />
+                </div>
+            </div>
 
 			<!-- Active checkbox -->
 			<div class="flex items-center gap-3 pt-2">
@@ -257,7 +249,7 @@
 					bind:checked={ formActive }
 					class="accent-brand h-4 w-4 cursor-pointer"
 				/>
-				<label for="prod-active" class="cursor-pointer select-none">Habilitar en Catálogo Público</label>
+				<label for="prod-active" class="font-bold text-brand cursor-pointer select-none">Habilitar en Catálogo Público</label>
 			</div>
 
 			<!-- Actions -->
