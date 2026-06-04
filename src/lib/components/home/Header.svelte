@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { fade }               from 'svelte/transition';
-	import { navigating }         from '$app/stores';
+	import { navigating }         from '$app/state';
 	import { globalLoadingStore } from '$lib/state/loading';
-	import NavigationMenu         from '$lib/components/shared/NavigationMenu.svelte';
 
-	const isLoading = $derived( !!$navigating || $globalLoadingStore );
+	const isLoading = $derived( !!navigating || $globalLoadingStore );
 
 	interface Props {
 		search   : string;
@@ -15,26 +14,26 @@
 
 	const { search, darkMode, onSearch, onToggle }: Props = $props();
 
-	let localSearch = $state( '' );
+	// let localSearch = $state( '' );
 
-    let timeoutId: number;
+    // let timeoutId: number;
 
 
 	// Keep localSearch in sync if search prop changes from parent (e.g. clearAll)
-	$effect(() => {
-		localSearch = search;
-	});
+	// $effect(() => {
+	// 	localSearch = search;
+	// });
 
 
-	function handleInput( value : string ): void {
-		localSearch = value;
+	// function handleInput( value : string ): void {
+	// 	localSearch = value;
 
-        clearTimeout( timeoutId );
+    //     clearTimeout( timeoutId );
 
-        timeoutId = setTimeout( ( ) => {
-			onSearch( value );
-		}, 300 );
-	}
+    //     timeoutId = setTimeout( ( ) => {
+	// 		onSearch( value );
+	// 	}, 300 );
+	// }
 
 
 </script>
