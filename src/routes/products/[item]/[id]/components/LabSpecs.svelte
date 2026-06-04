@@ -53,7 +53,7 @@
 			</div>
 		</div>
 
-		<div class="rounded-xl bg-surface px-4 py-3 flex justify-between items-center text-xs border border-brand/5">
+		<div class="rounded-xl bg-surface px-4 py-3 flex justify-between items-center border border-brand/5">
 			<span class="text-text-muted font-semibold">Espacio Útil de Trabajo</span>
 			<span class="font-bold text-brand uppercase tracking-wider">{ lab.dimensions || 'N/A' }</span>
 		</div>
@@ -76,18 +76,14 @@
 				{#each lab.kits as lk ( lk.id ) }
 					<a
 						href  = "/products/kit/{ lk.kit.id }"
-						class = "
-							group/item flex items-center justify-between rounded-xl
-							border border-blue-500/10 bg-blue-500/5 p-3.5
-							transition-all duration-200 hover:border-blue-500/25 hover:bg-blue-500/10
-						"
+						class="group/item flex items-center justify-between rounded-xl border border-blue-500/10 bg-blue-500/5 p-3.5 transition-all duration-200 hover:border-blue-500/25 hover:bg-blue-500/10"
 					>
 						<div class="flex items-center gap-2.5 min-w-0">
 							<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-[10px] font-bold text-blue-400 group-hover/item:bg-blue-500 group-hover/item:text-surface-dark transition-colors duration-200">
 								{ lk.quantity }x
 							</span>
 							<div class="flex flex-col min-w-0">
-								<span class="truncate text-xs font-bold text-text group-hover/item:text-blue-400 transition-colors duration-200">
+								<span class="truncate font-bold text-text group-hover/item:text-blue-400 transition-colors duration-200">
 									{ lk.kit.name }
 								</span>
 								<span class="text-[9px] font-mono text-text-muted mt-0.5">
@@ -97,7 +93,7 @@
 						</div>
 
 						<svg
-							class        = "h-3.5 w-3.5 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all duration-200 text-blue-400"
+							class="h-3.5 w-3.5 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all duration-200 text-blue-400"
 							viewBox      = "0 0 24 24"
 							fill         = "none"
 							stroke       = "currentColor"
@@ -113,18 +109,14 @@
 				{#each lab.products as lp ( lp.id ) }
 					<a
 						href  = "/products/product/{ lp.product.id }"
-						class = "
-							group/item flex items-center justify-between rounded-xl
-							border border-brand/5 bg-brand/5 p-3.5
-							transition-all duration-200 hover:border-brand/20 hover:bg-brand/10
-						"
+						class="group/item flex items-center justify-between rounded-xl border border-brand/5 bg-brand/5 p-3.5 transition-all duration-200 hover:border-brand/20 hover:bg-brand/10"
 					>
 						<div class="flex items-center gap-2.5 min-w-0">
 							<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-brand/15 text-[10px] font-bold text-brand group-hover/item:bg-brand group-hover/item:text-surface-dark transition-colors duration-200">
 								{ lp.quantity }x
 							</span>
 							<div class="flex flex-col min-w-0">
-								<span class="truncate text-xs font-bold text-text group-hover/item:text-brand transition-colors duration-200">
+								<span class="truncate font-bold text-text group-hover/item:text-brand transition-colors duration-200">
 									{ lp.product.name }
 								</span>
 								<span class="text-[9px] font-mono text-text-muted mt-0.5">
@@ -134,7 +126,7 @@
 						</div>
 
 						<svg
-							class        = "h-3.5 w-3.5 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all duration-200 text-brand"
+							class="h-3.5 w-3.5 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all duration-200 text-brand"
 							viewBox      = "0 0 24 24"
 							fill         = "none"
 							stroke       = "currentColor"
@@ -148,7 +140,7 @@
 
 			</div>
 		{:else}
-			<p class="text-xs italic text-text-muted py-8 text-center">
+			<p class="italic text-text-muted py-8 text-center">
 				No se han definido kits científicos ni reactivos adicionales en la configuración base de este laboratorio móvil.
 			</p>
 		{/if}

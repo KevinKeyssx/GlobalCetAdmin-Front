@@ -113,7 +113,7 @@
 	<!-- Error State with Retry option -->
 	<div class="flex flex-col items-center justify-center py-6 text-center gap-3 rounded-xl bg-red-500/5 border border-red-500/10 p-4">
 		<span class="text-2xl">⚠️</span>
-		<p class="text-xs font-semibold text-red-500">Error al cargar datos de filtros</p>
+		<p class="font-semibold text-red-500">Error al cargar datos de filtros</p>
 		<button
 			onclick={ () => { categoriesQuery.refetch(); materialsQuery.refetch(); } }
 			class="px-3 py-1.5 text-[11px] font-black uppercase tracking-wider bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/25 transition-all duration-300"
@@ -150,12 +150,7 @@
 						type="search"
 						bind:value={ categorySearch }
 						placeholder="Buscar categorías..."
-						class="
-							w-full rounded-xl border border-brand/10 bg-surface/50
-							py-2 pl-9 pr-4 text-xs text-text placeholder-text-muted/65
-							outline-none transition-all duration-300
-							focus:border-brand/40 focus:ring-1 focus:ring-brand/20
-						"
+						class="w-full rounded-xl border border-brand/10 bg-surface/50 py-2 pl-9 pr-4 text-text placeholder-text-muted/65 outline-none transition-all duration-300 focus:border-brand/40 focus:ring-1 focus:ring-brand/20"
 					/>
 				</div>
 

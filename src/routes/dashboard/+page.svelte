@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { onMount }     from 'svelte';
-	import { fade, slide }  from 'svelte/transition';
-	import toast            from 'svelte-french-toast';
+	import { onMount }  from 'svelte';
+	import { slide }    from 'svelte/transition';
+
+    import toast from 'svelte-french-toast';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import type { GlobalSearchResponse }    from '$lib/types/search';
@@ -15,7 +16,7 @@
 		labs       : 0,
 		categories : 0,
 		materials  : 0,
-	} );
+	});
 
 	// ─── Fetch live metrics from global-search ────────────────────────────────────
 	async function loadStats( ) : Promise<void> {
@@ -30,7 +31,6 @@
 			if ( isApiError( response ) ) {
 				toast.error( 'No se pudo conectar al servidor de base de datos de GlobalCET. Por favor, inicie el backend.', {
 					duration : 6000,
-					style    : 'background: #111f18; color: #69f0ae; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
 				} );
 				return;
 			}
@@ -56,12 +56,10 @@
 
 			toast.success( 'Conexión con el servidor establecida. Datos actualizados.', {
 				duration : 3000,
-				style    : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
 			} );
 		} catch ( e ) {
 			toast.error( 'Error de red: El servidor de GlobalCET está desconectado. Asegúrese de que esté encendido.', {
 				duration : 6000,
-				style    : 'background: #111f18; color: #ff5252; border: 1px solid rgba(255, 82, 82, 0.2); font-family: Outfit;',
 			} );
 		} finally {
 			$globalLoadingStore = false;
@@ -83,15 +81,11 @@
 </svelte:head>
 
 <main class="relative min-h-[calc(100vh-80px)] px-6 py-12 lg:py-16">
-	<!-- ─── Background Lights ────────────────────────────────────────────────── -->
-	<div class="pointer-events-none absolute top-10 left-10 h-[400px] w-[400px] rounded-full bg-brand/10 blur-[100px] dark:bg-brand/15"></div>
-	<div class="pointer-events-none absolute bottom-10 right-10 h-[500px] w-[500px] rounded-full bg-brand-bright/5 blur-[120px] dark:bg-brand-bright/10"></div>
-
 	<div class="relative mx-auto max-w-5xl space-y-12">
 		<!-- ─── Dashboard Header ─────────────────────────────────────────────────── -->
 		<div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-brand/15 pb-8">
 			<div class="space-y-2">
-				<span class="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-surface px-3 py-1 text-xs font-bold uppercase tracking-widest text-brand backdrop-blur-md">
+				<span class="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-surface px-3 py-1 font-bold uppercase tracking-widest text-brand backdrop-blur-md">
 					<span class="relative flex h-2 w-2">
 						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
 						<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand"></span>
@@ -109,12 +103,7 @@
 			<!-- Refresh stats button -->
 			<button
 				onclick={ loadStats }
-				class="
-					inline-flex items-center justify-center gap-2 rounded-xl
-					border border-brand/20 bg-surface/30 px-5 py-3 text-xs font-bold uppercase tracking-wider text-brand
-					backdrop-blur-sm transition-all duration-300
-					hover:-translate-y-0.5 hover:bg-brand/10 hover:border-brand/45
-				"
+				class="inline-flex items-center justify-center gap-2 rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-brand backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand/10 hover:border-brand/45"
 			>
 				<svg class="h-4 w-4 animate-spin-slow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 					<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
@@ -130,7 +119,7 @@
 				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Productos</p>
 				<div class="flex items-baseline gap-2 mt-1">
 					<span class="font-display text-3xl font-extrabold text-brand">{ stats.products }</span>
-					<span class="text-xs text-text-muted">reg.</span>
+					<span class="text-text-muted">reg.</span>
 				</div>
 			</div>
 
@@ -139,7 +128,7 @@
 				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Kits Diagnóstico</p>
 				<div class="flex items-baseline gap-2 mt-1">
 					<span class="font-display text-3xl font-extrabold text-brand">{ stats.kits }</span>
-					<span class="text-xs text-text-muted">reg.</span>
+					<span class="text-text-muted">reg.</span>
 				</div>
 			</div>
 
@@ -148,7 +137,7 @@
 				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Laboratorios</p>
 				<div class="flex items-baseline gap-2 mt-1">
 					<span class="font-display text-3xl font-extrabold text-brand">{ stats.labs }</span>
-					<span class="text-xs text-text-muted">reg.</span>
+					<span class="text-text-muted">reg.</span>
 				</div>
 			</div>
 
@@ -157,7 +146,7 @@
 				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Materiales</p>
 				<div class="flex items-baseline gap-2 mt-1">
 					<span class="font-display text-3xl font-extrabold text-brand-bright">{ stats.materials }</span>
-					<span class="text-xs text-text-muted">reg.</span>
+					<span class="text-text-muted">reg.</span>
 				</div>
 			</div>
 
@@ -166,7 +155,7 @@
 				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Categorías Prod.</p>
 				<div class="flex items-baseline gap-2 mt-1">
 					<span class="font-display text-3xl font-extrabold text-brand-bright">{ stats.categories }</span>
-					<span class="text-xs text-text-muted">reg.</span>
+					<span class="text-text-muted">reg.</span>
 				</div>
 			</div>
 		</section>
@@ -191,7 +180,7 @@
 							<h3 class="font-display text-lg font-black text-text uppercase tracking-wide">
 								División de Productos, Reactivos & Materiales
 							</h3>
-							<p class="text-xs text-text-muted">
+							<p class="text-text-muted">
 								Administre los insumos individuales, especificaciones de borosilicato, materiales y subcategorías.
 							</p>
 						</div>
@@ -210,10 +199,7 @@
 							<!-- Link: Administrar Productos -->
 							<a
 								href="/dashboard/products"
-								class="
-									group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5
-									shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md
-								"
+								class="group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md"
 							>
 								<div class="space-y-2">
 									<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/15 text-brand">
@@ -222,7 +208,7 @@
 									<h4 class="font-display text-base font-bold text-text group-hover:text-brand transition-colors">
 										Administrar Productos
 									</h4>
-									<p class="text-xs text-text-muted leading-relaxed">
+									<p class="text-text-muted leading-relaxed">
 										Cree, edite o elimine reactivos químicos de precisión, frascos erlenmeyer y equipos de medición de laboratorio.
 									</p>
 								</div>
@@ -237,10 +223,7 @@
 							<!-- Link: Administrar Materiales -->
 							<a
 								href="/dashboard/products/materials"
-								class="
-									group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5
-									shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md
-								"
+								class="group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md"
 							>
 								<div class="space-y-2">
 									<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/15 text-brand">
@@ -249,7 +232,7 @@
 									<h4 class="font-display text-base font-bold text-text group-hover:text-brand transition-colors">
 										Administrar Materiales
 									</h4>
-									<p class="text-xs text-text-muted leading-relaxed">
+									<p class="text-text-muted leading-relaxed">
 										Configure las propiedades analíticas de materiales, tales como Borosilicato 3.3, Acero Inoxidable y sus coeficientes térmicos.
 									</p>
 								</div>
@@ -264,10 +247,7 @@
 							<!-- Link: Administrar Categorías -->
 							<a
 								href="/dashboard/products/categories"
-								class="
-									group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5
-									shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md
-								"
+								class="group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md"
 							>
 								<div class="space-y-2">
 									<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/15 text-brand">
@@ -276,7 +256,7 @@
 									<h4 class="font-display text-base font-bold text-text group-hover:text-brand transition-colors">
 										Administrar Categorías
 									</h4>
-									<p class="text-xs text-text-muted leading-relaxed">
+									<p class="text-text-muted leading-relaxed">
 										Organice la estructura del catálogo creando categorías madre (ej. Reactivos) y subcategorías (ej. Ácidos PA).
 									</p>
 								</div>
@@ -311,7 +291,7 @@
 							<h3 class="font-display text-lg font-black text-text uppercase tracking-wide">
 								División de Kits de Laboratorio
 							</h3>
-							<p class="text-xs text-text-muted">
+							<p class="text-text-muted">
 								Gestione las colecciones y kits pedagógicos configurando agrupaciones de insumos específicos.
 							</p>
 						</div>
@@ -330,10 +310,7 @@
 							<!-- Link: Administrar Kits -->
 							<a
 								href="/dashboard/kits"
-								class="
-									group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5
-									shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md
-								"
+								class="group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md"
 							>
 								<div class="space-y-2">
 									<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/15 text-brand">
@@ -342,7 +319,7 @@
 									<h4 class="font-display text-base font-bold text-text group-hover:text-brand transition-colors">
 										Administrar Kits
 									</h4>
-									<p class="text-xs text-text-muted leading-relaxed">
+									<p class="text-text-muted leading-relaxed">
 										Cree kits para ciencias (Química Básica, Biología de Células) integrando productos individuales y definiendo cantidades exactas de insumos.
 									</p>
 								</div>
@@ -357,10 +334,7 @@
 							<!-- Link: Administrar Categorías de Kits -->
 							<a
 								href="/dashboard/kits/categories"
-								class="
-									group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5
-									shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md
-								"
+								class="group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md"
 							>
 								<div class="space-y-2">
 									<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/15 text-brand">
@@ -369,7 +343,7 @@
 									<h4 class="font-display text-base font-bold text-text group-hover:text-brand transition-colors">
 										Categorías de Kits
 									</h4>
-									<p class="text-xs text-text-muted leading-relaxed">
+									<p class="text-text-muted leading-relaxed">
 										Administre las divisiones y áreas pedagógicas (ej. Física Mecánica, Bioquímica Molecular) bajo las cuales se catalogan los kits.
 									</p>
 								</div>
@@ -403,7 +377,7 @@
 							<h3 class="font-display text-lg font-black text-text uppercase tracking-wide">
 								División de Laboratorios Móviles
 							</h3>
-							<p class="text-xs text-text-muted">
+							<p class="text-text-muted">
 								Administre las estaciones científicas autónomas móviles, carros tecnológicos e infraestructura integradora.
 							</p>
 						</div>
@@ -422,10 +396,7 @@
 							<!-- Link: Administrar Laboratorios -->
 							<a
 								href="/dashboard/mobile-labs"
-								class="
-									group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5
-									shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md
-								"
+								class="group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md"
 							>
 								<div class="space-y-2">
 									<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/15 text-brand">
@@ -434,7 +405,7 @@
 									<h4 class="font-display text-base font-bold text-text group-hover:text-brand transition-colors">
 										Administrar Laboratorios
 									</h4>
-									<p class="text-xs text-text-muted leading-relaxed">
+									<p class="text-text-muted leading-relaxed">
 										Registre estaciones y carros científicos móviles, configurando dimensiones, kits y productos individuales integrados de fábrica.
 									</p>
 								</div>
@@ -449,10 +420,7 @@
 							<!-- Link: Administrar Categorías de Laboratorios -->
 							<a
 								href="/dashboard/mobile-labs/categories"
-								class="
-									group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5
-									shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md
-								"
+								class="group flex flex-col justify-between rounded-xl border border-brand/10 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-md"
 							>
 								<div class="space-y-2">
 									<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/15 text-brand">
@@ -461,7 +429,7 @@
 									<h4 class="font-display text-base font-bold text-text group-hover:text-brand transition-colors">
 										Categorías de Laboratorios
 									</h4>
-									<p class="text-xs text-text-muted leading-relaxed">
+									<p class="text-text-muted leading-relaxed">
 										Configure las divisiones estructurales y de campo (ej. Estaciones de Prototipado, Carros Tecnológicos de Recinto).
 									</p>
 								</div>

@@ -23,11 +23,11 @@
 {#if ( show )}
 	<!-- ─── Modal Backdrop ─────────────────────────────────────────────────────── -->
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-y-auto"
 		transition:fade={ { duration : 150 } }
 	>
 		<div
-			class="w-full { maxWidth } rounded-2xl border border-brand/20 bg-card p-6 shadow-card-hover space-y-6 my-8"
+			class="w-full { maxWidth } rounded-2xl border border-brand/20 bg-card p-6 shadow-card-hover space-y-6 my-8 text-sm"
 			transition:slide={ { duration : 250 } }
 		>
 			<!-- ─── Header ──────────────────────────────────────────────────────── -->

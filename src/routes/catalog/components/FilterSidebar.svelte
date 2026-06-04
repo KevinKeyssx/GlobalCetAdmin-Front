@@ -66,29 +66,16 @@
 </script>
 
 <!-- ─── Sidebar Premium ──────────────────────────────────────────────────────────── -->
-<aside class="
-	flex w-80 shrink-0 flex-col gap-3
-	rounded-2xl
-	border border-brand/20 dark:border-brand/20
-	bg-sidebar/90 backdrop-blur-xl
-	px-5 py-6
-	shadow-sidebar ring-1 ring-brand/5 dark:ring-white/5
-	transition-all duration-500
-">
+<aside class="flex w-80 shrink-0 flex-col gap-3 rounded-2xl border border-brand/20 dark:border-brand/20 bg-sidebar/90 backdrop-blur-xl px-5 py-6 shadow-sidebar ring-1 ring-brand/5 dark:ring-white/5 transition-all duration-500">
 	<!-- Header section -->
 	<div class="flex items-center justify-between">
-		<h2 class="text-xs font-black uppercase tracking-[0.2em] text-brand drop-shadow-sm">Filtros</h2>
+		<h2 class="font-black uppercase tracking-[0.2em] text-brand drop-shadow-sm">Filtros</h2>
 
 		{#if hasActiveFilters}
 			<button
 				id="filter-clear-all"
 				onclick={ handleClear }
-				class="
-					group flex items-center gap-1.5 rounded-full px-0
-					text-[11px] font-bold tracking-wider text-text-muted
-					transition-all duration-300
-					hover:bg-red-500/10 hover:text-red-500
-				"
+				class="group flex items-center gap-1.5 rounded-full px-0 text-[11px] font-bold tracking-wider text-text-muted transition-all duration-300 hover:bg-red-500/10 hover:text-red-500"
 			>
 				<svg class="h-3 w-3 transition-transform duration-300 group-hover:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
 					<line x1="18" y1="6" x2="6" y2="18"></line>
@@ -108,31 +95,19 @@
 			<Tabs.List class="flex w-full items-center gap-1.5 rounded-xl bg-surface/50 border border-brand/5 p-1 backdrop-blur-md">
 				<Tabs.Trigger
 					value="productos"
-					class="
-						flex-1 flex items-center justify-center rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all duration-300
-						data-[state=active]:bg-brand data-[state=active]:text-surface-dark data-[state=active]:shadow-md
-						data-[state=inactive]:text-text-muted data-[state=inactive]:hover:bg-brand/5 data-[state=inactive]:hover:text-text
-					"
+					class="flex-1 flex items-center justify-center rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-brand data-[state=active]:text-surface-dark data-[state=active]:shadow-md data-[state=inactive]:text-text-muted data-[state=inactive]:hover:bg-brand/5 data-[state=inactive]:hover:text-text"
 				>
 					Productos
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="kits"
-					class="
-						flex-1 flex items-center justify-center rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all duration-300
-						data-[state=active]:bg-brand data-[state=active]:text-surface-dark data-[state=active]:shadow-md
-						data-[state=inactive]:text-text-muted data-[state=inactive]:hover:bg-brand/5 data-[state=inactive]:hover:text-text
-					"
+					class="flex-1 flex items-center justify-center rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-brand data-[state=active]:text-surface-dark data-[state=active]:shadow-md data-[state=inactive]:text-text-muted data-[state=inactive]:hover:bg-brand/5 data-[state=inactive]:hover:text-text"
 				>
 					Kits
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="lab-movil"
-					class="
-						flex-1 flex items-center justify-center rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all duration-300
-						data-[state=active]:bg-brand data-[state=active]:text-surface-dark data-[state=active]:shadow-md
-						data-[state=inactive]:text-text-muted data-[state=inactive]:hover:bg-brand/5 data-[state=inactive]:hover:text-text
-					"
+					class="flex-1 flex items-center justify-center rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-brand data-[state=active]:text-surface-dark data-[state=active]:shadow-md data-[state=inactive]:text-text-muted data-[state=inactive]:hover:bg-brand/5 data-[state=inactive]:hover:text-text"
 				>
 					Lab. Móvil
 				</Tabs.Trigger>

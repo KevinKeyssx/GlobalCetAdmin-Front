@@ -20,7 +20,7 @@
 			<!-- Hero Text -->
 			<div class="space-y-8 lg:col-span-7">
 				<!-- Brand Pill -->
-				<span class="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-surface px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand backdrop-blur-md shadow-card">
+				<span class="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-surface px-4 py-1.5 font-bold uppercase tracking-widest text-brand backdrop-blur-md shadow-card">
 					<span class="relative flex h-2 w-2">
 						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
 						<span class="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
@@ -46,22 +46,14 @@
 					<a
 						id="hero-cta-dashboard"
 						href="/dashboard"
-						class="
-							rounded-xl bg-brand px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-surface-dark
-							shadow-card transition-all duration-300
-							hover:-translate-y-0.5 hover:bg-brand-bright hover:shadow-lg
-						"
+						class="rounded-xl bg-brand px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright hover:shadow-lg"
 					>
 						Panel de Control
 					</a>
 					<a
 						id="hero-cta-about"
 						href="#features"
-						class="
-							rounded-xl border border-brand/20 bg-surface/30 px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-brand
-							backdrop-blur-sm transition-all duration-300
-							hover:-translate-y-0.5 hover:bg-brand/10 hover:border-brand/45
-						"
+						class="rounded-xl border border-brand/20 bg-surface/30 px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-brand backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand/10 hover:border-brand/45"
 					>
 						Nuestra Propuesta
 					</a>
@@ -72,22 +64,22 @@
 					<div class="grid grid-cols-3 gap-6">
 						<div>
 							<p class="text-xl font-bold text-text font-display">100%</p>
-							<p class="text-xs font-semibold text-text-muted uppercase tracking-wider">Pureza Certificada</p>
+							<p class="font-semibold text-text-muted uppercase tracking-wider">Pureza Certificada</p>
 						</div>
 
                         <div>
 							<p class="text-xl font-bold text-text font-display">ISO 9001</p>
-							<p class="text-xs font-semibold text-text-muted uppercase tracking-wider">Estándar Global</p>
+							<p class="font-semibold text-text-muted uppercase tracking-wider">Estándar Global</p>
 						</div>
 
                         <div>
 							<p class="text-xl font-bold text-text font-display">(OA)</p>
-							<p class="text-xs font-semibold text-text-muted uppercase tracking-wider">Objetivos de apredizaje</p>
+							<p class="font-semibold text-text-muted uppercase tracking-wider">Objetivos de apredizaje</p>
 						</div>
 
                         <div>
 							<p class="text-xl font-bold text-text font-display">(PME)</p>
-							<p class="text-xs font-semibold text-text-muted uppercase tracking-wider">Procesos de mejora continúa, fortalecimiento de aprendizaje de los estudiante</p>
+							<p class="font-semibold text-text-muted uppercase tracking-wider">Procesos de mejora continúa, fortalecimiento de aprendizaje de los estudiante</p>
 						</div>
 					</div>
 				</div>
@@ -120,7 +112,7 @@
 		<div class="mx-auto max-w-7xl">
 			<!-- Section Header -->
 			<div class="mx-auto max-w-3xl text-center space-y-4 mb-16">
-				<h2 class="text-xs font-black uppercase tracking-[0.25em] text-brand">Nuestras Divisiones</h2>
+				<h2 class="font-black uppercase tracking-[0.25em] text-brand">Nuestras Divisiones</h2>
 				<p class="font-display text-3xl font-extrabold tracking-tight text-text sm:text-4xl">
 					Sistemas Integrados para el Progreso Científico
 				</p>
@@ -132,12 +124,7 @@
 			<!-- Features Cards Grid -->
 			<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
 				<!-- Pillar 1: Equipos & Reactivos -->
-				<article class="
-					group relative flex flex-col justify-between overflow-hidden rounded-2xl
-					border border-brand/10 bg-card p-8
-					shadow-card transition-all duration-300
-					hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover
-				">
+				<article class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-brand/10 bg-card p-8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover">
 					<div class="space-y-6">
 						<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10 text-brand transition-all duration-300 group-hover:bg-brand group-hover:text-surface-dark">
 							<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -154,7 +141,7 @@
 						</div>
 					</div>
 					<div class="mt-8 border-t border-brand/5 pt-4">
-						<a href="/filters" class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-brand group-hover:underline">
+						<a href="/filters" class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand group-hover:underline">
 							Ver Equipos
 							<svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 								<polyline points="9 18 15 12 9 6"></polyline>
@@ -164,12 +151,7 @@
 				</article>
 
 				<!-- Pillar 2: Kits Moleculares -->
-				<article class="
-					group relative flex flex-col justify-between overflow-hidden rounded-2xl
-					border border-brand/10 bg-card p-8
-					shadow-card transition-all duration-300
-					hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover
-				">
+				<article class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-brand/10 bg-card p-8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover">
 					<div class="space-y-6">
 						<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-bright/10 text-brand-bright transition-all duration-300 group-hover:bg-brand-bright group-hover:text-surface-dark">
 							<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -190,7 +172,7 @@
 					</div>
 
                     <div class="mt-8 border-t border-brand/5 pt-4">
-						<a href="/filters" class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-brand-bright group-hover:underline">
+						<a href="/filters" class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand-bright group-hover:underline">
 							Ver Kits
 							<svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 								<polyline points="9 18 15 12 9 6"></polyline>
@@ -200,12 +182,7 @@
 				</article>
 
 				<!-- Pillar 3: Laboratorios Móviles -->
-				<article class="
-					group relative flex flex-col justify-between overflow-hidden rounded-2xl
-					border border-brand/10 bg-card p-8
-					shadow-card transition-all duration-300
-					hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover
-				">
+				<article class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-brand/10 bg-card p-8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover">
 					<div class="space-y-6">
 						<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10 text-brand transition-all duration-300 group-hover:bg-brand group-hover:text-surface-dark">
 							<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -225,7 +202,7 @@
 					</div>
 
                     <div class="mt-8 border-t border-brand/5 pt-4">
-						<a href="/filters" class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-brand group-hover:underline">
+						<a href="/filters" class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand group-hover:underline">
 							Ver Laboratorios
 
                             <svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -235,12 +212,7 @@
 					</div>
 				</article>
 
-                <article class="
-					group relative flex flex-col justify-between overflow-hidden rounded-2xl
-					border border-brand/10 bg-card p-8
-					shadow-card transition-all duration-300
-					hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover
-				">
+                <article class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-brand/10 bg-card p-8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover">
 					<div class="space-y-6">
 						<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10 text-brand transition-all duration-300 group-hover:bg-brand group-hover:text-surface-dark">
 							<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -260,7 +232,7 @@
 					</div>
 
                     <div class="mt-8 border-t border-brand/5 pt-4">
-						<a href="/filters" class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-brand group-hover:underline">
+						<a href="/filters" class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand group-hover:underline">
 							Ver NodoLabs
 
                             <svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -292,22 +264,14 @@
 					<a
 						id="cta-search-explore"
 						href="/filters"
-						class="
-							inline-flex items-center justify-center rounded-xl bg-brand px-6 py-4 text-xs font-black uppercase tracking-wider text-surface-dark
-							shadow-card transition-all duration-300
-							hover:-translate-y-0.5 hover:bg-brand-bright
-						"
+						class="inline-flex items-center justify-center rounded-xl bg-brand px-6 py-4 font-black uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
 					>
 						Abrir Buscador Inteligente
 					</a>
 					<a
 						id="cta-search-contact"
 						href="/contacto"
-						class="
-							inline-flex items-center justify-center rounded-xl border border-brand/20 bg-surface/30 px-6 py-4 text-xs font-black uppercase tracking-wider text-brand
-							backdrop-blur-sm transition-all duration-300
-							hover:-translate-y-0.5 hover:bg-brand/10
-						"
+						class="inline-flex items-center justify-center rounded-xl border border-brand/20 bg-surface/30 px-6 py-4 font-black uppercase tracking-wider text-brand backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand/10"
 					>
 						Contactar Soporte Técnico
 					</a>
@@ -323,7 +287,7 @@
 				<!-- Column text -->
 				<div class="space-y-8">
 					<div class="space-y-4">
-						<span class="text-xs font-black uppercase tracking-[0.25em] text-brand-bright">Calidad Sin Concesiones</span>
+						<span class="font-black uppercase tracking-[0.25em] text-brand-bright">Calidad Sin Concesiones</span>
 						<h2 class="font-display text-3xl font-extrabold tracking-tight text-text sm:text-4xl">
 							El Estándar Científico de GlobalCET
 						</h2>
@@ -342,7 +306,7 @@
 							</div>
 							<div class="space-y-1">
 								<h4 class="font-bold text-text text-sm">Control de Pureza Analítica</h4>
-								<p class="text-xs text-text-muted leading-relaxed">Cada lote de reactivos cuenta con certificación cromatográfica de espectrometría garantizada.</p>
+								<p class="text-text-muted leading-relaxed">Cada lote de reactivos cuenta con certificación cromatográfica de espectrometría garantizada.</p>
 							</div>
 						</div>
 
@@ -355,7 +319,7 @@
 							</div>
 							<div class="space-y-1">
 								<h4 class="font-bold text-text text-sm">Borosilicato 3.3 de Precisión</h4>
-								<p class="text-xs text-text-muted leading-relaxed">Materiales de vidrio diseñados para resistir shocks térmicos elevados y resistir la corrosión ácida.</p>
+								<p class="text-text-muted leading-relaxed">Materiales de vidrio diseñados para resistir shocks térmicos elevados y resistir la corrosión ácida.</p>
 							</div>
 						</div>
 
@@ -368,7 +332,7 @@
 							</div>
 							<div class="space-y-1">
 								<h4 class="font-bold text-text text-sm">Diseño de Ingeniería de Campo</h4>
-								<p class="text-xs text-text-muted leading-relaxed">Laboratorios y kits validados por biólogos y químicos expertos para asegurar su usabilidad.</p>
+								<p class="text-text-muted leading-relaxed">Laboratorios y kits validados por biólogos y químicos expertos para asegurar su usabilidad.</p>
 							</div>
 						</div>
 					</div>

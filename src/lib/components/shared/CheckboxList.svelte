@@ -75,12 +75,7 @@
 				type="search"
 				bind:value={ searchVal }
 				placeholder="Buscar..."
-				class="
-					w-full rounded-xl border border-brand/10 bg-surface/50
-					py-2 pl-9 pr-4 text-xs text-text placeholder-text-muted/65
-					outline-none transition-all duration-300
-					focus:border-brand/40 focus:ring-1 focus:ring-brand/20
-				"
+				class="w-full rounded-xl border border-brand/10 bg-surface/50 py-2 pl-9 pr-4 text-text placeholder-text-muted/65 outline-none transition-all duration-300 focus:border-brand/40 focus:ring-1 focus:ring-brand/20"
 			/>
 		</div>
 
@@ -92,25 +87,11 @@
 					type="button"
 					transition:slide={ { duration: 200 } }
 					onclick={ () => toggleItem( item.id ) }
-					class="
-						w-full flex items-center gap-3 rounded-xl px-3 py-2.5
-						transition-all duration-200 text-left border border-transparent
-						{isChecked
-							? 'bg-brand/10 border-brand/20 text-brand font-semibold shadow-[0_0_10px_rgba(0,230,118,0.05)]'
-							: 'hover:bg-brand/5 hover:border-brand/10 text-text-muted hover:text-text'
-						}
-					"
+					class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 text-left border border-transparent {isChecked ? 'bg-brand/10 border-brand/20 text-brand font-semibold shadow-[0_0_10px_rgba(0,230,118,0.05)]' : 'hover:bg-brand/5 hover:border-brand/10 text-text-muted hover:text-text' }"
 				>
 					<!-- Checkbox Visualizer -->
 					<div
-						class="
-							flex h-4 w-4 shrink-0 items-center justify-center rounded
-							border transition-all duration-300
-							{isChecked
-								? 'border-brand bg-brand text-surface-dark shadow-[0_0_8px_rgba(0,230,118,0.25)]'
-								: 'border-brand/20 bg-surface'
-							}
-						"
+						class="flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all duration-300 {isChecked ? 'border-brand bg-brand text-surface-dark shadow-[0_0_8px_rgba(0,230,118,0.25)]' : 'border-brand/20 bg-surface' }"
 					>
 						{#if isChecked}
 							<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
@@ -118,7 +99,7 @@
 							</svg>
 						{/if}
 					</div>
-					<span class="text-xs leading-tight">{item.name}</span>
+					<span class="leading-tight">{item.name}</span>
 				</button>
 			{:else}
 				<p class="text-center text-[11px] text-text-muted py-4 italic">Sin resultados</p>

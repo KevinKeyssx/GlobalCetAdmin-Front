@@ -96,7 +96,7 @@
 		</div>
 
 		{#if techSpecs.length > 0 }
-			<ul class="divide-y divide-brand/5 border-t border-brand/5 text-xs">
+			<ul class="divide-y divide-brand/5 border-t border-brand/5">
 				{#each techSpecs as [ key, value ] ( key ) }
 					<li class="flex items-center justify-between py-2.5">
 						<span class="font-bold capitalize text-text-muted">{ key }</span>
@@ -105,7 +105,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="text-xs italic text-text-muted py-6 text-center">
+			<p class="italic text-text-muted py-6 text-center">
 				No se especifican parámetros adicionales.
 			</p>
 		{/if}

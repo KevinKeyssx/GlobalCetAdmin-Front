@@ -10,7 +10,7 @@
 			<!-- Sub-Col 1: Canales Directos & Redes -->
 			<div class="space-y-6">
 				<div class="space-y-3">
-					<h4 class="text-xs font-black uppercase tracking-[0.2em] text-brand font-display">Canales Directos</h4>
+					<h4 class="font-black uppercase tracking-[0.2em] text-brand font-display">Canales Directos</h4>
 
                     <div class="space-y-2 text-sm font-semibold">
 						<!-- Tel -->
@@ -35,7 +35,7 @@
 
 				<!-- Compact Social Links -->
 				<div class="space-y-3">
-					<h4 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Redes</h4>
+					<h4 class="font-black uppercase tracking-[0.2em] text-slate-500">Redes</h4>
 
                     <div class="flex items-center gap-3">
 						<a
@@ -90,7 +90,7 @@
 			<div class="space-y-6">
 				<!-- Legal Info -->
 				<div class="space-y-2">
-					<h4 class="text-xs font-black uppercase tracking-[0.2em] text-brand font-display">Información</h4>
+					<h4 class="font-black uppercase tracking-[0.2em] text-brand font-display">Información</h4>
 
                     <div class="space-y-1 text-sm text-text-muted font-medium leading-relaxed">
 						<p class="text-text font-bold">CET Chile SpA</p>
@@ -103,10 +103,10 @@
 
 				<!-- Facturación -->
 				<div class="space-y-2">
-					<h4 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Datos Facturación</h4>
+					<h4 class="font-black uppercase tracking-[0.2em] text-slate-500">Datos Facturación</h4>
 
                     <div class="rounded-xl border border-brand/10 bg-input/20 p-4 space-y-2">
-						<p class="text-xs text-text-muted leading-relaxed font-semibold">
+						<p class="text-text-muted leading-relaxed font-semibold">
 							Si su Factura tiene datos erróneos, notifíquenos a:
 						</p>
 
@@ -143,7 +143,7 @@
 				<!-- Payment info -->
 				<div class="space-y-3 rounded-xl border border-brand/10 bg-input/40 p-4 shadow-sm">
 					<div class="space-y-1">
-						<h4 class="text-xs font-black uppercase tracking-[0.2em] text-brand font-display">Forma de Pago</h4>
+						<h4 class="font-black uppercase tracking-[0.2em] text-brand font-display">Forma de Pago</h4>
 						<div class="text-sm text-text-muted leading-relaxed font-semibold">
 							<p class="text-text font-bold">Transferencia Electrónica</p>
 							<p>Banco Estado — Chequera Electrónica</p>
@@ -161,8 +161,8 @@
 
 				<!-- State Provider (Larger image) -->
 				<div class="space-y-2">
-					<h4 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Estado</h4>
-					<div class="inline-block overflow-hidden rounded-xl border border-brand/10 bg-white p-3 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-brand/30 w-full ">
+					<h4 class="font-black uppercase tracking-[0.2em] text-slate-500">Estado</h4>
+					<div class="inline-block overflow-hidden rounded-xl border border-brand/10 bg-white p-3 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-brand/30 w-full">
 						<img src="/logo/proveedores.avif" alt="ChileCompra Proveedores del Estado" class="h-auto w-full object-contain" />
 					</div>
 				</div>
@@ -173,7 +173,7 @@
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:col-span-4 lg:grid-cols-1">
 			<!-- Differentiator Banner (Larger & Premium) -->
 			<div class="group relative overflow-hidden rounded-2xl border border-brand/10 bg-input/30 p-1.5 shadow-sm transition-all duration-500 hover:border-brand/20 hover:shadow-card-hover">
-				<div class="relative overflow-hidden rounded-xl bg-white ">
+				<div class="relative overflow-hidden rounded-xl bg-white">
 					<img
 						src="/logo/global.avif"
 						alt="GlobalCET - Ciencia, Educación, Tecnología"
@@ -182,9 +182,9 @@
 				</div>
 
                 <div class="p-4 space-y-2">
-					<h5 class="text-xs font-bold text-text tracking-wider uppercase">Ciencia Con Conciencia</h5>
+					<h5 class="font-bold text-text tracking-wider uppercase">Ciencia Con Conciencia</h5>
 
-                    <p class="text-xs leading-relaxed text-text-muted font-medium">
+                    <p class="leading-relaxed text-text-muted font-medium">
 						Sistemas integrados de alta pureza diseñados para mitigar el riesgo en investigación científica y docencia académica.
 					</p>
 				</div>
@@ -194,9 +194,9 @@
 			<div class="flex flex-col gap-4">
 				<!-- Compact Somos Directos Callout -->
 				<div class="rounded-xl border border-brand/10 bg-input/40 p-4 transition-all duration-300">
-					<p class="text-xs font-black text-brand uppercase tracking-wider">¡Somos directos!</p>
+					<p class="font-black text-brand uppercase tracking-wider">¡Somos directos!</p>
 
-                    <p class="text-xs text-text-muted mt-1 leading-relaxed font-semibold">¿Proyecta implementar su laboratorio? Llámenos directamente.</p>
+                    <p class="text-text-muted mt-1 leading-relaxed font-semibold">¿Proyecta implementar su laboratorio? Llámenos directamente.</p>
 				</div>
 
 				<!-- QR Code (Larger QR representation) -->
@@ -208,7 +208,7 @@
                     <div class="space-y-1">
 						<h5 class="text-[10px] font-black uppercase tracking-widest text-slate-500">Escanee Código QR</h5>
 
-                        <p class="text-xs leading-snug text-text-muted font-semibold">Enlace de comunicación rápida a soporte técnico y cotizaciones por WhatsApp.</p>
+                        <p class="leading-snug text-text-muted font-semibold">Enlace de comunicación rápida a soporte técnico y cotizaciones por WhatsApp.</p>
 					</div>
 				</div>
 			</div>
@@ -217,7 +217,7 @@
 	</div>
 
 	<!-- ─── Bottom copyright row ────────────────────────────────────────────────── -->
-	<div class="mx-auto max-w-7xl mt-12 pt-6 border-t border-brand/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-black tracking-widest text-slate-500 dark:text-slate-400 uppercase">
+	<div class="mx-auto max-w-7xl mt-12 pt-6 border-t border-brand/10 flex flex-col sm:flex-row items-center justify-between gap-4 font-black tracking-widest text-slate-500 dark:text-slate-400 uppercase">
 		<p>© { new Date().getFullYear() } CET Chile SpA / GlobalCET. Todos los derechos reservados.</p>
 
         <p class="flex items-center gap-1.5">
