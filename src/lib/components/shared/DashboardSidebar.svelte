@@ -33,7 +33,7 @@
 			label    : 'Kits',
 			icon     : '🧬',
 			children : [
-				{ label : 'Gestión de Kits', href : '/dashboard/kits',              icon : '🧪' },
+				{ label : 'Catálogo', href : '/dashboard/kits',              icon : '🧪' },
 				{ label : 'Categorías',      href : '/dashboard/kits/categories',   icon : '📂' },
 			],
 		},
@@ -42,7 +42,7 @@
 			label    : 'Laboratorios',
 			icon     : '🚛',
 			children : [
-				{ label : 'Laboratorios Móviles', href : '/dashboard/mobile-labs',              icon : '🏢' },
+				{ label : 'Catálogo', href : '/dashboard/mobile-labs',              icon : '🏢' },
 				{ label : 'Categorías',           href : '/dashboard/mobile-labs/categories',   icon : '📁' },
 			],
 		},
@@ -78,12 +78,12 @@
 <!-- ─── Sidebar Navigation Panel ──────────────────────────────────────────────── -->
 <aside
 	id="dashboard-sidebar"
-	class="sidebar-panel"
+	class="sticky top-0 flex flex-col w-[260px] min-w-[260px] h-screen py-5 bg-sidebar border-r border-brand/12 shadow-sidebar overflow-y-auto animate-sidebar-slide-in"
 >
 	<!-- ─── Header ──────────────────────────────────────────────────────────── -->
-	<div class="sidebar-header">
-		<a href="/dashboard" class="sidebar-logo-link">
-			<div class="sidebar-logo-orb">
+	<div class="px-5 pb-3">
+		<a href="/dashboard" class="group flex items-center gap-3 no-underline px-2.5 py-2 rounded-xl transition-all duration-300 hover:bg-brand/8">
+			<div class="flex items-center justify-center w-9 h-9 rounded-xl bg-brand/12 text-brand transition-all duration-300 group-hover:scale-105 group-hover:bg-brand/20">
 				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<rect x="3" y="3" width="7" height="7" rx="1.5" />
 					<rect x="14" y="3" width="7" height="7" rx="1.5" />
@@ -91,36 +91,34 @@
 					<rect x="14" y="14" width="7" height="7" rx="1.5" />
 				</svg>
 			</div>
-			<div class="sidebar-logo-text">
-				<span class="sidebar-logo-title">Panel Admin</span>
-				<span class="sidebar-logo-sub">GlobalCET</span>
+			<div class="flex flex-col leading-tight">
+				<span class="font-display font-black text-base tracking-wider uppercase text-text">Panel Admin</span>
+				<span class="text-[11px] font-bold text-brand/80">GlobalCET</span>
 			</div>
 		</a>
 	</div>
 
 	<!-- ─── Divider ─────────────────────────────────────────────────────────── -->
-	<div class="sidebar-divider"></div>
+	<div class="h-px my-2 mx-5 bg-linear-to-r from-transparent via-brand/20 to-transparent"></div>
 
 	<!-- ─── Navigation Sections ─────────────────────────────────────────────── -->
-	<nav class="sidebar-nav" aria-label="Panel de administración">
+	<nav class="flex-1 px-3 py-2 flex flex-col gap-1" aria-label="Panel de administración">
 		{#each sections as section ( section.id )}
-			<div class="sidebar-section">
+			<div class="flex flex-col">
 				<!-- Section Toggle -->
 				<button
 					onclick={ ( ) => toggleSection( section.id ) }
-					class="sidebar-section-toggle"
-					class:sidebar-section-active={ sectionIsActive( section ) }
+					class="group/toggle flex items-center justify-between w-full px-2.5 py-2 border-none rounded-lg bg-transparent cursor-pointer transition-all duration-250 outline-none hover:bg-brand/8 { sectionIsActive( section ) ? 'bg-brand/6' : '' }"
 					aria-expanded={ expandedSections[ section.id ] }
 					aria-controls="sidebar-section-{ section.id }"
 				>
-					<div class="sidebar-section-left">
-						<span class="sidebar-section-icon">{ section.icon }</span>
-						<span class="sidebar-section-label">{ section.label }</span>
+					<div class="flex items-center gap-2">
+						<span class="text-base w-6 text-center">{ section.icon }</span>
+						<span class="font-display text-sm font-black uppercase tracking-wider text-text-muted transition-colors duration-200 group-hover/toggle:text-text { sectionIsActive( section ) ? 'text-brand' : '' }">{ section.label }</span>
 					</div>
 
 					<svg
-						class="sidebar-chevron"
-						class:sidebar-chevron-open={ expandedSections[ section.id ] }
+						class="w-3.5 h-3.5 text-text-muted transition-all duration-300 ease-in-out { expandedSections[ section.id ] ? 'rotate-180 text-brand' : '' }"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
@@ -134,28 +132,27 @@
 				{#if ( expandedSections[ section.id ] )}
 					<div
 						id="sidebar-section-{ section.id }"
-						class="sidebar-children"
+						class="flex flex-col gap-0.5 pt-1 pb-1 pl-1.5 ml-4.5 border-l border-brand/15"
 						transition:slide={ { duration : 250 } }
 					>
 						{#each section.children as child ( child.href )}
 							<a
 								href={ child.href }
-								class="sidebar-child-link"
-								class:sidebar-child-active={ isActive( child.href ) }
+								class="group/child relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg no-underline text-sm font-semibold text-text-muted transition-all duration-200 hover:bg-brand/8 hover:text-text hover:translate-x-0.5 { isActive( child.href ) ? 'bg-brand/12! text-brand! font-black' : '' }"
 								aria-current={ isActive( child.href ) ? 'page' : undefined }
 							>
 								<!-- Active Indicator Bar -->
 								{#if ( isActive( child.href ) )}
-									<span class="sidebar-active-bar"></span>
+									<span class="absolute left-[-11px] top-1/2 -translate-y-1/2 w-0.5 h-3/5 rounded-full bg-brand animate-bar-pulse"></span>
 								{/if}
 
-								<span class="sidebar-child-icon">{ child.icon }</span>
-								<span class="sidebar-child-label">{ child.label }</span>
+								<span class="text-sm w-5 text-center">{ child.icon }</span>
+								<span class="flex-1">{ child.label }</span>
 
 								<!-- Active Arrow -->
 								{#if ( isActive( child.href ) )}
 									<svg
-										class="sidebar-active-arrow"
+										class="w-3 h-3 text-brand opacity-70 animate-arrow-bounce"
 										viewBox="0 0 24 24"
 										fill="none"
 										stroke="currentColor"
@@ -173,33 +170,20 @@
 	</nav>
 
 	<!-- ─── Bottom Divider + Back Link ──────────────────────────────────────── -->
-	<div class="sidebar-footer">
-		<div class="sidebar-divider"></div>
-		<a href="/dashboard" class="sidebar-back-link">
+	<!-- <div class="mt-auto px-3 pb-1">
+		<div class="h-px my-2 mx-5 bg-linear-to-r from-transparent via-brand/20 to-transparent"></div>
+		<a href="/dashboard" class="flex items-center gap-2 px-2.5 py-2 mt-2 rounded-lg no-underline font-display text-[11px] font-bold tracking-wider uppercase text-text-muted transition-all duration-250 hover:bg-brand/8 hover:text-brand hover:-translate-x-0.5">
 			<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 				<polyline points="15 18 9 12 15 6" />
 			</svg>
 			<span>Volver al Hub</span>
 		</a>
-	</div>
+	</div> -->
 </aside>
 
 <style>
-	/* ─── Sidebar Container ──────────────────────────────────────────────────── */
-	.sidebar-panel {
-		position         : sticky;
-		top              : 0;
-		display          : flex;
-		flex-direction   : column;
-		width            : 260px;
-		min-width        : 260px;
-		height           : 100vh;
-		padding          : 1.25rem 0;
-		background-color : var( --color-sidebar );
-		border-right     : 1px solid color-mix( in srgb, var( --color-brand ) 12%, transparent );
-		box-shadow       : var( --shadow-sidebar );
-		overflow-y       : auto;
-		animation        : sidebar-slide-in 0.4s cubic-bezier( 0.16, 1, 0.3, 1 );
+	.animate-sidebar-slide-in {
+		animation : sidebar-slide-in 0.4s cubic-bezier( 0.16, 1, 0.3, 1 );
 	}
 
 	@keyframes sidebar-slide-in {
@@ -213,213 +197,8 @@
 		}
 	}
 
-	/* ─── Header ─────────────────────────────────────────────────────────────── */
-	.sidebar-header {
-		padding : 0 1.25rem 0.75rem;
-	}
-
-	.sidebar-logo-link {
-		display         : flex;
-		align-items     : center;
-		gap             : 0.75rem;
-		text-decoration : none;
-		padding         : 0.5rem 0.625rem;
-		border-radius   : 0.75rem;
-		transition      : all 0.3s ease;
-	}
-
-	.sidebar-logo-link:hover {
-		background-color : color-mix( in srgb, var( --color-brand ) 8%, transparent );
-	}
-
-	.sidebar-logo-orb {
-		display          : flex;
-		align-items      : center;
-		justify-content  : center;
-		width            : 36px;
-		height           : 36px;
-		border-radius    : 0.75rem;
-		background-color : color-mix( in srgb, var( --color-brand ) 12%, transparent );
-		color            : var( --color-brand );
-		transition       : all 0.3s ease;
-	}
-
-	.sidebar-logo-link:hover .sidebar-logo-orb {
-		background-color : color-mix( in srgb, var( --color-brand ) 20%, transparent );
-		transform        : scale( 1.05 );
-	}
-
-	.sidebar-logo-text {
-		display        : flex;
-		flex-direction : column;
-		line-height    : 1.15;
-	}
-
-	.sidebar-logo-title {
-		font-family    : var( --font-display );
-		font-weight    : 800;
-		font-size      : 0.8125rem;
-		letter-spacing : 0.04em;
-		text-transform : uppercase;
-		color          : var( --color-text );
-	}
-
-	.sidebar-logo-sub {
-		font-size   : 0.625rem;
-		font-weight : 700;
-		color       : var( --color-brand );
-		opacity     : 0.8;
-	}
-
-	/* ─── Divider ────────────────────────────────────────────────────────────── */
-	.sidebar-divider {
-		height           : 1px;
-		margin           : 0.5rem 1.25rem;
-		background-image : linear-gradient(
-			to right,
-			transparent,
-			color-mix( in srgb, var( --color-brand ) 20%, transparent ),
-			transparent
-		);
-	}
-
-	/* ─── Nav ────────────────────────────────────────────────────────────────── */
-	.sidebar-nav {
-		flex    : 1;
-		padding : 0.5rem 0.75rem;
-		display : flex;
-		flex-direction : column;
-		gap     : 0.25rem;
-	}
-
-	/* ─── Section ────────────────────────────────────────────────────────────── */
-	.sidebar-section {
-		display        : flex;
-		flex-direction : column;
-	}
-
-	.sidebar-section-toggle {
-		display          : flex;
-		align-items      : center;
-		justify-content  : space-between;
-		width            : 100%;
-		padding          : 0.5rem 0.625rem;
-		border           : none;
-		border-radius    : 0.625rem;
-		background-color : transparent;
-		cursor           : pointer;
-		transition       : all 0.25s ease;
-		outline          : none;
-	}
-
-	.sidebar-section-toggle:hover {
-		background-color : color-mix( in srgb, var( --color-brand ) 8%, transparent );
-	}
-
-	.sidebar-section-active {
-		background-color : color-mix( in srgb, var( --color-brand ) 6%, transparent );
-	}
-
-	.sidebar-section-left {
-		display     : flex;
-		align-items : center;
-		gap         : 0.5rem;
-	}
-
-	.sidebar-section-icon {
-		font-size : 1rem;
-		width     : 1.5rem;
-		text-align : center;
-	}
-
-	.sidebar-section-label {
-		font-family    : var( --font-display );
-		font-size      : 0.6875rem;
-		font-weight    : 800;
-		text-transform : uppercase;
-		letter-spacing : 0.08em;
-		color          : var( --color-text-muted );
-		transition     : color 0.2s ease;
-	}
-
-	.sidebar-section-toggle:hover .sidebar-section-label {
-		color : var( --color-text );
-	}
-
-	.sidebar-section-active .sidebar-section-label {
-		color : var( --color-brand );
-	}
-
-	/* ─── Chevron ─────────────────────────────────────────────────────────────── */
-	.sidebar-chevron {
-		width      : 14px;
-		height     : 14px;
-		color      : var( --color-text-muted );
-		transition : all 0.3s cubic-bezier( 0.4, 0, 0.2, 1 );
-	}
-
-	.sidebar-chevron-open {
-		transform : rotate( 180deg );
-		color     : var( --color-brand );
-	}
-
-	/* ─── Children ───────────────────────────────────────────────────────────── */
-	.sidebar-children {
-		display        : flex;
-		flex-direction : column;
-		gap            : 2px;
-		padding        : 0.25rem 0 0.25rem 0.375rem;
-		margin-left    : 1.125rem;
-		border-left    : 1px solid color-mix( in srgb, var( --color-brand ) 15%, transparent );
-	}
-
-	.sidebar-child-link {
-		position         : relative;
-		display          : flex;
-		align-items      : center;
-		gap              : 0.5rem;
-		padding          : 0.4375rem 0.625rem;
-		border-radius    : 0.5rem;
-		text-decoration  : none;
-		font-size        : 0.6875rem;
-		font-weight      : 600;
-		color            : var( --color-text-muted );
-		transition       : all 0.2s ease;
-	}
-
-	.sidebar-child-link:hover {
-		background-color : color-mix( in srgb, var( --color-brand ) 8%, transparent );
-		color            : var( --color-text );
-		transform        : translateX( 2px );
-	}
-
-	.sidebar-child-active {
-		background-color : color-mix( in srgb, var( --color-brand ) 12%, transparent ) !important;
-		color            : var( --color-brand ) !important;
-		font-weight      : 800;
-	}
-
-	.sidebar-child-icon {
-		font-size : 0.8125rem;
-		width     : 1.25rem;
-		text-align : center;
-	}
-
-	.sidebar-child-label {
-		flex : 1;
-	}
-
-	/* ─── Active Indicator Bar ────────────────────────────────────────────────── */
-	.sidebar-active-bar {
-		position         : absolute;
-		left             : -0.6875rem;
-		top              : 50%;
-		transform        : translateY( -50% );
-		width            : 3px;
-		height           : 60%;
-		border-radius    : 99px;
-		background-color : var( --color-brand );
-		animation        : bar-pulse 2s ease-in-out infinite;
+	.animate-bar-pulse {
+		animation : bar-pulse 2s ease-in-out infinite;
 	}
 
 	@keyframes bar-pulse {
@@ -427,12 +206,7 @@
 		50%      { opacity : 0.5; }
 	}
 
-	/* ─── Active Arrow ────────────────────────────────────────────────────────── */
-	.sidebar-active-arrow {
-		width     : 12px;
-		height    : 12px;
-		color     : var( --color-brand );
-		opacity   : 0.7;
+	.animate-arrow-bounce {
 		animation : arrow-bounce 1.5s ease-in-out infinite;
 	}
 
@@ -441,45 +215,15 @@
 		50%      { transform : translateX( 3px ); }
 	}
 
-	/* ─── Footer ─────────────────────────────────────────────────────────────── */
-	.sidebar-footer {
-		margin-top : auto;
-		padding    : 0 0.75rem 0.25rem;
-	}
-
-	.sidebar-back-link {
-		display          : flex;
-		align-items      : center;
-		gap              : 0.5rem;
-		padding          : 0.5rem 0.625rem;
-		margin-top       : 0.5rem;
-		border-radius    : 0.625rem;
-		text-decoration  : none;
-		font-family      : var( --font-display );
-		font-size        : 0.6875rem;
-		font-weight      : 700;
-		letter-spacing   : 0.04em;
-		text-transform   : uppercase;
-		color            : var( --color-text-muted );
-		transition       : all 0.25s ease;
-	}
-
-	.sidebar-back-link:hover {
-		background-color : color-mix( in srgb, var( --color-brand ) 8%, transparent );
-		color            : var( --color-brand );
-		transform        : translateX( -2px );
-	}
-
-	/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
-	.sidebar-panel::-webkit-scrollbar {
+	#dashboard-sidebar::-webkit-scrollbar {
 		width : 3px;
 	}
 
-	.sidebar-panel::-webkit-scrollbar-track {
+	#dashboard-sidebar::-webkit-scrollbar-track {
 		background : transparent;
 	}
 
-	.sidebar-panel::-webkit-scrollbar-thumb {
+	#dashboard-sidebar::-webkit-scrollbar-thumb {
 		background    : color-mix( in srgb, var( --color-brand ) 20%, transparent );
 		border-radius : 99px;
 	}
