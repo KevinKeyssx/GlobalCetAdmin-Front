@@ -40,13 +40,7 @@
 </script>
 
 <!-- ─── Header Shell ─────────────────────────────────────────────────────────── -->
-<header class="
-	sticky top-0 z-50 w-full
-	border-b border-brand/20
-	bg-surface/80 backdrop-blur-lg
-	transition-colors duration-300
-	relative
-">
+<header class="sticky top-0 z-50 w-full border-b border-brand/20 bg-surface/80 backdrop-blur-lg transition-colors duration-300">
 	<!-- Infinite Marquee glowing loading bar -->
 	{#if ( isLoading ) }
 		<div class="loading-bar" transition:fade={ { duration : 250 } }></div>
@@ -67,17 +61,8 @@
         <h1 class="text-2xl md:text-4xl font-extrabold tracking-tight">Panel de administración</h1>
 
 		<!-- Search Bar -->
-		<!-- <div class="
-			relative flex-1 max-w-xl
-			transition-all duration-500 ease-out
-			focus-within:max-w-2xl focus-within:scale-[ 1.015 ]
-		">
-			<svg class="
-				absolute left-3.5 top-1/2 -translate-y-1/2
-				h-4 w-4 text-text-muted
-				transition-all duration-500 ease-out
-				peer-focus:text-brand peer-focus:scale-110 peer-focus:rotate-6
-			" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		<!-- <div class="relative flex-1 max-w-xl transition-all duration-500 ease-out focus-within:max-w-2xl focus-within:scale-[ 1.015 ]">
+			<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted transition-all duration-500 ease-out peer-focus:text-brand peer-focus:scale-110 peer-focus:rotate-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 				<circle cx="11" cy="11" r="8"/>
 				<path d="m21 21-4.35-4.35"/>
 			</svg>
@@ -88,16 +73,7 @@
 				placeholder = "Buscar productos, reactivos, equipos..."
 				value       = { localSearch }
 				oninput     = { ( e ) => handleInput( ( e.target as HTMLInputElement ).value ) }
-				class       = "
-					peer w-full rounded-xl
-					border border-brand/25 bg-input
-					py-2.5 pl-10 pr-4 text-sm text-text
-					placeholder:text-text-muted
-					outline-none ring-0
-					transition-all duration-500 ease-out
-					focus:border-brand focus:bg-card focus:ring-4 focus:ring-brand/15
-					focus:shadow-[ 0_0_30px_rgba( 5,150,105,0.15 ) ]
-				"
+				class="peer w-full rounded-xl border border-brand/25 bg-input py-2.5 pl-10 pr-4 text-sm text-text placeholder:text-text-muted outline-none ring-0 transition-all duration-500 ease-out focus:border-brand focus:bg-card focus:ring-4 focus:ring-brand/15 focus:shadow-[ 0_0_30px_rgba( 5,150,105,0.15 ) ]"
 			/>
 		</div> -->
 
@@ -111,13 +87,7 @@
 			id="dark-mode-toggle"
 			onclick={onToggle}
 			aria-label="Alternar modo oscuro"
-			class="
-				flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
-				border border-brand/20 bg-brand/10
-				text-brand
-				transition-all duration-300
-				hover:bg-brand/25 hover:scale-105
-			"
+			class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand/20 bg-brand/10 text-brand transition-all duration-300 hover:bg-brand/25 hover:scale-105"
 		>
 			{#if darkMode}
 				<!-- Sun icon -->
