@@ -6,6 +6,8 @@
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import LabFormModal                     from './components/LabFormModal.svelte';
+	import TableActions                     from '$lib/components/shared/TableActions.svelte';
+	import Status                           from '$lib/components/shared/Status.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductRelation {
@@ -183,9 +185,7 @@
 				return;
 			}
 
-			toast.success( 'Laboratorio eliminado con éxito.', {
-				style : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
-			} );
+			toast.success( 'Laboratorio eliminado con éxito.' );
 			loadAllData();
 		} catch ( err ) {
 			toast.error( 'Error de red al intentar eliminar.' );
@@ -204,7 +204,7 @@
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-6">
 			<div class="space-y-1">
-				<div class="flex items-center gap-2 text-xs text-text-muted">
+				<div class="flex items-center gap-2 text-text-muted">
 					<a href="/dashboard" class="hover:text-brand">Dashboard</a>
 					<span>/</span>
 					<span class="text-brand font-bold">Laboratorios Móviles</span>
@@ -212,18 +212,14 @@
 				<h1 class="font-display text-3xl font-black text-text uppercase tracking-wide">
 					Gestión de Laboratorios Móviles
 				</h1>
-				<p class="text-xs text-text-muted">
+				<p class="text-text-muted">
 					Administre estaciones de ciencias móviles, nodolabs e infraestructuras pedagógicas autónomas.
 				</p>
 			</div>
 
 			<button
 				onclick={ openCreateModal }
-				class="
-					inline-flex items-center justify-center gap-2 rounded-xl
-					bg-brand px-5 py-3 text-xs font-bold uppercase tracking-wider text-surface-dark
-					shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright
-				"
+				class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 					<line x1="12" y1="5" x2="12" y2="19" />
@@ -243,10 +239,7 @@
 				type="search"
 				placeholder="Buscar laboratorio por SKU o Nombre..."
 				bind:value={ search }
-				class="
-					w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text
-					outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10
-				"
+				class="w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
 			/>
 		</div>
 
@@ -266,7 +259,7 @@
 							<th class="px-6 py-4 text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody class="divide-y divide-brand/10 text-xs font-semibold">
+					<tbody class="divide-y divide-brand/10 font-semibold">
 						{#each filteredLabs as item ( item.id ) }
 							<tr class="hover:bg-brand/5 transition-colors duration-150">
 								<td class="px-6 py-3">
@@ -309,27 +302,14 @@
 									</div>
 								</td>
 								<td class="px-6 py-4">
-									{#if item.active }
-										<span class="text-brand font-bold">Activo</span>
-									{:else}
-										<span class="text-text-muted">Inactivo</span>
-									{/if}
+									<Status status={ item.active } />
 								</td>
 								<td class="px-6 py-4 text-right">
-									<div class="flex items-center justify-end gap-2">
-										<button
-											onclick={ ( ) => openEditModal( item ) }
-											class="rounded-lg border border-brand/20 bg-brand/10 px-3 py-1.5 font-bold uppercase tracking-wider text-brand hover:bg-brand hover:text-surface-dark transition-all duration-200"
-										>
-											Editar
-										</button>
-										<button
-											onclick={ ( ) => deleteLab( item.id ) }
-											class="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 font-bold uppercase tracking-wider text-red-400 hover:bg-red-500 hover:text-white transition-all duration-200"
-										>
-											Eliminar
-										</button>
-									</div>
+									<TableActions
+										item={ item }
+										openEditModal={ openEditModal }
+										deleteItem={ ( l ) => deleteLab( l.id ) }
+									/>
 								</td>
 							</tr>
 						{:else}
