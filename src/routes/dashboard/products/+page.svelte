@@ -1,11 +1,15 @@
 <script lang="ts">
-	import { onMount }     from 'svelte';
-	import toast            from 'svelte-french-toast';
+	import { onMount } from 'svelte';
+
+    import toast    from 'svelte-french-toast';
+	import { Plus } from '@lucide/svelte';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import ProductFormModal                 from './components/ProductFormModal.svelte';
+	import TableActions                     from '$lib/components/shared/TableActions.svelte';
+	import Status                           from '$lib/components/shared/Status.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Product {
@@ -138,9 +142,7 @@
 				return;
 			}
 
-			toast.success( 'Producto eliminado con éxito.', {
-				style : 'background: #111f18; color: #00e676; border: 1px solid rgba(0, 230, 118, 0.2); font-family: Outfit;',
-			} );
+			toast.success( 'Producto eliminado con éxito.' );
 			loadAllData();
 		} catch ( err ) {
 			toast.error( 'Error de red al intentar eliminar.' );
@@ -159,32 +161,32 @@
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-6">
 			<div class="space-y-1">
-				<div class="flex items-center gap-2 text-xs text-text-muted">
+				<div class="flex items-center gap-2 text-text-muted">
 					<a href="/dashboard" class="hover:text-brand">Dashboard</a>
-					<span>/</span>
-					<span class="text-brand font-bold">Productos</span>
+
+                    <span>/</span>
+
+                    <span class="text-brand font-bold">Productos</span>
 				</div>
-				<h1 class="font-display text-3xl font-black text-text uppercase tracking-wide">
+
+                <h1 class="font-display text-xl md:text-3xl font-black text-text uppercase tracking-wide">
 					Catálogo de Productos
 				</h1>
-				<p class="text-xs text-text-muted">
+
+                <p class="text-text-muted">
 					Administre reactivos cromatográficos, borosilicato, instrumental médico y equipos analíticos.
 				</p>
 			</div>
 
 			<button
 				onclick={ openCreateModal }
-				class="
-					inline-flex items-center justify-center gap-2 rounded-xl
-					bg-brand px-5 py-3 text-xs font-bold uppercase tracking-wider text-surface-dark
-					shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright
-				"
+				class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-xs font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
 			>
-				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<line x1="12" y1="5" x2="12" y2="19" />
-					<line x1="5" y1="12" x2="19" y2="12" />
-				</svg>
-				Agregar Producto
+                <Plus class="size-4"/>
+
+                <span class="hidden sm:flex">
+                    Agregar Producto
+                </span>
 			</button>
 		</div>
 
@@ -198,10 +200,7 @@
 				type="search"
 				placeholder="Buscar por SKU, Nombre o Descripción..."
 				bind:value={ search }
-				class="
-					w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text
-					outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10
-				"
+				class="w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
 			/>
 		</div>
 
@@ -210,7 +209,7 @@
 			<div class="overflow-x-auto">
 				<table class="w-full text-left border-collapse">
 					<thead>
-						<tr class="border-b border-brand/15 bg-brand/5 text-[10px] font-black uppercase tracking-widest text-text-muted">
+						<tr class="border-b border-brand/15 bg-brand/5 text-xs font-black uppercase tracking-widest text-text-muted">
 							<th class="px-6 py-4">Imagen</th>
 							<th class="px-6 py-4">SKU</th>
 							<th class="px-6 py-4">Nombre</th>
@@ -220,7 +219,8 @@
 							<th class="px-6 py-4 text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody class="divide-y divide-brand/10 text-xs font-semibold">
+
+                    <tbody class="divide-y divide-brand/10 font-semibold text-sm">
 						{#each filteredProducts as prod ( prod.id ) }
 							<tr class="hover:bg-brand/5 transition-colors duration-150">
 								<td class="px-6 py-3">
@@ -237,35 +237,28 @@
 										{/if}
 									</div>
 								</td>
-								<td class="px-6 py-4 font-mono text-brand font-bold">{ prod.sku }</td>
-								<td class="px-6 py-4">
+
+                                <td class="px-6 py-4 font-mono text-brand font-bold">{ prod.sku }</td>
+
+                                <td class="px-6 py-4">
 									<div class="font-bold text-text">{ prod.name }</div>
-									<div class="text-[10px] text-text-muted font-normal max-w-xs truncate">{ prod.description || 'Sin descripción' }</div>
+									<div class="text-xs text-text-muted font-normal max-w-xs truncate">{ prod.description || 'Sin descripción' }</div>
 								</td>
-								<td class="px-6 py-4 text-text-muted">{ prod.subcategory?.name || 'N/A' }</td>
-								<td class="px-6 py-4 font-bold text-emerald-500">{ prod.material?.name || 'N/A' }</td>
-								<td class="px-6 py-4">
-									{#if prod.active }
-										<span class="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400 font-bold border border-emerald-500/20">Activo</span>
-									{:else}
-										<span class="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] text-red-400 font-bold border border-red-500/20">Inactivo</span>
-									{/if}
+
+                                <td class="px-6 py-4 text-text-muted">{ prod.subcategory?.name || 'N/A' }</td>
+
+                                <td class="px-6 py-4 font-bold text-emerald-500">{ prod.material?.name || 'N/A' }</td>
+
+                                <td class="px-6 py-4">
+									<Status status={ prod.active } />
 								</td>
-								<td class="px-6 py-4 text-right">
-									<div class="flex items-center justify-end gap-2">
-										<button
-											onclick={ ( ) => openEditModal( prod ) }
-											class="rounded-lg border border-brand/20 bg-brand/10 px-3 py-1.5 font-bold uppercase tracking-wider text-brand hover:bg-brand hover:text-surface-dark transition-all duration-200"
-										>
-											Editar
-										</button>
-										<button
-											onclick={ ( ) => deleteProduct( prod.id ) }
-											class="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 font-bold uppercase tracking-wider text-red-400 hover:bg-red-500 hover:text-white transition-all duration-200"
-										>
-											Eliminar
-										</button>
-									</div>
+
+                                <td class="px-6 py-4 text-right">
+									<TableActions
+										item            = { prod }
+										openEditModal   = { openEditModal }
+										deleteItem      = { ( p ) => deleteProduct( p.id ) }
+									/>
 								</td>
 							</tr>
 						{:else}
