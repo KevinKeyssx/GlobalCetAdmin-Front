@@ -1,33 +1,37 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
+
+import connectRequest, { isApiError } from '$lib/services/fetch.service';
 import { ENV }                       from '$lib/utils/env.server';
+import type { Material }             from '$lib/types/material';
+import { METHOD }                    from '$lib/services/http-codes';
 
 // ─── POST Handler: Create a material ──────────────────────────────────────────
-export const POST: RequestHandler = async ( { request } ) => {
+export const POST: RequestHandler = async ( { request, fetch } ) => {
 	try {
 		const body     = await request.json();
-		const response = await fetch( `${ ENV.BACKEND_URL }/materials`, {
-			method  : 'POST',
-			headers : {
-				'Content-Type' : 'application/json',
-				'x-secret'     : ENV.INTERNAL_SECRET_KEY,
+		const response = await connectRequest< Material >( {
+			endpoint   : 'materials',
+			method     : METHOD.POST,
+			isInternal : false,
+			body       : body,
+			headers    : {
+				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
-			body    : JSON.stringify( body ),
+			fetch      : fetch,
 		} );
 
-		if ( !response.ok ) {
-			const err = await response.json().catch( ( ) => ( { message : 'Backend error' } ) );
-			return json( { error : err.message || 'Request to backend failed' }, { status : response.status } );
+		if ( isApiError( response ) ) {
+			return json( { error : response.message }, { status : response.status || 500 } );
 		}
 
-		const result = await response.json();
-		return json( result, { status : 201 } );
+		return json( response, { status : 201 } );
 	} catch ( e : any ) {
 		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
 	}
 };
 
 // ─── PUT Handler: Modify a material ───────────────────────────────────────────
-export const PUT: RequestHandler = async ( { request, url } ) => {
+export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 	try {
 		const id = url.searchParams.get( 'id' ) || '';
 
@@ -36,29 +40,29 @@ export const PUT: RequestHandler = async ( { request, url } ) => {
 		}
 
 		const body     = await request.json();
-		const response = await fetch( `${ ENV.BACKEND_URL }/materials/${ id }`, {
-			method  : 'PUT',
-			headers : {
-				'Content-Type' : 'application/json',
-				'x-secret'     : ENV.INTERNAL_SECRET_KEY,
+		const response = await connectRequest< Material >( {
+			endpoint   : `materials/${ id }`,
+			method     : METHOD.PUT,
+			isInternal : false,
+			body       : body,
+			headers    : {
+				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
-			body    : JSON.stringify( body ),
+			fetch      : fetch,
 		} );
 
-		if ( !response.ok ) {
-			const err = await response.json().catch( ( ) => ( { message : 'Backend error' } ) );
-			return json( { error : err.message || 'Request to backend failed' }, { status : response.status } );
+		if ( isApiError( response ) ) {
+			return json( { error : response.message }, { status : response.status || 500 } );
 		}
 
-		const result = await response.json();
-		return json( result );
+		return json( response );
 	} catch ( e : any ) {
 		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
 	}
 };
 
 // ─── DELETE Handler: Remove a material ────────────────────────────────────────
-export const DELETE: RequestHandler = async ( { url } ) => {
+export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 	try {
 		const id = url.searchParams.get( 'id' ) || '';
 
@@ -66,16 +70,18 @@ export const DELETE: RequestHandler = async ( { url } ) => {
 			return json( { error : 'Missing material ID' }, { status : 400 } );
 		}
 
-		const response = await fetch( `${ ENV.BACKEND_URL }/materials/${ id }`, {
-			method  : 'DELETE',
-			headers : {
+		const response = await connectRequest< any >( {
+			endpoint   : `materials/${ id }`,
+			method     : METHOD.DELETE,
+			isInternal : false,
+			headers    : {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
+			fetch      : fetch,
 		} );
 
-		if ( !response.ok ) {
-			const err = await response.json().catch( ( ) => ( { message : 'Backend error' } ) );
-			return json( { error : err.message || 'Request to backend failed' }, { status : response.status } );
+		if ( isApiError( response ) ) {
+			return json( { error : response.message }, { status : response.status || 500 } );
 		}
 
 		return json( { success : true } );

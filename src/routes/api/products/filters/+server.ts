@@ -24,7 +24,7 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 	const subcategories = url.searchParams.getAll( 'subcategories' );
 	const materials     = url.searchParams.getAll( 'materials' );
 
-	const params = new URLSearchParams( {
+	const params = new URLSearchParams({
 		page,
 		size,
 		includeImages : 'true',

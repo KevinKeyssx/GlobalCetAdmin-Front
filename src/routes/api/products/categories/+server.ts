@@ -1,35 +1,39 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { ENV }                       from '$lib/utils/env.server';
+
+import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+import { ENV }                          from '$lib/utils/env.server';
+import type { Category, SubCategory }   from '$lib/types/category';
+import { METHOD }                       from '$lib/services/http-codes';
 
 // ─── POST Handler: Create a category or subcategory ───────────────────────────
-export const POST: RequestHandler = async ( { request, url } ) => {
+export const POST: RequestHandler = async ( { request, url, fetch } ) => {
 	try {
 		const type     = url.searchParams.get( 'type' ) || 'category';
 		const path     = type === 'subcategory' ? 'subcategories' : 'categories';
 		const body     = await request.json();
-		const response = await fetch( `${ ENV.BACKEND_URL }/${ path }`, {
-			method  : 'POST',
-			headers : {
-				'Content-Type' : 'application/json',
-				'x-secret'     : ENV.INTERNAL_SECRET_KEY,
+		const response = await connectRequest< Category | SubCategory >( {
+			endpoint   : path,
+			method     : METHOD.POST,
+			isInternal : false,
+			body       : body,
+			headers    : {
+				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
-			body    : JSON.stringify( body ),
+			fetch      : fetch,
 		} );
 
-		if ( !response.ok ) {
-			const err = await response.json().catch( ( ) => ( { message : 'Backend error' } ) );
-			return json( { error : err.message || 'Request to backend failed' }, { status : response.status } );
+		if ( isApiError( response ) ) {
+			return json( { error : response.message }, { status : response.status || 500 } );
 		}
 
-		const result = await response.json();
-		return json( result, { status : 201 } );
+		return json( response, { status : 201 } );
 	} catch ( e : any ) {
 		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
 	}
 };
 
 // ─── PUT Handler: Modify a category or subcategory ────────────────────────────
-export const PUT: RequestHandler = async ( { request, url } ) => {
+export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 	try {
 		const id = url.searchParams.get( 'id' ) || '';
 		if ( !id ) {
@@ -39,29 +43,29 @@ export const PUT: RequestHandler = async ( { request, url } ) => {
 		const type     = url.searchParams.get( 'type' ) || 'category';
 		const path     = type === 'subcategory' ? 'subcategories' : 'categories';
 		const body     = await request.json();
-		const response = await fetch( `${ ENV.BACKEND_URL }/${ path }/${ id }`, {
-			method  : 'PUT',
-			headers : {
-				'Content-Type' : 'application/json',
-				'x-secret'     : ENV.INTERNAL_SECRET_KEY,
+		const response = await connectRequest< Category | SubCategory >( {
+			endpoint   : `${ path }/${ id }`,
+			method     : METHOD.PUT,
+			isInternal : false,
+			body       : body,
+			headers    : {
+				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
-			body    : JSON.stringify( body ),
+			fetch      : fetch,
 		} );
 
-		if ( !response.ok ) {
-			const err = await response.json().catch( ( ) => ( { message : 'Backend error' } ) );
-			return json( { error : err.message || 'Request to backend failed' }, { status : response.status } );
+		if ( isApiError( response ) ) {
+			return json( { error : response.message }, { status : response.status || 500 } );
 		}
 
-		const result = await response.json();
-		return json( result );
+		return json( response );
 	} catch ( e : any ) {
 		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
 	}
 };
 
 // ─── DELETE Handler: Remove a category or subcategory ─────────────────────────
-export const DELETE: RequestHandler = async ( { url } ) => {
+export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 	try {
 		const id = url.searchParams.get( 'id' ) || '';
 		if ( !id ) {
@@ -70,16 +74,18 @@ export const DELETE: RequestHandler = async ( { url } ) => {
 
 		const type     = url.searchParams.get( 'type' ) || 'category';
 		const path     = type === 'subcategory' ? 'subcategories' : 'categories';
-		const response = await fetch( `${ ENV.BACKEND_URL }/${ path }/${ id }`, {
-			method  : 'DELETE',
-			headers : {
+		const response = await connectRequest< any >( {
+			endpoint   : `${ path }/${ id }`,
+			method     : METHOD.DELETE,
+			isInternal : false,
+			headers    : {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
+			fetch      : fetch,
 		} );
 
-		if ( !response.ok ) {
-			const err = await response.json().catch( ( ) => ( { message : 'Backend error' } ) );
-			return json( { error : err.message || 'Request to backend failed' }, { status : response.status } );
+		if ( isApiError( response ) ) {
+			return json( { error : response.message }, { status : response.status || 500 } );
 		}
 
 		return json( { success : true } );
