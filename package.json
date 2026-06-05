@@ -19,6 +19,7 @@
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@tailwindcss/vite": "^4.2.2",
 		"@tanstack/svelte-query-devtools": "^6.1.33",
+		"@types/jszip": "^3.4.1",
 		"prettier": "^3.8.1",
 		"prettier-plugin-svelte": "^3.5.1",
 		"prettier-plugin-tailwindcss": "^0.7.2",
@@ -32,6 +33,7 @@
 		"@lucide/svelte": "^1.17.0",
 		"@tanstack/svelte-query": "^6.1.33",
 		"bits-ui": "^2.18.1",
+		"jszip": "^3.10.1",
 		"svelte-french-toast": "^1.2.0",
 		"zod": "^4.4.3"
 	}
