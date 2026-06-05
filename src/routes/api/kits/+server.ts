@@ -4,6 +4,7 @@ import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 import { ENV }                          from '$lib/utils/env.server';
 import type { GlobalSearchKit }         from '$lib/types/search';
 import { METHOD }                       from '$lib/services/http-codes';
+import { EXTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 
 // ─── POST Handler: Create a new kit ───────────────────────────────────────────
 export const POST: RequestHandler = async ( { request, fetch } ) => {
@@ -16,7 +17,7 @@ export const POST: RequestHandler = async ( { request, fetch } ) => {
 		}
 
 		const response = await connectRequest< GlobalSearchKit >( {
-			endpoint   : 'kits',
+			endpoint   : EXTERNAL_ENDPOINTS.KITS.BASE,
 			method     : METHOD.POST,
 			isInternal : false,
 			body       : backendData,
@@ -54,7 +55,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		// 1. Fetch existing kit with files to compare
 		const existingKit = await connectRequest< GlobalSearchKit >( {
-			endpoint   : `kits/${ id }?includeFiles=true&includeProducts=true`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }?includeFiles=true&includeProducts=true`,
 			isInternal : false,
 			headers    : {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
@@ -77,7 +78,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		if ( deletedFileIds.length > 0 ) {
 			const deleteRes = await connectRequest< any >( {
-				endpoint   : `kits/${ id }/files/delete`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }/files/delete`,
 				method     : METHOD.POST,
 				isInternal : false,
 				body       : { files : deletedFileIds },
@@ -107,10 +108,10 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 				alt    : f.alt,
 				isMain : f.isMain,
 				order  : f.order,
-			}))));
+			} ) ) ) );
 
 			const uploadRes = await connectRequest< any >( {
-				endpoint   : `kits/${ id }/files`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }/files`,
 				method     : METHOD.POST,
 				isInternal : false,
 				body       : uploadFormData,
@@ -118,7 +119,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 					'x-secret' : ENV.INTERNAL_SECRET_KEY,
 				},
 				fetch      : fetch,
-			});
+			} );
 
 			if ( isApiError( uploadRes ) ) {
 				return json( { error : uploadRes.message }, { status : uploadRes.status || 500 } );
@@ -144,7 +145,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		// 4. Update info for all remaining/new files
 		if ( finalFilesInfo.length > 0 ) {
 			const updateInfoRes = await connectRequest< any >( {
-				endpoint   : `kits/${ id }/files/info`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }/files/info`,
 				method     : METHOD.PATCH,
 				isInternal : false,
 				body       : { filesInfo : finalFilesInfo },
@@ -162,7 +163,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		// 5. Update products relations
 		if ( clientProducts.length > 0 ) {
 			const updateProductsRes = await connectRequest< any >( {
-				endpoint   : `kits/${ id }/products`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }/products`,
 				method     : METHOD.POST,
 				isInternal : false,
 				body       : { products : clientProducts },
@@ -193,7 +194,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		}
 
 		const updateKitRes = await connectRequest< GlobalSearchKit >( {
-			endpoint   : `kits/${ id }`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }`,
 			method     : METHOD.PATCH,
 			isInternal : false,
 			body       : basicData,
@@ -223,7 +224,7 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 		}
 
 		const response = await connectRequest< any >( {
-			endpoint   : `kits/${ id }`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }`,
 			method     : METHOD.DELETE,
 			isInternal : false,
 			headers    : {

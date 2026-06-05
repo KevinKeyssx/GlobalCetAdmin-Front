@@ -4,6 +4,7 @@ import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 import { ENV }                          from '$lib/utils/env.server';
 import type { GlobalSearchMobileLab }   from '$lib/types/search';
 import { METHOD }                       from '$lib/services/http-codes';
+import { EXTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 
 // ─── POST Handler: Create a new mobile lab ────────────────────────────────────
 export const POST: RequestHandler = async ( { request, fetch } ) => {
@@ -16,7 +17,7 @@ export const POST: RequestHandler = async ( { request, fetch } ) => {
 		}
 
 		const response = await connectRequest< GlobalSearchMobileLab >( {
-			endpoint   : 'mobile-labs',
+			endpoint   : EXTERNAL_ENDPOINTS.LABS.BASE,
 			method     : METHOD.POST,
 			isInternal : false,
 			body       : backendData,
@@ -56,7 +57,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		// 1. Fetch existing lab with files to compare
 		const existingLab = await connectRequest< GlobalSearchMobileLab >( {
-			endpoint   : `mobile-labs/${ id }?includeFiles=true&includeProducts=true&includeKits=true`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }?includeFiles=true&includeProducts=true&includeKits=true`,
 			isInternal : false,
 			headers    : {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
@@ -79,7 +80,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		if ( deletedFileIds.length > 0 ) {
 			const deleteRes = await connectRequest< any >( {
-				endpoint   : `mobile-labs/${ id }/files/delete`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }/files/delete`,
 				method     : METHOD.POST,
 				isInternal : false,
 				body       : { files : deletedFileIds },
@@ -112,7 +113,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			} ) ) ) );
 
 			const uploadRes = await connectRequest< any >( {
-				endpoint   : `mobile-labs/${ id }/files`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }/files`,
 				method     : METHOD.POST,
 				isInternal : false,
 				body       : uploadFormData,
@@ -146,7 +147,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		// 4. Update info for all remaining/new files
 		if ( finalFilesInfo.length > 0 ) {
 			const updateInfoRes = await connectRequest< any >( {
-				endpoint   : `mobile-labs/${ id }/files/info`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }/files/info`,
 				method     : METHOD.PATCH,
 				isInternal : false,
 				body       : { filesInfo : finalFilesInfo },
@@ -164,7 +165,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		// 5. Update products relations
 		if ( clientProducts.length > 0 ) {
 			const updateProductsRes = await connectRequest< any >( {
-				endpoint   : `mobile-labs/${ id }/products`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }/products`,
 				method     : METHOD.POST,
 				isInternal : false,
 				body       : { products : clientProducts },
@@ -182,7 +183,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		// 6. Update kits relations
 		if ( clientKits.length > 0 ) {
 			const updateKitsRes = await connectRequest< any >( {
-				endpoint   : `mobile-labs/${ id }/kits`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }/kits`,
 				method     : METHOD.POST,
 				isInternal : false,
 				body       : { kits : clientKits },
@@ -213,7 +214,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		}
 
 		const updateLabRes = await connectRequest< GlobalSearchMobileLab >( {
-			endpoint   : `mobile-labs/${ id }`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }`,
 			method     : METHOD.PATCH,
 			isInternal : false,
 			body       : basicData,
@@ -243,7 +244,7 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 		}
 
 		const response = await connectRequest< any >( {
-			endpoint   : `mobile-labs/${ id }`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }`,
 			method     : METHOD.DELETE,
 			isInternal : false,
 			headers    : {

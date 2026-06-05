@@ -4,13 +4,14 @@ import connectRequest, { isApiError } from '$lib/services/fetch.service';
 import { ENV }                       from '$lib/utils/env.server';
 import type { LabCategory }          from '$lib/types/category';
 import { METHOD }                    from '$lib/services/http-codes';
+import { EXTERNAL_ENDPOINTS }        from '$lib/utils/endpoints';
 
 // ─── POST Handler: Create a lab category ──────────────────────────────────────
 export const POST: RequestHandler = async ( { request, fetch } ) => {
 	try {
 		const body     = await request.json();
 		const response = await connectRequest< LabCategory >( {
-			endpoint   : 'lab-categories',
+			endpoint   : EXTERNAL_ENDPOINTS.LABS.CATEGORIES.GET_ALL,
 			method     : METHOD.POST,
 			isInternal : false,
 			body       : body,
@@ -41,7 +42,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		const body     = await request.json();
 		const response = await connectRequest< LabCategory >( {
-			endpoint   : `lab-categories/${ id }`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.CATEGORIES.GET_ALL }/${ id }`,
 			method     : METHOD.PUT,
 			isInternal : false,
 			body       : body,
@@ -71,7 +72,7 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 		}
 
 		const response = await connectRequest< any >( {
-			endpoint   : `lab-categories/${ id }`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.CATEGORIES.GET_ALL }/${ id }`,
 			method     : METHOD.DELETE,
 			isInternal : false,
 			headers    : {

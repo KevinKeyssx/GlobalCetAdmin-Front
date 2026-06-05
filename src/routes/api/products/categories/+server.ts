@@ -4,12 +4,13 @@ import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 import { ENV }                          from '$lib/utils/env.server';
 import type { Category, SubCategory }   from '$lib/types/category';
 import { METHOD }                       from '$lib/services/http-codes';
+import { EXTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 
 // ─── POST Handler: Create a category or subcategory ───────────────────────────
 export const POST: RequestHandler = async ( { request, url, fetch } ) => {
 	try {
 		const type     = url.searchParams.get( 'type' ) || 'category';
-		const path     = type === 'subcategory' ? 'subcategories' : 'categories';
+		const path     = type === 'subcategory' ? EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.SUBCATEGORIES : EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL;
 		const body     = await request.json();
 		const response = await connectRequest< Category | SubCategory >( {
 			endpoint   : path,
@@ -41,7 +42,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		}
 
 		const type     = url.searchParams.get( 'type' ) || 'category';
-		const path     = type === 'subcategory' ? 'subcategories' : 'categories';
+		const path     = type === 'subcategory' ? EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.SUBCATEGORIES : EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL;
 		const body     = await request.json();
 		const response = await connectRequest< Category | SubCategory >( {
 			endpoint   : `${ path }/${ id }`,
@@ -73,7 +74,7 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 		}
 
 		const type     = url.searchParams.get( 'type' ) || 'category';
-		const path     = type === 'subcategory' ? 'subcategories' : 'categories';
+		const path     = type === 'subcategory' ? EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.SUBCATEGORIES : EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL;
 		const response = await connectRequest< any >( {
 			endpoint   : `${ path }/${ id }`,
 			method     : METHOD.DELETE,

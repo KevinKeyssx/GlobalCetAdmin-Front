@@ -4,6 +4,7 @@ import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 import { ENV }                          from '$lib/utils/env.server';
 import type { GlobalSearchProduct }     from '$lib/types/search';
 import { METHOD }                       from '$lib/services/http-codes';
+import { EXTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 
 // ─── POST Handler: Create a new product ───────────────────────────────────────
 export const POST: RequestHandler = async ( { request, fetch } ) => {
@@ -16,7 +17,7 @@ export const POST: RequestHandler = async ( { request, fetch } ) => {
 		}
 
 		const response = await connectRequest< GlobalSearchProduct >( {
-			endpoint   : 'products',
+			endpoint   : EXTERNAL_ENDPOINTS.PRODUCTS.BASE,
 			method     : METHOD.POST,
 			isInternal : false,
 			body       : backendData,
@@ -52,7 +53,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		// 1. Fetch existing product with images to compare
 		const existingProduct = await connectRequest< GlobalSearchProduct >( {
-			endpoint   : `products/${ id }?includeImages=true`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }?includeImages=true`,
 			isInternal : false,
 			headers    : {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
@@ -75,7 +76,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		if ( deletedImageIds.length > 0 ) {
 			const deleteRes = await connectRequest< any >( {
-				endpoint   : `products/${ id }/images/delete`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }/images/delete`,
 				method     : METHOD.POST,
 				isInternal : false,
 				body       : { imageIds : deletedImageIds },
@@ -108,7 +109,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			} ) ) ) );
 
 			const uploadRes = await connectRequest< any >( {
-				endpoint   : `products/${ id }/images`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }/images`,
 				method     : METHOD.POST,
 				isInternal : false,
 				body       : uploadFormData,
@@ -142,7 +143,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		// 4. Update info for all remaining/new images
 		if ( finalImagesInfo.length > 0 ) {
 			const updateInfoRes = await connectRequest< any >( {
-				endpoint   : `products/${ id }/images/info`,
+				endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }/images/info`,
 				method     : METHOD.PATCH,
 				isInternal : false,
 				body       : { imagesInfo : finalImagesInfo },
@@ -175,7 +176,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		}
 
 		const updateProductRes = await connectRequest< GlobalSearchProduct >( {
-			endpoint   : `products/${ id }`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }`,
 			method     : METHOD.PATCH,
 			isInternal : false,
 			body       : basicData,
@@ -205,7 +206,7 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 		}
 
 		const response = await connectRequest< any >( {
-			endpoint   : `products/${ id }`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }`,
 			method     : METHOD.DELETE,
 			isInternal : false,
 			headers    : {
