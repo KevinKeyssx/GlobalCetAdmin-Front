@@ -11,19 +11,9 @@
 	import DashboardModal                   from '../../components/DashboardModal.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
 
+	import type { KitInitial, KitProduct }  from '$lib/types/kit';
+
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
-	interface ProductRelation {
-		id   : string;
-		name : string;
-		sku  : string;
-	}
-
-	interface KitProduct {
-		productId : string;
-		quantity  : number;
-		product?  : ProductRelation;
-	}
-
 	interface KitCategory {
 		id   : string;
 		name : string;
@@ -44,16 +34,6 @@
 		catalogProducts : CatalogProduct[];
 		onSave          : () => void;
 		onCancel        : () => void;
-	}
-
-	interface KitInitial {
-		name		: string;
-		sku			: string;
-		description	: string;
-		categoryId	: string;
-		active		: boolean;
-		products	: KitProduct[];
-		files?		: Array<{ id : string; url : string; alt : string; isMain : boolean; order : number }>;
 	}
 
 	let {

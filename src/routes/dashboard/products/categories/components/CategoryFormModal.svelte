@@ -65,7 +65,8 @@
 		}
 
 		$globalLoadingStore = true;
-		try {
+
+        try {
 			const isSub    = activeTab === 'subcategories';
 			const path     = isSub ? 'products/categories?type=subcategory' : 'products/categories';
 			const endpoint = isEditing ? `${ path }&id=${ editingId }` : path;
@@ -80,7 +81,7 @@
 				method,
 				body       : payload,
 				isInternal : true,
-			} );
+			});
 
 			if ( isApiError( response ) ) {
 				toast.error( `Error: ${ response.message }` );

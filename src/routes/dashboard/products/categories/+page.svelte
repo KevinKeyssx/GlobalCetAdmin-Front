@@ -137,21 +137,27 @@
 </svelte:head>
 
 <main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
-	<div class="mx-auto max-w-6xl space-y-8">
+	<div class="mx-auto max-w-6xl space-y-4 sm:space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
-		<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-6">
+		<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-3 sm:pb-6">
 			<div class="space-y-1">
 				<div class="flex items-center gap-2 text-text-muted">
 					<a href="/dashboard" class="hover:text-brand">Dashboard</a>
-					<span>/</span>
-					<span>Productos</span>
-					<span>/</span>
-					<span class="text-brand font-bold">Categorías & Subcategorías</span>
+
+                    <span>/</span>
+
+                    <span>Productos</span>
+
+                    <span>/</span>
+
+                    <span class="text-brand font-bold">Categorías & Subcategorías</span>
 				</div>
-				<h1 class="font-display text-3xl font-black text-text uppercase tracking-wide">
+
+                <h1 class="font-display text-3xl font-black text-text uppercase tracking-wide">
 					Categorías de Productos
 				</h1>
-				<p class="text-text-muted">
+
+                <p class="text-text-muted">
 					Administre las categorías analíticas y subcategorías estructuradas de sus productos científicos.
 				</p>
 			</div>
@@ -164,23 +170,24 @@
 					<line x1="12" y1="5" x2="12" y2="19" />
 					<line x1="5" y1="12" x2="19" y2="12" />
 				</svg>
-				Agregar { activeTab === 'categories' ? 'Categoría' : 'Subcategoría' }
+
+                Agregar { activeTab === 'categories' ? 'Categoría' : 'Subcategoría' }
 			</button>
 		</div>
 
 		<!-- ─── Tab Switcher & Search Bar ───────────────────────────────────────── -->
-		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 text-xs">
 			<!-- Tabs -->
-			<div class="flex rounded-xl bg-input p-1 border border-brand/10 max-w-xs">
+			<div class="grid sm:flex rounded-xl bg-input p-1 border border-brand/10 max-w-xs gap-1">
 				<button
 					onclick={ ( ) => { activeTab = 'categories'; } }
-					class="flex-1 rounded-lg px-4 py-2 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'categories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
+					class="flex-1 rounded-lg px-4 py-1 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'categories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
 				>
 					Categorías
 				</button>
 				<button
 					onclick={ ( ) => { activeTab = 'subcategories'; } }
-					class="flex-1 rounded-lg px-4 py-2 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'subcategories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
+					class="flex-1 rounded-lg px-4 py-1 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'subcategories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
 				>
 					Subcategorías
 				</button>

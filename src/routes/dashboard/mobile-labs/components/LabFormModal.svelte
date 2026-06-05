@@ -1,36 +1,17 @@
 <script lang="ts">
-	import toast from 'svelte-french-toast';
+	import toast                            from 'svelte-french-toast';
+	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 
 	import FileUploader, { type UploadedFileItem } from '$lib/components/shared/FileUploader.svelte';
 	import { globalLoadingStore }                   from '$lib/state/loading';
+	import connectRequest, { isApiError }           from '$lib/services/fetch.service';
+	import { METHOD }                               from '$lib/services/http-codes';
 	import DashboardModal                           from '../../components/DashboardModal.svelte';
 	import Select                                   from '$lib/components/shared/Select.svelte';
 
+	import type { LabInitial, LabProduct, LabKit } from '$lib/types/lab';
+
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
-	interface ProductRelation {
-		id   : string;
-		name : string;
-		sku  : string;
-	}
-
-	interface KitRelation {
-		id   : string;
-		name : string;
-		sku  : string;
-	}
-
-	interface LabProduct {
-		productId : string;
-		quantity  : number;
-		product?  : ProductRelation;
-	}
-
-	interface LabKit {
-		kitId    : string;
-		quantity : number;
-		kit?     : KitRelation;
-	}
-
 	interface LabCategory {
 		id   : string;
 		name : string;
@@ -58,17 +39,6 @@
 		catalogKits     : CatalogKit[];
 		onSave          : () => void;
 		onCancel        : () => void;
-	}
-
-	interface LabInitial {
-		name        : string;
-		sku         : string;
-		description : string;
-		dimensions  : string;
-		categoryId  : string;
-		active      : boolean;
-		products    : LabProduct[];
-		kits        : LabKit[];
 	}
 
 	let {
@@ -139,7 +109,7 @@
 	} );
 
 	// ─── Sync data on open ────────────────────────────────────────────────────────
-	$effect( () => {
+	$effect( ( ) => {
 		if ( show && initialData ) {
 			formName          = initialData.name;
 			formSku           = initialData.sku;
@@ -154,7 +124,17 @@
 			formKits          = initialData.kits || [];
 			selectedAddProd   = catalogProducts[ 0 ]?.id || '';
 			selectedAddKit    = catalogKits[ 0 ]?.id || '';
-			uploaderFiles     = [];
+			if ( isEditing && initialData.files ) {
+				uploaderFiles = initialData.files.map( ( f ) => ( {
+					id		: f.id,
+					preview	: f.url,
+					alt		: f.alt || '',
+					isMain	: f.isMain,
+					order	: f.order,
+				} ) );
+			} else {
+				uploaderFiles = [];
+			}
 			uploaderFilesInfo = '';
 		} else if ( show && !initialData ) {
 			formName          = '';
@@ -236,8 +216,46 @@
 		formKits = formKits.filter( ( k ) => k.kitId !== id );
 	}
 
+	// ─── TanStack Query client & mutation ─────────────────────────────────────────
+	const queryClient = useQueryClient();
+
+	const labMutation = createMutation( () => ( {
+		mutationFn : async ( { isEditing, editingId, formData } : { isEditing : boolean; editingId : string; formData : FormData } ) : Promise< any > => {
+			const endpoint = isEditing ? `labs?id=${ editingId }` : 'labs';
+			const method   = isEditing ? METHOD.PUT : METHOD.POST;
+
+			const response = await connectRequest< any >( {
+				endpoint	: endpoint,
+				method		: method,
+				body		: formData,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( response.message );
+			}
+
+			return response;
+		},
+		onSuccess : () => {
+			toast.success( isEditing ? 'Laboratorio editado con éxito.' : 'Laboratorio creado con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-labs' ] } );
+			onSave();
+		},
+		onError : ( error : any ) => {
+			toast.error( error.message || 'Error al guardar.' );
+		},
+	} ) );
+
+	$effect( () => {
+		$globalLoadingStore = labMutation.isPending;
+		return () => {
+			$globalLoadingStore = false;
+		};
+	} );
+
 	// ─── Submit Handler ───────────────────────────────────────────────────────────
-	async function handleSubmit( e : Event ) : Promise<void> {
+	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
 		if ( !formName.trim() || !formSku.trim() ) {
@@ -245,58 +263,37 @@
 			return;
 		}
 
-		$globalLoadingStore = true;
-		try {
-			const formData = new FormData();
-			formData.append( 'name', formName );
-			formData.append( 'sku', formSku );
-			formData.append( 'description', formDescription );
-			formData.append( 'dimensions', formDimensions );
-			formData.append( 'categoryId', formCategoryId );
-			formData.append( 'active', String( formActive ) );
+		const formData = new FormData();
+		formData.append( 'name', formName );
+		formData.append( 'sku', formSku );
+		formData.append( 'description', formDescription );
+		formData.append( 'dimensions', formDimensions );
+		formData.append( 'categoryId', formCategoryId );
+		formData.append( 'active', String( formActive ) );
 
-			// Format products relation info
-			const mappedRelations = formProducts.map( ( p ) => ( {
-				productId : p.productId,
-				quantity  : Number( p.quantity ) || 1,
-			} ) );
-			formData.append( 'products', JSON.stringify( mappedRelations ) );
+		// Format products relation info
+		const mappedRelations = formProducts.map( ( p ) => ( {
+			productId : p.productId,
+			quantity  : Number( p.quantity ) || 1,
+		} ) );
+		formData.append( 'products', JSON.stringify( mappedRelations ) );
 
-			// Format kits relation info
-			const mappedKits = formKits.map( ( k ) => ( {
-				kitId    : k.kitId,
-				quantity : Number( k.quantity ) || 1,
-			} ) );
-			formData.append( 'kits', JSON.stringify( mappedKits ) );
+		// Format kits relation info
+		const mappedKits = formKits.map( ( k ) => ( {
+			kitId    : k.kitId,
+			quantity : Number( k.quantity ) || 1,
+		} ) );
+		formData.append( 'kits', JSON.stringify( mappedKits ) );
 
-			// Images
-			formData.append( 'filesInfo', uploaderFilesInfo || '[]' );
-			uploaderFiles.forEach( ( u ) => {
+		// Images
+		formData.append( 'filesInfo', uploaderFilesInfo || '[]' );
+		uploaderFiles.forEach( ( u ) => {
+			if ( u.file ) {
 				formData.append( 'files', u.file );
-			} );
-
-			const endpoint = isEditing ? `labs?id=${ editingId }` : 'labs';
-			const method   = isEditing ? 'PUT' : 'POST';
-
-			const response = await fetch( `/api/${ endpoint }`, {
-				method,
-				body : formData,
-			} );
-
-			if ( !response.ok ) {
-				const err = await response.json().catch( () => ( { error : 'Error al guardar.' } ) );
-				toast.error( `Error: ${ err.error || err.message }` );
-				return;
 			}
+		} );
 
-			toast.success( isEditing ? 'Laboratorio editado con éxito.' : 'Laboratorio creado con éxito.' );
-
-			onSave();
-		} catch ( err ) {
-			toast.error( 'Error de red al enviar el formulario.' );
-		} finally {
-			$globalLoadingStore = false;
-		}
+		labMutation.mutate( { isEditing, editingId, formData } );
 	}
 </script>
 
@@ -324,7 +321,8 @@
 				<!-- SKU -->
 				<div class="space-y-1.5">
 					<label for="lab-sku">SKU Identificador</label>
-					<input
+
+                    <input
 						id="lab-sku"
 						type="text"
 						bind:value={ formSku }
@@ -338,7 +336,8 @@
 				<!-- Dimensions -->
 				<div class="space-y-1.5">
 					<label for="dim-length">Dimensiones (Largo x Ancho x Alto en metros)</label>
-					<div class="grid grid-cols-3 gap-2">
+
+                    <div class="grid grid-cols-3 gap-2">
 						<input
 							id="dim-length"
 							type="number"
@@ -348,7 +347,8 @@
 							placeholder="Largo"
 							class="w-full rounded-xl border border-brand/15 bg-input px-3 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 						/>
-						<input
+
+                        <input
 							id="dim-width"
 							type="number"
 							step="0.1"
@@ -357,7 +357,8 @@
 							placeholder="Ancho"
 							class="w-full rounded-xl border border-brand/15 bg-input px-3 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 						/>
-						<input
+
+                        <input
 							id="dim-height"
 							type="number"
 							step="0.1"
@@ -372,7 +373,8 @@
 				<!-- Category Select -->
 				<div class="space-y-1.5">
 					<label for="lab-cat">Categoría Científica</label>
-					<Select
+
+                    <Select
 						options={ categories }
 						bind:value={ formCategoryId }
 						multiple={ false }
@@ -384,7 +386,8 @@
 			<!-- Description -->
 			<div class="space-y-1.5">
 				<label for="lab-desc">Descripción Completa del Laboratorio</label>
-				<textarea
+
+                <textarea
 					id="lab-desc"
 					bind:value={ formDescription }
 					placeholder="Describa la infraestructura técnica, conexiones eléctricas, suministro de agua, etc..."
@@ -406,7 +409,8 @@
 							multiple={ false }
 							placeholder="Seleccionar producto..."
 						/>
-						<button
+
+                        <button
 							type="button"
 							onclick={ addProductToForm }
 							class="rounded-xl border border-brand bg-brand/10 hover:bg-brand hover:text-surface-dark px-3 py-2 transition-colors font-bold uppercase text-[10px]"
@@ -421,14 +425,16 @@
 								<div class="space-y-0.5 max-w-[60%]">
 									<span class="font-bold text-text truncate block">{ item.product?.name || 'Insumo' }</span>
 								</div>
-								<div class="flex items-center gap-2">
+
+                                <div class="flex items-center gap-2">
 									<input
 										type="number"
 										min="1"
 										bind:value={ item.quantity }
 										class="w-10 text-center rounded-lg border border-brand/15 bg-card py-0.5 text-text font-bold"
 									/>
-									<button
+
+                                    <button
 										type="button"
 										onclick={ () => removeProductFromForm( item.productId ) }
 										class="text-red-400 font-bold"
@@ -454,7 +460,8 @@
 							multiple={ false }
 							placeholder="Seleccionar kit..."
 						/>
-						<button
+
+                        <button
 							type="button"
 							onclick={ addKitToForm }
 							class="rounded-xl border border-brand bg-brand/10 hover:bg-brand hover:text-surface-dark px-3 py-2 transition-colors font-bold uppercase text-[10px]"
@@ -469,14 +476,16 @@
 								<div class="space-y-0.5 max-w-[60%]">
 									<span class="font-bold text-text truncate block">{ item.kit?.name || 'Kit' }</span>
 								</div>
-								<div class="flex items-center gap-2">
+
+                                <div class="flex items-center gap-2">
 									<input
 										type="number"
 										min="1"
 										bind:value={ item.quantity }
 										class="w-10 text-center rounded-lg border border-brand/15 bg-card py-0.5 text-text font-bold"
 									/>
-									<button
+
+                                    <button
 										type="button"
 										onclick={ () => removeKitFromForm( item.kitId ) }
 										class="text-red-400 font-bold"
@@ -495,7 +504,8 @@
 			<!-- Image Dropzone Area -->
 			<div class="space-y-1.5 border-t border-brand/5 pt-3">
 				<span class="text-[10px] uppercase font-black tracking-wider text-brand">Imágenes del Laboratorio</span>
-				<FileUploader
+
+                <FileUploader
 					bind:files={ uploaderFiles }
 					bind:filesInfo={ uploaderFilesInfo }
 				/>
@@ -509,7 +519,8 @@
 					bind:checked={ formActive }
 					class="accent-brand h-4 w-4 cursor-pointer"
 				/>
-				<label for="lab-active" class="cursor-pointer select-none">Habilitar en Catálogo Público</label>
+
+                <label for="lab-active" class="cursor-pointer select-none">Habilitar en Catálogo Público</label>
 			</div>
 
 			<!-- Actions -->
@@ -517,15 +528,18 @@
 				<button
 					type="button"
 					onclick={ onCancel }
-					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors"
+					disabled={ labMutation.isPending }
+					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					Cancelar
 				</button>
-				<button
+
+                <button
 					type="submit"
-					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors"
+					disabled={ labMutation.isPending }
+					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					Guardar Laboratorio
+					{ labMutation.isPending ? 'Guardando...' : 'Guardar Laboratorio' }
 				</button>
 			</div>
 		</form>

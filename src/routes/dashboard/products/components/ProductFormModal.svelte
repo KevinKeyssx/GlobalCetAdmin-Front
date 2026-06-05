@@ -12,6 +12,8 @@
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import KeyValueEditor                   from '$lib/components/shared/KeyValueEditor.svelte';
 
+	import type { ProductInitial }          from '$lib/types/product';
+
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductFormProps {
 		show        : boolean;
@@ -33,17 +35,6 @@
 		id            : string;
 		name          : string;
 		subCategories : Array<{ id : string; name : string }>;
-	}
-
-	interface ProductInitial {
-		name			: string;
-		sku				: string;
-		description		: string;
-		materialId		: string;
-		subcategoryId	: string;
-		active			: boolean;
-		technicalSpecs	: string;
-		files?			: Array<{ id : string; url : string; alt : string; isMain : boolean; order : number }>;
 	}
 
 	let {
