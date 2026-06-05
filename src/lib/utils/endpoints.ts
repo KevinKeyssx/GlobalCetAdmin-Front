@@ -36,7 +36,8 @@ export const EXTERNAL_ENDPOINTS = {
 			GET_ALL : '/materials',
 		},
 		CATEGORIES : {
-			GET_ALL : '/categories',
+			GET_ALL       : '/categories',
+			SUBCATEGORIES : '/subcategories',
 		},
 	},
 	GLOBAL_SEARCH : {
