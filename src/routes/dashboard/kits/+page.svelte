@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { onMount }     from 'svelte';
-	import toast            from 'svelte-french-toast';
+	import toast                            from 'svelte-french-toast';
+	import { createQuery, useQueryClient }  from '@tanstack/svelte-query';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import KitFormModal                     from './components/KitFormModal.svelte';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
@@ -44,17 +45,64 @@
 		sku  : string;
 	}
 
+	// ─── TanStack Query client & queries ──────────────────────────────────────────
+	const queryClient = useQueryClient();
+
+	const kitsQuery = createQuery( () => ( {
+		queryKey	: [ 'admin-kits' ],
+		queryFn		: async () : Promise< Kit[] > => {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ INTERNAL_ENDPOINTS.KITS.FILTERS }?size=50`,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( 'Error al cargar kits.' );
+			}
+			return response.data || [];
+		},
+	} ) );
+
+	const catalogProductsQuery = createQuery( () => ( {
+		queryKey	: [ 'catalog-products' ],
+		queryFn		: async () : Promise< CatalogProduct[] > => {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=100`,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( 'Error al cargar productos del catálogo.' );
+			}
+			return response.data || [];
+		},
+	} ) );
+
+	const categoriesQuery = createQuery( () => ( {
+		queryKey	: [ 'kit-categories' ],
+		queryFn		: async () : Promise< KitCategory[] > => {
+			const response = await connectRequest< KitCategory[] >( {
+				endpoint	: 'kits/categories/get-all',
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( 'Error al cargar categorías.' );
+			}
+			return response;
+		},
+	} ) );
+
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	let kits            = $state< Kit[] >( [] );
+	const kits            = $derived( kitsQuery.data            || [] );
+	const catalogProducts = $derived( catalogProductsQuery.data || [] );
+	const categories      = $derived( categoriesQuery.data      || [] );
+
 	let search          = $state( '' );
 	let showModal       = $state( false );
 	let isEditing       = $state( false );
 	let editingId       = $state( '' );
 	let editingKit      = $state< any >( null );
-
-	// Catalogs
-	let categories      = $state< KitCategory[] >( [] );
-	let catalogProducts = $state< CatalogProduct[] >( [] );
 
 	// ─── Filtered View ────────────────────────────────────────────────────────────
 	const filteredKits = $derived(
@@ -65,38 +113,12 @@
 		)
 	);
 
-	// ─── Load Data ────────────────────────────────────────────────────────────────
-	async function loadAllData() : Promise<void> {
-		$globalLoadingStore = true;
-		try {
-			// Load kits and catalog products
-			const globalResponse = await connectRequest< any >( {
-				endpoint   : 'global-search?limitPerEntity=50',
-				isInternal : true,
-			} );
-
-			if ( isApiError( globalResponse ) ) {
-				toast.error( 'Error al cargar kits del catálogo.' );
-				return;
-			}
-			kits            = globalResponse.kits || [];
-			catalogProducts = globalResponse.products || [];
-
-			// Load kit categories
-			const catResponse = await connectRequest< KitCategory[] >( {
-				endpoint   : 'kits/categories/get-all',
-				isInternal : true,
-			} );
-			categories = isApiError( catResponse ) ? [] : catResponse;
-		} catch ( e ) {
-			toast.error( 'Error de conexión de red con el backend.' );
-		} finally {
+	// Sincronizar cargando global con queries
+	$effect( () => {
+		$globalLoadingStore = kitsQuery.isFetching || catalogProductsQuery.isFetching || categoriesQuery.isFetching;
+		return () => {
 			$globalLoadingStore = false;
-		}
-	}
-
-	onMount( () => {
-		loadAllData();
+		};
 	} );
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
@@ -111,12 +133,12 @@
 		isEditing  = true;
 		editingId  = item.id;
 		editingKit = {
-			name        : item.name,
-			sku         : item.sku,
-			description : item.description,
-			categoryId  : item.category?.id || '',
-			active      : item.active,
-			products    : ( item.products || [] ).map( ( p ) => ( {
+			name		: item.name,
+			sku			: item.sku,
+			description	: item.description,
+			categoryId	: item.category?.id || '',
+			active		: item.active,
+			products	: ( item.products || [] ).map( ( p ) => ( {
 				productId : p.productId,
 				quantity  : p.quantity,
 				product   : p.product ? {
@@ -129,6 +151,7 @@
 					sku  : 'PROD',
 				},
 			} ) ),
+			files		: ( item.files || [] ).filter( ( f ) => f.id !== 'placeholder' ),
 		};
 		showModal  = true;
 	}
@@ -139,9 +162,9 @@
 		$globalLoadingStore = true;
 		try {
 			const response = await connectRequest< any >( {
-				endpoint   : `kits?id=${ id }`,
-				method     : METHOD.DELETE,
-				isInternal : true,
+				endpoint	: `kits?id=${ id }`,
+				method		: METHOD.DELETE,
+				isInternal	: true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -150,7 +173,7 @@
 			}
 
 			toast.success( 'Kit eliminado con éxito.' );
-			loadAllData();
+			queryClient.invalidateQueries( { queryKey : [ 'admin-kits' ] } );
 		} catch ( err ) {
 			toast.error( 'Error de red al intentar eliminar.' );
 		} finally {
@@ -291,7 +314,6 @@
 				{ catalogProducts }
 				onSave={ () => {
 					showModal = false;
-					loadAllData();
 				} }
 				onCancel={ () => {
 					showModal = false;

@@ -1,13 +1,16 @@
 <script lang="ts">
-	import toast from 'svelte-french-toast';
+	import toast                            from 'svelte-french-toast';
+	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 
 	import FileUploader, {
-        type UploadedFileItem
-    }                               from '$lib/components/shared/FileUploader.svelte';
-	import { globalLoadingStore }   from '$lib/state/loading';
-	import DashboardModal           from '../../components/DashboardModal.svelte';
-	import Select                   from '$lib/components/shared/Select.svelte';
-	import KeyValueEditor           from '$lib/components/shared/KeyValueEditor.svelte';
+		type UploadedFileItem
+	}                                       from '$lib/components/shared/FileUploader.svelte';
+	import { globalLoadingStore }           from '$lib/state/loading';
+	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { METHOD }                       from '$lib/services/http-codes';
+	import DashboardModal                   from '../../components/DashboardModal.svelte';
+	import Select                           from '$lib/components/shared/Select.svelte';
+	import KeyValueEditor                   from '$lib/components/shared/KeyValueEditor.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductFormProps {
@@ -33,13 +36,14 @@
 	}
 
 	interface ProductInitial {
-		name          : string;
-		sku           : string;
-		description   : string;
-		materialId    : string;
-		subcategoryId : string;
-		active        : boolean;
-		technicalSpecs: string;
+		name			: string;
+		sku				: string;
+		description		: string;
+		materialId		: string;
+		subcategoryId	: string;
+		active			: boolean;
+		technicalSpecs	: string;
+		files?			: Array<{ id : string; url : string; alt : string; isMain : boolean; order : number }>;
 	}
 
 	let {
@@ -67,31 +71,79 @@
 	let uploaderFilesInfo = $state( '' );
 
 	const mappedSubcategories = $derived.by( () => {
-		return categories.flatMap(( cat ) => {
-			return ( cat.subCategories || [] ).map(( sub ) => ( {
+		return categories.flatMap( ( cat ) => {
+			return ( cat.subCategories || [] ).map( ( sub ) => ( {
 				id   : sub.id,
 				name : `${ cat.name }:${ sub.name }`,
-			}));
-		});
-	});
+			} ) );
+		} );
+	} );
 
 	// ─── Sync data on open ────────────────────────────────────────────────────────
-	$effect(() => {
-        if ( show ) {
-            formName          = initialData?.name           || '';
+	$effect( () => {
+		if ( show ) {
+			formName          = initialData?.name           || '';
 			formSku           = initialData?.sku            || '';
 			formDescription   = initialData?.description    || '';
 			formMaterialId    = initialData?.materialId     || ( materials[ 0 ]?.id || '' );
 			formSubcategoryId = initialData?.subcategoryId  || '';
 			formActive        = initialData?.active         || true;
 			formSpecs         = initialData?.technicalSpecs || '{}';
-			uploaderFiles     = [];
+			if ( isEditing && initialData?.files ) {
+				uploaderFiles = initialData.files.map( ( f ) => ( {
+					id		: f.id,
+					preview	: f.url,
+					alt		: f.alt || '',
+					isMain	: f.isMain,
+					order	: f.order,
+				} ) );
+			} else {
+				uploaderFiles = [];
+			}
 			uploaderFilesInfo = '';
-        }
+		}
+	} );
+
+	// ─── TanStack Query client & mutation ─────────────────────────────────────────
+	const queryClient = useQueryClient();
+
+	const productMutation = createMutation( () => ( {
+		mutationFn : async ( { isEditing, editingId, formData } : { isEditing : boolean; editingId : string; formData : FormData } ) : Promise< any > => {
+			const endpoint = isEditing ? `products?id=${ editingId }` : 'products';
+			const method   = isEditing ? METHOD.PUT : METHOD.POST;
+
+			const response = await connectRequest< any >( {
+				endpoint	: endpoint,
+				method		: method,
+				body		: formData,
+				isInternal	: true,
+			});
+
+			if ( isApiError( response )) {
+				throw new Error( response.message );
+			}
+
+			return response;
+		},
+		onSuccess : () => {
+			toast.success( isEditing ? 'Producto editado con éxito.' : 'Producto creado con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-products' ] } );
+			onSave();
+		},
+		onError : ( error : any ) => {
+			toast.error( error.message || 'Error al guardar.' );
+		},
+	}));
+
+	$effect( () => {
+		$globalLoadingStore = productMutation.isPending;
+		return () => {
+			$globalLoadingStore = false;
+		};
 	});
 
 	// ─── Submit Handler ───────────────────────────────────────────────────────────
-	async function handleSubmit( e : Event ) : Promise<void> {
+	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
 		if ( !formName.trim() || !formSku.trim() ) {
@@ -99,51 +151,28 @@
 			return;
 		}
 
-		$globalLoadingStore = true;
+		const formData = new FormData();
+		formData.append( 'name', formName );
+		formData.append( 'sku', formSku );
+		formData.append( 'description', formDescription );
+		formData.append( 'materialId', formMaterialId );
+		formData.append( 'subcategoryId', formSubcategoryId );
+		formData.append( 'active', String( formActive ) );
+		formData.append( 'includeImages', 'true' );
+		formData.append( 'includeKits', 'false' );
+		formData.append( 'includeMobileLabs', 'false' );
+		formData.append( 'technical_specs', formSpecs );
 
-        try {
-			const formData = new FormData();
+		// Sync file items
+		formData.append( 'imagesInfo', uploaderFilesInfo || '[]' );
 
-            formData.append( 'name', formName );
-			formData.append( 'sku', formSku );
-			formData.append( 'description', formDescription );
-			formData.append( 'materialId', formMaterialId );
-			formData.append( 'subcategoryId', formSubcategoryId );
-			formData.append( 'active', String( formActive ) );
-			formData.append( 'includeImages', 'true' );
-			formData.append( 'includeKits', 'false' );
-			formData.append( 'includeMobileLabs', 'false' );
-			formData.append( 'technical_specs', formSpecs );
-
-			// Sync file items
-			formData.append( 'imagesInfo', uploaderFilesInfo || '[]' );
-
-			uploaderFiles.forEach( ( u ) => {
+		uploaderFiles.forEach( ( u ) => {
+			if ( u.file ) {
 				formData.append( 'files', u.file );
-			});
-
-			const endpoint = isEditing ? `products?id=${ editingId }` : 'products';
-			const method   = isEditing ? 'PUT' : 'POST';
-
-			const response = await fetch( `/api/${ endpoint }`, {
-				method,
-				body : formData,
-			});
-
-			if ( !response.ok ) {
-				const err = await response.json().catch( () => ( { error : 'Error al guardar.' } ) );
-				toast.error( `Error: ${ err.error || err.message }` );
-				return;
 			}
+		});
 
-			toast.success( isEditing ? 'Producto editado con éxito.' : 'Producto creado con éxito.' );
-
-			onSave();
-		} catch ( err ) {
-			toast.error( 'Error de red al enviar el formulario.' );
-		} finally {
-			$globalLoadingStore = false;
-		}
+		productMutation.mutate( { isEditing, editingId, formData } );
 	}
 </script>
 
@@ -233,7 +262,7 @@
 
                 <!-- Custom Shared File Uploader (Dropzone area) -->
                 <div class="space-y-1.5">
-                    <span class="text-[10px] uppercase font-black tracking-wider text-brand">Carga de Imágenes Catálogo</span>
+                    <span class="text-sm text-brand">Carga de Imágenes Catálogo</span>
                     <FileUploader
                         bind:files={ uploaderFiles }
                         bind:filesInfo={ uploaderFilesInfo }
@@ -257,15 +286,17 @@
 				<button
 					type="button"
 					onclick={ onCancel }
-					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors"
+					disabled={ productMutation.isPending }
+					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					Cancelar
 				</button>
 				<button
 					type="submit"
-					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors"
+					disabled={ productMutation.isPending }
+					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					Guardar Producto
+					{ productMutation.isPending ? 'Guardando...' : 'Guardar Producto' }
 				</button>
 			</div>
 		</form>

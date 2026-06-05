@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
-    import toast    from 'svelte-french-toast';
-	import { Plus } from '@lucide/svelte';
+	import toast                            from 'svelte-french-toast';
+	import { Plus }                         from '@lucide/svelte';
+	import { createQuery, useQueryClient }  from '@tanstack/svelte-query';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import ProductFormModal                 from './components/ProductFormModal.svelte';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
@@ -22,7 +22,7 @@
 		subcategory : {
 			id       : string;
 			name     : string;
-			category : { id : string; name : string };
+			// category : { id : string; name : string };
 		};
 		material    : {
 			id   : string;
@@ -42,17 +42,62 @@
 		subCategories : Array<{ id : string; name : string }>;
 	}
 
+	// ─── TanStack Query client & queries ──────────────────────────────────────────
+	const queryClient = useQueryClient();
+
+	const productsQuery = createQuery( () => ( {
+		queryKey	: [ 'admin-products' ],
+		queryFn		: async () : Promise< Product[] > => {
+			const prodResponse = await connectRequest< any >( {
+				endpoint	: `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=50`,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( prodResponse ) ) {
+				throw new Error( 'Error al cargar productos.' );
+			}
+			return prodResponse.data || [];
+		},
+	} ) );
+
+	const materialsQuery = createQuery( () => ( {
+		queryKey	: [ 'materials' ],
+		queryFn		: async () : Promise< MaterialInfo[] > => {
+			const matResponse = await connectRequest< MaterialInfo[] >( {
+				endpoint	: INTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.GET_ALL,
+				isInternal	: true,
+			} );
+			if ( isApiError( matResponse ) ) {
+				throw new Error( 'Error al cargar materiales.' );
+			}
+			return matResponse;
+		},
+	} ) );
+
+	const categoriesQuery = createQuery( () => ( {
+		queryKey	: [ 'categories' ],
+		queryFn		: async () : Promise< CategoryInfo[] > => {
+			const catResponse = await connectRequest< CategoryInfo[] >( {
+				endpoint	: INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL,
+				isInternal	: true,
+			} );
+			if ( isApiError( catResponse ) ) {
+				throw new Error( 'Error al cargar categorías.' );
+			}
+			return catResponse;
+		},
+	} ) );
+
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	let products       = $state< Product[] >( [] );
+	const products   = $derived( productsQuery.data   || [] );
+	const materials  = $derived( materialsQuery.data  || [] );
+	const categories = $derived( categoriesQuery.data || [] );
+
 	let search         = $state( '' );
 	let showModal      = $state( false );
 	let isEditing      = $state( false );
 	let editingId      = $state( '' );
 	let editingProduct = $state< any >( null );
-
-	// Catalogs
-	let materials  = $state< MaterialInfo[] >( [] );
-	let categories = $state< CategoryInfo[] >( [] );
 
 	// ─── Filtered View ────────────────────────────────────────────────────────────
 	const filteredProducts = $derived(
@@ -63,44 +108,12 @@
 		)
 	);
 
-	// ─── Load Data ────────────────────────────────────────────────────────────────
-	async function loadAllData() : Promise<void> {
-		$globalLoadingStore = true;
-		try {
-			// Load products
-			const prodResponse = await connectRequest< any >( {
-				endpoint   : 'global-search?limitPerEntity=50',
-				isInternal : true,
-			} );
-
-			if ( isApiError( prodResponse ) ) {
-				toast.error( 'Error al cargar productos de GlobalCET.' );
-				return;
-			}
-			products = prodResponse.products || [];
-
-			// Load materials
-			const matResponse = await connectRequest< MaterialInfo[] >( {
-				endpoint   : 'products/materials/get-all',
-				isInternal : true,
-			} );
-			materials = isApiError( matResponse ) ? [] : matResponse;
-
-			// Load categories
-			const catResponse = await connectRequest< CategoryInfo[] >( {
-				endpoint   : 'products/categories/get-all',
-				isInternal : true,
-			} );
-			categories = isApiError( catResponse ) ? [] : catResponse;
-		} catch ( e ) {
-			toast.error( 'Error de conexión de red con el backend.' );
-		} finally {
+	// Sincronizar cargando global con queries
+	$effect( () => {
+		$globalLoadingStore = productsQuery.isFetching || materialsQuery.isFetching || categoriesQuery.isFetching;
+		return () => {
 			$globalLoadingStore = false;
-		}
-	}
-
-	onMount( () => {
-		loadAllData();
+		};
 	} );
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
@@ -115,13 +128,14 @@
 		isEditing      = true;
 		editingId      = item.id;
 		editingProduct = {
-			name           : item.name,
-			sku            : item.sku,
-			description    : item.description,
-			materialId     : item.material?.id || '',
-			subcategoryId  : item.subcategory?.id || '',
-			active         : item.active,
-			technicalSpecs : '{"color":"verde"}', // default specs
+			name			: item.name,
+			sku				: item.sku,
+			description		: item.description,
+			materialId		: item.material?.id || '',
+			subcategoryId	: item.subcategory?.id || '',
+			active			: item.active,
+			technicalSpecs	: '{"color":"verde"}',
+			files			: ( item.files || [] ).filter( ( f ) => f.id !== 'placeholder' ),
 		};
 		showModal      = true;
 	}
@@ -132,9 +146,9 @@
 		$globalLoadingStore = true;
 		try {
 			const response = await connectRequest< any >( {
-				endpoint   : `products?id=${ id }`,
-				method     : METHOD.DELETE,
-				isInternal : true,
+				endpoint	: `products?id=${ id }`,
+				method		: METHOD.DELETE,
+				isInternal	: true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -143,7 +157,7 @@
 			}
 
 			toast.success( 'Producto eliminado con éxito.' );
-			loadAllData();
+			queryClient.invalidateQueries( { queryKey : [ 'admin-products' ] } );
 		} catch ( err ) {
 			toast.error( 'Error de red al intentar eliminar.' );
 		} finally {
@@ -284,7 +298,6 @@
 				{ categories } 
 				onSave={ () => {
 					showModal = false;
-					loadAllData();
 				} }
 				onCancel={ () => {
 					showModal = false;

@@ -1,12 +1,15 @@
 <script lang="ts">
-	import toast from 'svelte-french-toast';
+	import toast                            from 'svelte-french-toast';
+	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 
 	import FileUploader, {
-        type UploadedFileItem
-    }                               from '$lib/components/shared/FileUploader.svelte';
-	import { globalLoadingStore }   from '$lib/state/loading';
-	import DashboardModal           from '../../components/DashboardModal.svelte';
-	import Select                   from '$lib/components/shared/Select.svelte';
+		type UploadedFileItem
+	}                                       from '$lib/components/shared/FileUploader.svelte';
+	import { globalLoadingStore }           from '$lib/state/loading';
+	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { METHOD }                       from '$lib/services/http-codes';
+	import DashboardModal                   from '../../components/DashboardModal.svelte';
+	import Select                           from '$lib/components/shared/Select.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductRelation {
@@ -44,12 +47,13 @@
 	}
 
 	interface KitInitial {
-		name        : string;
-		sku         : string;
-		description : string;
-		categoryId  : string;
-		active      : boolean;
-		products    : KitProduct[];
+		name		: string;
+		sku			: string;
+		description	: string;
+		categoryId	: string;
+		active		: boolean;
+		products	: KitProduct[];
+		files?		: Array<{ id : string; url : string; alt : string; isMain : boolean; order : number }>;
 	}
 
 	let {
@@ -95,7 +99,17 @@
 			formActive        = initialData.active;
 			formProducts      = initialData.products || [];
 			selectedAddProd   = catalogProducts[ 0 ]?.id || '';
-			uploaderFiles     = [];
+			if ( isEditing && initialData.files ) {
+				uploaderFiles = initialData.files.map( ( f ) => ( {
+					id		: f.id,
+					preview	: f.url,
+					alt		: f.alt || '',
+					isMain	: f.isMain,
+					order	: f.order,
+				} ) );
+			} else {
+				uploaderFiles = [];
+			}
 			uploaderFilesInfo = '';
 		} else if ( show && !initialData ) {
 			formName          = '';
@@ -141,8 +155,46 @@
 		formProducts = formProducts.filter( ( p ) => p.productId !== id );
 	}
 
+	// ─── TanStack Query client & mutation ─────────────────────────────────────────
+	const queryClient = useQueryClient();
+
+	const kitMutation = createMutation( () => ( {
+		mutationFn : async ( { isEditing, editingId, formData } : { isEditing : boolean; editingId : string; formData : FormData } ) : Promise< any > => {
+			const endpoint = isEditing ? `kits?id=${ editingId }` : 'kits';
+			const method   = isEditing ? METHOD.PUT : METHOD.POST;
+
+			const response = await connectRequest< any >( {
+				endpoint	: endpoint,
+				method		: method,
+				body		: formData,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( response.message );
+			}
+
+			return response;
+		},
+		onSuccess : () => {
+			toast.success( isEditing ? 'Kit editado con éxito.' : 'Kit creado con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-kits' ] } );
+			onSave();
+		},
+		onError : ( error : any ) => {
+			toast.error( error.message || 'Error al guardar.' );
+		},
+	} ) );
+
+	$effect( () => {
+		$globalLoadingStore = kitMutation.isPending;
+		return () => {
+			$globalLoadingStore = false;
+		};
+	} );
+
 	// ─── Submit Handler ───────────────────────────────────────────────────────────
-	async function handleSubmit( e : Event ) : Promise<void> {
+	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
 		if ( !formName.trim() || !formSku.trim() ) {
@@ -150,50 +202,29 @@
 			return;
 		}
 
-		$globalLoadingStore = true;
-		try {
-			const formData = new FormData();
-			formData.append( 'name', formName );
-			formData.append( 'sku', formSku );
-			formData.append( 'description', formDescription );
-			formData.append( 'categoryId', formCategoryId );
-			formData.append( 'active', String( formActive ) );
+		const formData = new FormData();
+		formData.append( 'name', formName );
+		formData.append( 'sku', formSku );
+		formData.append( 'description', formDescription );
+		formData.append( 'categoryId', formCategoryId );
+		formData.append( 'active', String( formActive ) );
 
-			// Format products relation info
-			const mappedRelations = formProducts.map( ( p ) => ( {
-				productId : p.productId,
-				quantity  : Number( p.quantity ) || 1,
-			} ) );
-			formData.append( 'products', JSON.stringify( mappedRelations ) );
+		// Format products relation info
+		const mappedRelations = formProducts.map( ( p ) => ( {
+			productId : p.productId,
+			quantity  : Number( p.quantity ) || 1,
+		} ) );
+		formData.append( 'products', JSON.stringify( mappedRelations ) );
 
-			// Images
-			formData.append( 'filesInfo', uploaderFilesInfo || '[]' );
-			uploaderFiles.forEach( ( u ) => {
+		// Images
+		formData.append( 'filesInfo', uploaderFilesInfo || '[]' );
+		uploaderFiles.forEach( ( u ) => {
+			if ( u.file ) {
 				formData.append( 'files', u.file );
-			} );
-
-			const endpoint = isEditing ? `kits?id=${ editingId }` : 'kits';
-			const method   = isEditing ? 'PUT' : 'POST';
-
-			const response = await fetch( `/api/${ endpoint }`, {
-				method,
-				body : formData,
-			} );
-
-			if ( !response.ok ) {
-				const err = await response.json().catch( () => ( { error : 'Error al guardar.' } ) );
-				toast.error( `Error: ${ err.error || err.message }` );
-				return;
 			}
+		} );
 
-			toast.success( isEditing ? 'Kit editado con éxito.' : 'Kit creado con éxito.' );
-
-			onSave();
-		} catch ( err ) {
-			toast.error( 'Error de red al enviar el formulario.' );
-		} finally {
-			$globalLoadingStore = false;
-		}
+		kitMutation.mutate( { isEditing, editingId, formData } );
 	}
 </script>
 
@@ -333,15 +364,17 @@
 				<button
 					type="button"
 					onclick={ onCancel }
-					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors"
+					disabled={ kitMutation.isPending }
+					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					Cancelar
 				</button>
 				<button
 					type="submit"
-					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors"
+					disabled={ kitMutation.isPending }
+					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					Guardar Kit
+					{ kitMutation.isPending ? 'Guardando...' : 'Guardar Kit' }
 				</button>
 			</div>
 		</form>

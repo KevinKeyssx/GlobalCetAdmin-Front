@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { onMount }     from 'svelte';
-	import toast            from 'svelte-french-toast';
+	import toast                            from 'svelte-french-toast';
+	import { createQuery, useQueryClient }  from '@tanstack/svelte-query';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import LabFormModal                     from './components/LabFormModal.svelte';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
@@ -64,18 +65,80 @@
 		sku  : string;
 	}
 
+	// ─── TanStack Query client & queries ──────────────────────────────────────────
+	const queryClient = useQueryClient();
+
+	const labsQuery = createQuery( () => ( {
+		queryKey	: [ 'admin-labs' ],
+		queryFn		: async () : Promise< MobileLab[] > => {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ INTERNAL_ENDPOINTS.LABS.FILTERS }?size=50`,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( 'Error al cargar laboratorios.' );
+			}
+			return response.data || [];
+		},
+	} ) );
+
+	const catalogProductsQuery = createQuery( () => ( {
+		queryKey	: [ 'catalog-products' ],
+		queryFn		: async () : Promise< CatalogProduct[] > => {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=100`,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( 'Error al cargar productos del catálogo.' );
+			}
+			return response.data || [];
+		},
+	} ) );
+
+	const catalogKitsQuery = createQuery( () => ( {
+		queryKey	: [ 'catalog-kits' ],
+		queryFn		: async () : Promise< CatalogKit[] > => {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ INTERNAL_ENDPOINTS.KITS.FILTERS }?size=100`,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( 'Error al cargar kits del catálogo.' );
+			}
+			return response.data || [];
+		},
+	} ) );
+
+	const categoriesQuery = createQuery( () => ( {
+		queryKey	: [ 'lab-categories' ],
+		queryFn		: async () : Promise< LabCategory[] > => {
+			const response = await connectRequest< LabCategory[] >( {
+				endpoint	: 'labs/categories/get-all',
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( 'Error al cargar categorías.' );
+			}
+			return response;
+		},
+	} ) );
+
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	let labs            = $state< MobileLab[] >( [] );
+	const labs            = $derived( labsQuery.data            || [] );
+	const catalogProducts = $derived( catalogProductsQuery.data || [] );
+	const catalogKits     = $derived( catalogKitsQuery.data     || [] );
+	const categories      = $derived( categoriesQuery.data      || [] );
+
 	let search          = $state( '' );
 	let showModal       = $state( false );
 	let isEditing       = $state( false );
 	let editingId       = $state( '' );
 	let editingLab      = $state< any >( null );
-
-	// Catalogs
-	let categories      = $state< LabCategory[] >( [] );
-	let catalogProducts = $state< CatalogProduct[] >( [] );
-	let catalogKits     = $state< CatalogKit[] >( [] );
 
 	// ─── Filtered View ────────────────────────────────────────────────────────────
 	const filteredLabs = $derived(
@@ -86,39 +149,12 @@
 		)
 	);
 
-	// ─── Load Data ────────────────────────────────────────────────────────────────
-	async function loadAllData() : Promise<void> {
-		$globalLoadingStore = true;
-		try {
-			// Load labs, products and kits catalogs
-			const globalResponse = await connectRequest< any >( {
-				endpoint   : 'global-search?limitPerEntity=50',
-				isInternal : true,
-			} );
-
-			if ( isApiError( globalResponse ) ) {
-				toast.error( 'Error al cargar laboratorios del catálogo.' );
-				return;
-			}
-			labs            = globalResponse.mobileLabs || [];
-			catalogProducts = globalResponse.products || [];
-			catalogKits     = globalResponse.kits || [];
-
-			// Load lab categories
-			const catResponse = await connectRequest< LabCategory[] >( {
-				endpoint   : 'labs/categories/get-all',
-				isInternal : true,
-			} );
-			categories = isApiError( catResponse ) ? [] : catResponse;
-		} catch ( e ) {
-			toast.error( 'Error de conexión de red con el backend.' );
-		} finally {
+	// Sincronizar cargando global con queries
+	$effect( () => {
+		$globalLoadingStore = labsQuery.isFetching || catalogProductsQuery.isFetching || catalogKitsQuery.isFetching || categoriesQuery.isFetching;
+		return () => {
 			$globalLoadingStore = false;
-		}
-	}
-
-	onMount( () => {
-		loadAllData();
+		};
 	} );
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
@@ -133,13 +169,13 @@
 		isEditing  = true;
 		editingId  = item.id;
 		editingLab = {
-			name        : item.name,
-			sku         : item.sku,
-			description : item.description,
-			dimensions  : item.dimensions,
-			categoryId  : item.category?.id || '',
-			active      : item.active,
-			products    : ( item.products || [] ).map( ( p ) => ( {
+			name		: item.name,
+			sku			: item.sku,
+			description	: item.description,
+			dimensions	: item.dimensions,
+			categoryId	: item.category?.id || '',
+			active		: item.active,
+			products	: ( item.products || [] ).map( ( p ) => ( {
 				productId : p.productId,
 				quantity  : p.quantity,
 				product   : p.product ? {
@@ -152,7 +188,7 @@
 					sku  : 'PROD',
 				},
 			} ) ),
-			kits        : ( item.kits || [] ).map( ( k ) => ( {
+			kits		: ( item.kits || [] ).map( ( k ) => ( {
 				kitId    : k.kitId,
 				quantity : k.quantity,
 				kit      : k.kit ? {
@@ -165,6 +201,7 @@
 					sku  : 'KIT',
 				},
 			} ) ),
+			files		: ( item.files || [] ).filter( ( f ) => f.id !== 'placeholder' ),
 		};
 		showModal  = true;
 	}
@@ -175,9 +212,9 @@
 		$globalLoadingStore = true;
 		try {
 			const response = await connectRequest< any >( {
-				endpoint   : `labs?id=${ id }`,
-				method     : METHOD.DELETE,
-				isInternal : true,
+				endpoint	: `labs?id=${ id }`,
+				method		: METHOD.DELETE,
+				isInternal	: true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -186,7 +223,7 @@
 			}
 
 			toast.success( 'Laboratorio eliminado con éxito.' );
-			loadAllData();
+			queryClient.invalidateQueries( { queryKey : [ 'admin-labs' ] } );
 		} catch ( err ) {
 			toast.error( 'Error de red al intentar eliminar.' );
 		} finally {
@@ -336,7 +373,6 @@
 				{ catalogKits }
 				onSave={ () => {
 					showModal = false;
-					loadAllData();
 				} }
 				onCancel={ () => {
 					showModal = false;
