@@ -39,3 +39,24 @@ export interface FilterState {
 	categories  : Set<ProductCategory>;
 	types       : Set<ProductType>;
 }
+
+// ─── Initial Form Interfaces ───────────────────────────────────────────────────
+
+export interface InitialFile {
+	id     : string;
+	url    : string;
+	alt    : string;
+	isMain : boolean;
+	order  : number;
+}
+
+export interface ProductInitial {
+	name           : string;
+	sku            : string;
+	description    : string;
+	materialId     : string;
+	subcategoryId  : string;
+	active         : boolean;
+	technicalSpecs : string;
+	files?         : InitialFile[];
+}
