@@ -6,12 +6,35 @@ import type { KitCategory }          from '$lib/types/category';
 import { METHOD }                    from '$lib/services/http-codes';
 import { EXTERNAL_ENDPOINTS }        from '$lib/utils/endpoints';
 
+// ─── GET Handler: Fetch paginated kit categories ──────────────────────────────
+export const GET: RequestHandler = async ( { url, fetch } ) => {
+	try {
+		const response = await connectRequest< any >( {
+			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.CATEGORIES.GET_ALL }?${ url.searchParams.toString() }`,
+			method     : METHOD.GET,
+			isInternal : false,
+			headers    : {
+				'x-secret' : ENV.INTERNAL_SECRET_KEY,
+			},
+			fetch      : fetch,
+		} );
+
+		if ( isApiError( response ) ) {
+			return json( { error : response.message }, { status : response.status || 500 } );
+		}
+
+		return json( response );
+	} catch ( e : any ) {
+		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+	}
+};
+
 // ─── POST Handler: Create a kit category ──────────────────────────────────────
 export const POST: RequestHandler = async ( { request, fetch } ) => {
 	try {
 		const body     = await request.json();
 		const response = await connectRequest< KitCategory >( {
-			endpoint   : EXTERNAL_ENDPOINTS.KITS.CATEGORIES.GET_ALL,
+			endpoint   : EXTERNAL_ENDPOINTS.KITS.CATEGORIES.BASE,
 			method     : METHOD.POST,
 			isInternal : false,
 			body       : body,
@@ -42,8 +65,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		const body     = await request.json();
 		const response = await connectRequest< KitCategory >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.CATEGORIES.GET_ALL }/${ id }`,
-			method     : METHOD.PUT,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.CATEGORIES.BASE }/${ id }`,
+			method     : METHOD.PATCH,
 			isInternal : false,
 			body       : body,
 			headers    : {
@@ -72,7 +95,7 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 		}
 
 		const response = await connectRequest< any >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.CATEGORIES.GET_ALL }/${ id }`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.CATEGORIES.BASE }/${ id }`,
 			method     : METHOD.DELETE,
 			isInternal : false,
 			headers    : {

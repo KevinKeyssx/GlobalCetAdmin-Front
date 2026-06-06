@@ -5,15 +5,19 @@ import { EXTERNAL_ENDPOINTS }   from '$lib/utils/endpoints';
 import { ENV }                  from '$lib/utils/env.server';
 
 
-export const GET: RequestHandler = async ({ fetch }) => {
-	const response = await connectRequest({
-		endpoint   : `${EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL}?includeSubcategories=true`,
+export const GET: RequestHandler = async ( { fetch } ) => {
+	const response = await connectRequest< any >( {
+		endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL }?includeSubcategories=true&size=1000`,
 		isInternal : false,
 		headers    : {
 			'x-secret' : ENV.INTERNAL_SECRET_KEY,
 		},
-		fetch,
-	});
+		fetch      : fetch,
+	} );
+
+	if ( response && response.data ) {
+		return json( response.data );
+	}
 
 	return json( response );
 };

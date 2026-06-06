@@ -37,7 +37,6 @@ export const POST: RequestHandler = async ( { request, fetch } ) => {
 	}
 };
 
-// ─── PUT Handler: Modify an existing product ──────────────────────────────────
 export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 	try {
 		const id = url.searchParams.get( 'id' ) || '';
@@ -51,49 +50,43 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		const clientImages  = JSON.parse( imagesInfoStr );
 		const filesToUpload = clientData.getAll( 'files' ) as File[];
 
-		// 1. Fetch existing product with images to compare
-		const existingProduct = await connectRequest< GlobalSearchProduct >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }?includeImages=true`,
+		// 1. Update basic product data
+		const basicData : any = {};
+		const fieldsToSync    = [ 'name', 'sku', 'description', 'materialId', 'subcategoryId', 'active', 'technical_specs' ];
+
+		for ( const key of fieldsToSync ) {
+			if ( clientData.has( key ) ) {
+				const val = clientData.get( key );
+				if ( key === 'active' ) {
+					basicData[ key ] = val === 'true';
+				} else if ( key === 'technical_specs' ) {
+					basicData[ key ] = JSON.parse( val as string || '{}' );
+				} else {
+					basicData[ key ] = val;
+				}
+			}
+		}
+
+		const updateProductRes = await connectRequest< GlobalSearchProduct >( {
+			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }`,
+			method     : METHOD.PATCH,
 			isInternal : false,
+			body       : basicData,
 			headers    : {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
 			fetch      : fetch,
 		} );
 
-		if ( isApiError( existingProduct ) ) {
-			return json( { error : existingProduct.message }, { status : existingProduct.status || 500 } );
+		if ( isApiError( updateProductRes ) ) {
+			return json( { error : updateProductRes.message }, { status : updateProductRes.status || 500 } );
 		}
 
-		const existingImages   = existingProduct.files || [];
+		const existingImages   = updateProductRes.files || [];
 		const existingImageIds = new Set( existingImages.map( ( img : any ) => img.id ) );
+		const finalImagesInfo  = clientImages.filter( ( img : any ) => existingImageIds.has( img.id ) );
 
-		// 2. Determine deleted images
-		const clientImageIds  = new Set( clientImages.map( ( img : any ) => img.id ) );
-		const deletedImageIds = existingImages
-			.filter( ( img : any ) => !clientImageIds.has( img.id ) )
-			.map( ( img : any ) => img.id );
-
-		if ( deletedImageIds.length > 0 ) {
-			const deleteRes = await connectRequest< any >( {
-				endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }/images/delete`,
-				method     : METHOD.POST,
-				isInternal : false,
-				body       : { imageIds : deletedImageIds },
-				headers    : {
-					'x-secret' : ENV.INTERNAL_SECRET_KEY,
-				},
-				fetch      : fetch,
-			} );
-
-			if ( isApiError( deleteRes ) ) {
-				return json( { error : deleteRes.message }, { status : deleteRes.status || 500 } );
-			}
-		}
-
-		// 3. Handle new image uploads
-		const finalImagesInfo = clientImages.filter( ( img : any ) => existingImageIds.has( img.id ) );
-
+		// 2. Upload new files if any
 		if ( filesToUpload.length > 0 ) {
 			const newImagesInfo  = clientImages.filter( ( img : any ) => !existingImageIds.has( img.id ) );
 			const uploadFormData = new FormData();
@@ -126,7 +119,6 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			const updatedFiles         = uploadRes.files || [];
 			const newFilesFromResponse = updatedFiles.filter( ( f : any ) => !existingImageIds.has( f.id ) );
 
-			// Map client temp IDs to server IDs
 			newImagesInfo.forEach( ( img : any, index : number ) => {
 				const serverFile = newFilesFromResponse[ index ];
 				if ( serverFile ) {
@@ -140,7 +132,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			} );
 		}
 
-		// 4. Update info for all remaining/new images
+		// 3. Update metadata info for all remaining/new images
 		if ( finalImagesInfo.length > 0 ) {
 			const updateInfoRes = await connectRequest< any >( {
 				endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }/images/info`,
@@ -158,39 +150,21 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			}
 		}
 
-		// 5. Update basic product data
-		const basicData : any = {};
-		const fieldsToSync    = [ 'name', 'sku', 'description', 'materialId', 'subcategoryId', 'active', 'technical_specs' ];
-
-		for ( const key of fieldsToSync ) {
-			if ( clientData.has( key ) ) {
-				const val = clientData.get( key );
-				if ( key === 'active' ) {
-					basicData[ key ] = val === 'true';
-				} else if ( key === 'technical_specs' ) {
-					basicData[ key ] = JSON.parse( val as string || '{}' );
-				} else {
-					basicData[ key ] = val;
-				}
-			}
-		}
-
-		const updateProductRes = await connectRequest< GlobalSearchProduct >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }`,
-			method     : METHOD.PATCH,
+		// Re-fetch final product data to return complete updated state
+		const finalProduct = await connectRequest< GlobalSearchProduct >( {
+			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }?includeImages=true`,
 			isInternal : false,
-			body       : basicData,
 			headers    : {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
 			fetch      : fetch,
 		} );
 
-		if ( isApiError( updateProductRes ) ) {
-			return json( { error : updateProductRes.message }, { status : updateProductRes.status || 500 } );
+		if ( isApiError( finalProduct ) ) {
+			return json( { error : finalProduct.message }, { status : finalProduct.status || 500 } );
 		}
 
-		return json( updateProductRes );
+		return json( finalProduct );
 	} catch ( e : any ) {
 		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
 	}
