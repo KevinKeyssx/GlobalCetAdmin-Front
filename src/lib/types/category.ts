@@ -5,6 +5,11 @@ export interface SubCategory {
 	active     : boolean;
 	createdAt  : string;
 	updatedAt  : string;
+	category?  : {
+		id     : string;
+		name   : string;
+		active : boolean;
+	};
 }
 
 export interface Category {
