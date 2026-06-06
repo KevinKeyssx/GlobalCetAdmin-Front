@@ -1,92 +1,170 @@
 <script lang="ts">
-	import { onMount }     from 'svelte';
-	import toast            from 'svelte-french-toast';
+	import {
+        createQuery,
+        createMutation,
+        useQueryClient
+    }               from '@tanstack/svelte-query';
+	import toast    from 'svelte-french-toast';
 
-	import connectRequest, { isApiError } from '$lib/services/fetch.service';
-	import { METHOD }                     from '$lib/services/http-codes';
-	import { globalLoadingStore }         from '$lib/state/loading';
-	import CategoryFormModal              from './components/CategoryFormModal.svelte';
-	import TableActions                   from '$lib/components/shared/TableActions.svelte';
+	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { METHOD }                       from '$lib/services/http-codes';
+	import { globalLoadingStore }           from '$lib/state/loading';
+	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
+	import TableActions                     from '$lib/components/shared/TableActions.svelte';
+	import Pagination                       from '$lib/components/shared/Pagination.svelte';
+	import type { Category, SubCategory }   from '$lib/types/category';
 
-	// ─── Interfaces ───────────────────────────────────────────────────────────────
-	interface Category {
-		id            : string;
-		name          : string;
-		subcategories : Subcategory[];
-	}
-
-	interface Subcategory {
-		id       : string;
-		name     : string;
-		category : {
-			id   : string;
-			name : string;
+	// ─── Paginated Response Interface ──────────────────────────────────────────────
+	interface PaginatedResponse< T > {
+		data : T[];
+		meta : {
+			total      : number;
+			page       : number;
+			size       : number;
+			totalPages : number;
 		};
 	}
 
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	let activeTab       = $state( 'categories' ); // 'categories' | 'subcategories'
-	let categories      = $state< Category[] >( [] );
-	let search          = $state( '' );
-	let showModal       = $state( false );
-	let isEditing       = $state( false );
-	let editingId       = $state( '' );
-	let editingCategory = $state<{ name : string; parentCatId? : string; } | null>( null );
+	let activeTab         = $state( 'categories' ); // 'categories' | 'subcategories'
+	let search            = $state( '' );
+	let activeStatus      = $state( 'all' ); // 'all' | 'true' | 'false'
+	let order             = $state( 'name' );
+	let typeOrder         = $state( 'asc' );
+	let categoriesPage    = $state( 1 );
+	let subcategoriesPage = $state( 1 );
+	let showModal         = $state( false );
+	let isEditing         = $state( false );
+	let editingId         = $state( '' );
+	let editingCategory   = $state<{ name : string; parentCatId? : string; } | null>( null );
 
-	// ─── Derived: Unpacked Subcategories List ─────────────────────────────────────
-	const allSubcategories = $derived(
-		categories.flatMap( ( cat ) =>
-			( cat.subcategories || [] ).map( ( sub ) => ( {
-				id       : sub.id,
-				name     : sub.name,
-				category : {
-					id   : cat.id,
-					name : cat.name,
-				},
-			} ) )
-		)
-	);
+	// Reset to page 1 on filter changes
+	$effect( ( ) => {
+		categoriesPage    = 1;
+		subcategoriesPage = 1;
+	});
 
-	// ─── Derived: Filtered Views ──────────────────────────────────────────────────
-	const filteredCategories = $derived(
-		categories.filter( ( c ) => c.name.toLowerCase().includes( search.toLowerCase() ) )
-	);
+	// ─── TanStack Query client & queries ──────────────────────────────────────────
+	const queryClient = useQueryClient();
 
-	const filteredSubcategories = $derived(
-		allSubcategories.filter( ( s ) =>
-			s.name.toLowerCase().includes( search.toLowerCase() ) ||
-			s.category.name.toLowerCase().includes( search.toLowerCase() )
-		)
-	);
+	const categoriesQuery = createQuery( ( ) => ( {
+		queryKey : [ 'categories', categoriesPage, search, activeStatus, order, typeOrder ],
+		queryFn  : async ( ) : Promise< PaginatedResponse< Category > > => {
+			const params = new URLSearchParams( {
+				type      : 'category',
+				page      : categoriesPage.toString(),
+				size      : '10',
+				order     : order,
+				typeOrder : typeOrder,
+			} );
 
-	// ─── Fetch Categories & Subcategories ──────────────────────────────────────────
-	async function loadCategories() : Promise<void> {
-		$globalLoadingStore = true;
-		try {
+			if ( search.trim() ) {
+				params.append( 'name', search.trim() );
+			}
+
+			if ( activeStatus !== 'all' ) {
+				params.append( 'active', activeStatus );
+			}
+
+			const response = await connectRequest< PaginatedResponse< Category > >( {
+				endpoint   : `products/categories?${ params.toString() }`,
+				isInternal : true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( 'No se pudieron cargar las categorías.' );
+			}
+
+			return response;
+		},
+		enabled  : activeTab === 'categories',
+	} ) );
+
+	const allCategoriesQuery = createQuery( ( ) => ( {
+		queryKey : [ 'categories', 'all' ],
+		queryFn  : async ( ) : Promise< Category[] > => {
 			const response = await connectRequest< Category[] >( {
 				endpoint   : 'products/categories/get-all',
 				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
-				toast.error( 'Error de servidor: No se pudieron cargar las categorías.' );
-				return;
+				throw new Error( 'No se pudieron cargar todas las categorías.' );
 			}
 
-			categories = response || [];
-		} catch ( e ) {
-			toast.error( 'Error de red al conectar con el servidor de GlobalCET.' );
-		} finally {
-			$globalLoadingStore = false;
-		}
-	}
+			return response || [];
+		},
+	} ) );
 
-	onMount( () => {
-		loadCategories();
+	const subcategoriesQuery = createQuery( ( ) => ( {
+		queryKey : [ 'subcategories', subcategoriesPage, search, activeStatus, order, typeOrder ],
+		queryFn  : async ( ) : Promise< PaginatedResponse< SubCategory > > => {
+			const params = new URLSearchParams( {
+				type            : 'subcategory',
+				page            : subcategoriesPage.toString(),
+				size            : '10',
+				order           : order,
+				typeOrder       : typeOrder,
+				includeCategory : 'true',
+			} );
+
+			if ( search.trim() ) {
+				params.append( 'name', search.trim() );
+			}
+
+			if ( activeStatus !== 'all' ) {
+				params.append( 'active', activeStatus );
+			}
+
+			const response = await connectRequest< PaginatedResponse< SubCategory > >( {
+				endpoint   : `products/categories?${ params.toString() }`,
+				isInternal : true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( 'No se pudieron cargar las subcategorías.' );
+			}
+
+			return response;
+		},
+		enabled  : activeTab === 'subcategories',
+	} ) );
+
+	const deleteMutation = createMutation( ( ) => ( {
+		mutationFn : async ( id : string ) : Promise< any > => {
+			const isSub    = activeTab === 'subcategories';
+			const path     = isSub ? 'products/categories?type=subcategory' : 'products/categories';
+			const response = await connectRequest< any >( {
+				endpoint   : `${ path }${ isSub ? '&' : '?' }id=${ id }`,
+				method     : METHOD.DELETE,
+				isInternal : true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( response.message );
+			}
+
+			return response;
+		},
+		onSuccess  : ( ) => {
+			toast.success( 'Registro eliminado con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'categories' ] } );
+			queryClient.invalidateQueries( { queryKey : [ 'subcategories' ] } );
+		},
+		onError    : ( error : any ) => {
+			toast.error( error.message || 'Error al intentar eliminar.' );
+		},
+	} ) );
+
+	$effect( ( ) => {
+		$globalLoadingStore = categoriesQuery.isFetching || subcategoriesQuery.isFetching || deleteMutation.isPending;
+		return ( ) => {
+			$globalLoadingStore = false;
+		};
 	} );
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
-	function openCreateModal() : void {
+	function openCreateModal( ) : void {
 		isEditing       = false;
 		editingId       = '';
 		editingCategory = null;
@@ -98,36 +176,24 @@
 		editingId       = item.id;
 		editingCategory = {
 			name        : item.name,
-			parentCatId : activeTab === 'subcategories' ? ( item.category?.id || '' ) : '',
+			parentCatId : activeTab === 'subcategories' ? ( item.categoryId || '' ) : '',
 		};
 		showModal       = true;
 	}
 
-	async function deleteItem( id : string ) : Promise<void> {
+	function deleteItem( id : string ) : void {
 		const label = activeTab === 'subcategories' ? 'esta subcategoría' : 'esta categoría y todas sus subcategorías';
 		if ( !confirm( `¿Está seguro de que desea eliminar ${ label }?` ) ) return;
 
-		$globalLoadingStore = true;
-		try {
-			const isSub    = activeTab === 'subcategories';
-			const path     = isSub ? 'products/categories?type=subcategory' : 'products/categories';
-			const response = await connectRequest< any >( {
-				endpoint   : `${ path }&id=${ id }`,
-				method     : METHOD.DELETE,
-				isInternal : true,
-			} );
+		deleteMutation.mutate( id );
+	}
 
-			if ( isApiError( response ) ) {
-				toast.error( `Error al eliminar: ${ response.message }` );
-				return;
-			}
-
-			toast.success( 'Registro eliminado con éxito.' );
-			loadCategories();
-		} catch ( err ) {
-			toast.error( 'Error de red al intentar eliminar.' );
-		} finally {
-			$globalLoadingStore = false;
+	function toggleSort( field : string ) : void {
+		if ( order === field ) {
+			typeOrder = typeOrder === 'asc' ? 'desc' : 'asc';
+		} else {
+			order     = field;
+			typeOrder = 'asc';
 		}
 	}
 </script>
@@ -193,41 +259,57 @@
 				</button>
 			</div>
 
-			<!-- Search -->
-			<div class="flex items-center max-w-xs relative w-full">
-				<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="11" cy="11" r="8" />
-					<path d="m21 21-4.35-4.35" />
-				</svg>
-				<input
-					type="search"
-					placeholder="Buscar..."
-					bind:value={ search }
-					class="w-full rounded-xl border border-brand/15 bg-input py-2 pl-10 pr-4 text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
-				/>
+			<!-- Filters -->
+			<div class="flex flex-col sm:flex-row items-center gap-2 max-w-md w-full">
+				<select
+					bind:value={ activeStatus }
+					class="w-full sm:w-auto rounded-xl border border-brand/15 bg-input py-2 px-3 text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10 font-bold"
+				>
+					<option value="all">Todos los estados</option>
+					<option value="true">Activos</option>
+					<option value="false">Inactivos</option>
+				</select>
+
+				<div class="flex items-center relative w-full">
+					<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<circle cx="11" cy="11" r="8" />
+						<path d="m21 21-4.35-4.35" />
+					</svg>
+					<input
+						type="search"
+						placeholder="Buscar..."
+						bind:value={ search }
+						class="w-full rounded-xl border border-brand/15 bg-input py-2 pl-10 pr-4 text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
+					/>
+				</div>
 			</div>
 		</div>
 
 		<!-- ─── Table Lists ──────────────────────────────────────────────────────── -->
-		{#if ( activeTab === 'categories' ) }
+		{#if ( activeTab === 'categories' )}
 			<!-- Categories View -->
-			<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card animate-fade-in">
+			<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card animate-fade-in space-y-4 pb-4">
 				<div class="overflow-x-auto">
 					<table class="w-full text-left border-collapse">
 						<thead>
 							<tr class="border-b border-brand/15 bg-brand/5 text-[10px] font-black uppercase tracking-widest text-text-muted">
-								<th class="px-6 py-4">Nombre de Categoría</th>
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
+									Nombre de Categoría { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
 								<th class="px-6 py-4">Subcategorías Asociadas</th>
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
+									Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
 								<th class="px-6 py-4 text-right">Acciones</th>
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-brand/10 font-semibold">
-							{#each filteredCategories as cat ( cat.id ) }
+							{#each ( categoriesQuery.data?.data || [] ) as cat ( cat.id )}
 								<tr class="hover:bg-brand/5 transition-colors duration-150">
 									<td class="px-6 py-4 font-bold text-text">{ cat.name }</td>
 									<td class="px-6 py-4">
 										<div class="flex flex-wrap gap-1.5">
-											{#each ( cat.subcategories || [] ) as sub ( sub.id ) }
+											{#each ( cat.subCategories || [] ) as sub ( sub.id )}
 												<span class="rounded-full bg-brand/10 px-2.5 py-0.5 text-[10px] text-brand border border-brand/15">
 													{ sub.name }
 												</span>
@@ -235,6 +317,11 @@
 												<span class="text-text-muted text-[10px]">Sin subcategorías</span>
 											{/each}
 										</div>
+									</td>
+									<td class="px-6 py-4">
+										<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { cat.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
+											{ cat.active ? 'Activo' : 'Inactivo' }
+										</span>
 									</td>
 									<td class="px-6 py-4 text-right">
 										<TableActions
@@ -246,7 +333,7 @@
 								</tr>
 							{:else}
 								<tr>
-									<td colspan="3" class="px-6 py-12 text-center text-text-muted leading-relaxed">
+									<td colspan="4" class="px-6 py-12 text-center text-text-muted leading-relaxed">
 										No hay categorías registradas.
 									</td>
 								</tr>
@@ -254,25 +341,45 @@
 						</tbody>
 					</table>
 				</div>
+
+				{#if ( categoriesQuery.data?.meta && categoriesQuery.data.meta.totalPages > 1 )}
+					<div class="flex justify-center pt-2">
+						<Pagination
+							count={ categoriesQuery.data.meta.total }
+							perPage={ categoriesQuery.data.meta.size }
+							bind:page={ categoriesPage }
+						/>
+					</div>
+				{/if}
 			</section>
 		{:else}
 			<!-- Subcategories View -->
-			<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card animate-fade-in">
+			<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card animate-fade-in space-y-4 pb-4">
 				<div class="overflow-x-auto">
 					<table class="w-full text-left border-collapse">
 						<thead>
 							<tr class="border-b border-brand/15 bg-brand/5 text-[10px] font-black uppercase tracking-widest text-text-muted">
-								<th class="px-6 py-4">Nombre de Subcategoría</th>
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
+									Nombre de Subcategoría { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
 								<th class="px-6 py-4">Categoría Padre</th>
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
+									Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
 								<th class="px-6 py-4 text-right">Acciones</th>
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-brand/10 font-semibold">
-							{#each filteredSubcategories as sub ( sub.id ) }
+							{#each ( subcategoriesQuery.data?.data || [] ) as sub ( sub.id )}
 								<tr class="hover:bg-brand/5 transition-colors duration-150">
 									<td class="px-6 py-4 font-bold text-text">{ sub.name }</td>
 									<td class="px-6 py-4 font-bold text-brand uppercase tracking-wider text-[10px]">
-										{ sub.category.name }
+										{ sub.category?.name || 'Sin Categoría' }
+									</td>
+									<td class="px-6 py-4">
+										<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { sub.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
+											{ sub.active ? 'Activo' : 'Inactivo' }
+										</span>
 									</td>
 									<td class="px-6 py-4 text-right">
 										<TableActions
@@ -301,14 +408,14 @@
 				show={ showModal }
 				{ isEditing }
 				{ editingId }
+				context="products"
 				{ activeTab }
-				{ categories }
+				categories={ allCategoriesQuery.data || [] }
 				initialData={ editingCategory }
-				onSave={ () => {
+				onSave={ ( ) => {
 					showModal = false;
-					loadCategories();
 				} }
-				onCancel={ () => {
+				onCancel={ ( ) => {
 					showModal = false;
 				} }
 			/>
