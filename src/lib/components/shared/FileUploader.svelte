@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
-	import toast          from 'svelte-french-toast';
-	import JSZip          from 'jszip';
+	import { onDestroy, untrack }   from 'svelte';
+	import toast                    from 'svelte-french-toast';
+	import JSZip                    from 'jszip';
+	import { Trash2, X }            from '@lucide/svelte';
+
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	export interface UploadedFileItem {
@@ -14,12 +16,33 @@
 	}
 
 	interface Props {
-		files     : UploadedFileItem[];
-		filesInfo : string;
+		files				: UploadedFileItem[];
+		filesInfo			: string;
+		isEditing?			: boolean;
+		deletingFileId?		: string | null;
+		onDeleteSingle?		: ( fileId : string ) => Promise< void > | void;
+		onDeleteMultiple?	: ( fileIds : string[] ) => Promise< void > | void;
 	}
 
 	// ─── Props & Bindings (Svelte 5 Runes) ────────────────────────────────────────
-	let { files = $bindable( [] ), filesInfo = $bindable( '' ) }: Props = $props();
+	let {
+		files            = $bindable( [] ),
+		filesInfo        = $bindable( '' ),
+		isEditing        = false,
+		deletingFileId   = null,
+		onDeleteSingle,
+		onDeleteMultiple,
+	} : Props = $props();
+
+	let selectedFileIds = $state< string[] >( [] );
+
+	$effect( () => {
+		const currentIds = files.map( ( f ) => f.id );
+
+		untrack( () => {
+			selectedFileIds = selectedFileIds.filter( ( id ) => currentIds.includes( id ) );
+		} );
+	} );
 
 	let isDragging     = $state( false );
 	let isDraggingDocx = $state( false );
@@ -352,12 +375,54 @@
 				<h4 class="font-display text-sm text-brand">
 					Archivos a subir ( { files.length } )
 				</h4>
+
+				{#if isEditing && selectedFileIds.length > 0 }
+					<button
+						type     = "button"
+						onclick  = { () => {
+							if ( onDeleteMultiple ) {
+								onDeleteMultiple( selectedFileIds );
+								selectedFileIds = [];
+							}
+						} }
+						disabled = { deletingFileId !== null }
+						class    = "flex items-center gap-1 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-red-400 hover:bg-red-500 hover:text-white transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{#if deletingFileId === 'bulk' }
+							<div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-red-400 border-t-transparent"></div>
+							Eliminando...
+						{:else}
+							<Trash2 class="h-3.5 w-3.5" />
+							Eliminar Seleccionados ( { selectedFileIds.length } )
+						{/if}
+					</button>
+				{/if}
 			</div>
 
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				{#each files as item ( item.id ) }
 					<div class="flex flex-col gap-2 rounded-xl border border-brand/10 bg-card p-3 shadow-card transition-all duration-300 hover:border-brand/20">
 						<div class="flex gap-3">
+							{#if isEditing && !item.file }
+								<div class="flex items-center justify-center shrink-0">
+									<input
+										type     = "checkbox"
+										checked  = { selectedFileIds.includes( item.id ) }
+										disabled = { deletingFileId !== null }
+										onchange = { ( e ) => {
+											const target = e.target as HTMLInputElement;
+
+											if ( target.checked ) {
+												selectedFileIds = [ ...selectedFileIds, item.id ];
+											} else {
+												selectedFileIds = selectedFileIds.filter( ( id ) => id !== item.id );
+											}
+										} }
+										class    = "accent-brand h-4 w-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+									/>
+								</div>
+							{/if}
+
 							<!-- Thumbnail Preview -->
 							<div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-brand/15 bg-input flex items-center justify-center text-xl font-bold select-none">
 								{#if ( item.file && item.file.type === 'application/pdf' ) || item.preview.toLowerCase().endsWith( '.pdf' ) || item.alt.toLowerCase().endsWith( '.pdf' ) }
@@ -400,17 +465,37 @@
 							</div>
 
 							<!-- Delete Button -->
-							<button
-								type    = "button"
-								onclick = { () => removeFile( item.id ) }
-								class   = "h-7 w-7 shrink-0 flex items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 transition-all duration-200 hover:bg-red-500 hover:text-white"
-								title   = "Eliminar archivo"
-							>
-								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-									<line x1="18" y1="6" x2="6" y2="18" />
-									<line x1="6" y1="6" x2="18" y2="18" />
-								</svg>
-							</button>
+							{#if isEditing && !item.file }
+								<button
+									type     = "button"
+									onclick  = { () => {
+										if ( onDeleteSingle ) {
+											onDeleteSingle( item.id );
+										} else {
+											removeFile( item.id );
+										}
+									} }
+									disabled = { deletingFileId !== null }
+									class    = "h-7 w-7 shrink-0 flex items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 transition-all duration-200 hover:bg-red-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+									title    = "Eliminar archivo del servidor"
+								>
+									{#if deletingFileId === item.id }
+										<div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-red-400 border-t-transparent"></div>
+									{:else}
+										<Trash2 class="h-4 w-4" />
+									{/if}
+								</button>
+							{:else}
+								<button
+									type     = "button"
+									onclick  = { () => removeFile( item.id ) }
+									disabled = { deletingFileId !== null }
+									class    = "h-7 w-7 shrink-0 flex items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 transition-all duration-200 hover:bg-red-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+									title    = "Quitar archivo local"
+								>
+									<X class="h-4 w-4" />
+								</button>
+							{/if}
 						</div>
 
 						{#if !isDocument( item ) }
