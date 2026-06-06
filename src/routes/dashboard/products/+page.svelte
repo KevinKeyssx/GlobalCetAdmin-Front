@@ -2,14 +2,15 @@
 	import toast                            from 'svelte-french-toast';
 	import { Plus }                         from '@lucide/svelte';
 	import { createQuery, useQueryClient }  from '@tanstack/svelte-query';
+	import { PUBLIC_NOT_FOUND_IMAGE }       from '$env/static/public';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
-	import ProductFormModal                 from './components/ProductFormModal.svelte';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
+	import ProductFormModal                 from './components/ProductFormModal.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Product {
@@ -47,57 +48,94 @@
 
 	const productsQuery = createQuery( () => ( {
 		queryKey	: [ 'admin-products' ],
-		queryFn		: async () : Promise< Product[] > => {
-			const prodResponse = await connectRequest< any >( {
+		queryFn		: async () : Promise<Product[]> => {
+			const prodResponse = await connectRequest<any>({
 				endpoint	: `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=50`,
 				isInternal	: true,
-			} );
+			});
 
-			if ( isApiError( prodResponse ) ) {
+			if ( isApiError( prodResponse )) {
 				throw new Error( 'Error al cargar productos.' );
 			}
-			return prodResponse.data || [];
-		},
-	} ) );
 
-	const materialsQuery = createQuery( () => ( {
+            return prodResponse.data || [];
+		},
+	}));
+
+
+    const materialsQuery = createQuery( () => ({
 		queryKey	: [ 'materials' ],
-		queryFn		: async () : Promise< MaterialInfo[] > => {
-			const matResponse = await connectRequest< MaterialInfo[] >( {
+		queryFn		: async () : Promise<MaterialInfo[]> => {
+			const matResponse = await connectRequest<MaterialInfo[]>({
 				endpoint	: INTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.GET_ALL,
 				isInternal	: true,
-			} );
-			if ( isApiError( matResponse ) ) {
+			});
+
+            if ( isApiError( matResponse )) {
 				throw new Error( 'Error al cargar materiales.' );
 			}
-			return matResponse;
-		},
-	} ) );
 
-	const categoriesQuery = createQuery( () => ( {
+            return matResponse;
+		},
+	}));
+
+
+    const categoriesQuery = createQuery( () => ( {
 		queryKey	: [ 'categories' ],
-		queryFn		: async () : Promise< CategoryInfo[] > => {
-			const catResponse = await connectRequest< CategoryInfo[] >( {
+		queryFn		: async () : Promise<CategoryInfo[]> => {
+			const catResponse = await connectRequest<CategoryInfo[]>({
 				endpoint	: INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL,
 				isInternal	: true,
-			} );
-			if ( isApiError( catResponse ) ) {
+			});
+
+            if ( isApiError( catResponse )) {
 				throw new Error( 'Error al cargar categorías.' );
 			}
-			return catResponse;
+
+            return catResponse;
 		},
-	} ) );
+	}));
 
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
 	const products   = $derived( productsQuery.data   || [] );
 	const materials  = $derived( materialsQuery.data  || [] );
 	const categories = $derived( categoriesQuery.data || [] );
 
-	let search         = $state( '' );
-	let showModal      = $state( false );
-	let isEditing      = $state( false );
-	let editingId      = $state( '' );
-	let editingProduct = $state< any >( null );
+	let search    = $state( '' );
+	let showModal = $state( false );
+	let isEditing = $state( false );
+	let editingId = $state( '' );
+
+	const editingProduct = $derived.by( () => {
+		if ( !isEditing || !editingId ) {
+			return null;
+		}
+
+		const item = products.find( ( p ) => p.id === editingId );
+
+		if ( !item ) {
+			return null;
+		}
+
+		return {
+			name			: item.name,
+			sku				: item.sku,
+			description		: item.description,
+			materialId		: item.material?.id || '',
+			subcategoryId	: item.subcategory?.id || '',
+			active			: item.active,
+			technicalSpecs	: '{"color":"verde"}',
+			files			: ( item.files || [] )
+				.filter( ( f ) => f.id !== 'placeholder' )
+				.map( ( f, index ) => ( {
+					id		: f.id,
+					url		: f.url,
+					alt		: f.alt || '',
+					isMain	: f.isMain || false,
+					order	: ( f as any ).order ?? index,
+				} ) ),
+		};
+	} );
 
 	// ─── Filtered View ────────────────────────────────────────────────────────────
 	const filteredProducts = $derived(
@@ -114,37 +152,27 @@
 		return () => {
 			$globalLoadingStore = false;
 		};
-	} );
+	});
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
 	function openCreateModal() : void {
-		isEditing      = false;
-		editingId      = '';
-		editingProduct = null;
-		showModal      = true;
+		isEditing = false;
+		editingId = '';
+		showModal = true;
 	}
 
 	function openEditModal( item : Product ) : void {
-		isEditing      = true;
-		editingId      = item.id;
-		editingProduct = {
-			name			: item.name,
-			sku				: item.sku,
-			description		: item.description,
-			materialId		: item.material?.id || '',
-			subcategoryId	: item.subcategory?.id || '',
-			active			: item.active,
-			technicalSpecs	: '{"color":"verde"}',
-			files			: ( item.files || [] ).filter( ( f ) => f.id !== 'placeholder' ),
-		};
-		showModal      = true;
+		isEditing = true;
+		editingId = item.id;
+		showModal = true;
 	}
 
 	async function deleteProduct( id : string ) : Promise<void> {
 		if ( !confirm( '¿Está seguro de que desea eliminar este producto del catálogo?' ) ) return;
 
 		$globalLoadingStore = true;
-		try {
+
+        try {
 			const response = await connectRequest< any >( {
 				endpoint	: `products?id=${ id }`,
 				method		: METHOD.DELETE,
@@ -164,7 +192,17 @@
 			$globalLoadingStore = false;
 		}
 	}
+
+
+    function getProductImageUrl( files : Array<{ url : string; isMain : boolean }> | undefined ) : string {
+		const mainFile = files?.find( ( f ) => f.isMain );
+
+		return mainFile
+			? mainFile.url
+			: PUBLIC_NOT_FOUND_IMAGE;
+	}
 </script>
+
 
 <svelte:head>
 	<title>Administración de Productos - GlobalCET</title>
@@ -240,11 +278,10 @@
 								<td class="px-6 py-3">
 									<div class="h-10 w-10 overflow-hidden rounded-lg border border-brand/10 bg-input">
 										{#if ( prod.files && prod.files[ 0 ] ) }
-											<!-- Safe local static or external URL -->
 											<img 
-												src={ prod.files[ 0 ].url.startsWith( 'http' ) ? prod.files[ 0 ].url : `https://res.cloudinary.com/dbgzsikcs/image/upload/v1779666295/globalcet/${ prod.files[ 0 ].url }` } 
-												alt={ prod.name } 
-												class="h-full w-full object-cover" 
+												src     = { getProductImageUrl( prod.files ) } 
+												alt     = { prod.name } 
+												class   = "h-full w-full object-cover" 
 											/>
 										{:else}
 											<div class="flex h-full w-full items-center justify-center bg-brand/5 text-[10px] text-brand">🔬</div>
