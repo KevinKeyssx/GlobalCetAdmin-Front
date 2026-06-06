@@ -60,6 +60,7 @@
 	// File Uploader state
 	let uploaderFiles     = $state< UploadedFileItem[] >( [] );
 	let uploaderFilesInfo = $state( '' );
+	let deletingFileId    = $state< string | null >( null );
 
 	const mappedSubcategories = $derived.by( () => {
 		return categories.flatMap( ( cat ) => {
@@ -95,7 +96,7 @@
 		}
 	} );
 
-	// ─── TanStack Query client & mutation ─────────────────────────────────────────
+	// ─── TanStack Query client & mutations ────────────────────────────────────────
 	const queryClient = useQueryClient();
 
 	const productMutation = createMutation( () => ( {
@@ -104,36 +105,88 @@
 			const method   = isEditing ? METHOD.PUT : METHOD.POST;
 
 			const response = await connectRequest< any >( {
-				endpoint	: endpoint,
-				method		: method,
-				body		: formData,
-				isInternal	: true,
-			});
+				endpoint   : endpoint,
+				method     : method,
+				body       : formData,
+				isInternal : true,
+			} );
 
-			if ( isApiError( response )) {
+			if ( isApiError( response ) ) {
 				throw new Error( response.message );
 			}
 
 			return response;
 		},
-		onSuccess : () => {
+		onSuccess  : () => {
 			toast.success( isEditing ? 'Producto editado con éxito.' : 'Producto creado con éxito.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-products' ] } );
 			onSave();
 		},
-		onError : ( error : any ) => {
+		onError    : ( error : any ) => {
 			toast.error( error.message || 'Error al guardar.' );
 		},
-	}));
+	} ) );
 
 	$effect( () => {
 		$globalLoadingStore = productMutation.isPending;
 		return () => {
 			$globalLoadingStore = false;
 		};
-	});
+	} );
 
-	// ─── Submit Handler ───────────────────────────────────────────────────────────
+	// ─── Deletion Handlers ────────────────────────────────────────────────────────
+	async function handleDeleteSingleFile( fileId : string ) : Promise< void > {
+		try {
+			deletingFileId      = fileId;
+			$globalLoadingStore = true;
+
+			const response = await connectRequest< any >( {
+				endpoint	: `products/files?id=${ editingId }&fileId=${ fileId }`,
+				method		: METHOD.DELETE,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( response.message );
+			}
+
+			toast.success( 'Archivo eliminado con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-products' ] } );
+		} catch ( error : any ) {
+			toast.error( error.message || 'Error al eliminar el archivo.' );
+		} finally {
+			deletingFileId      = null;
+			$globalLoadingStore = false;
+		}
+	}
+
+	async function handleDeleteMultipleFiles( fileIds : string[] ) : Promise< void > {
+		try {
+			deletingFileId      = 'bulk';
+			$globalLoadingStore = true;
+
+			const response = await connectRequest< any >( {
+				endpoint	: `products/files?id=${ editingId }`,
+				method		: METHOD.DELETE,
+				body		: { fileIds },
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( response.message );
+			}
+
+			toast.success( 'Archivos seleccionados eliminados con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-products' ] } );
+		} catch ( error : any ) {
+			toast.error( error.message || 'Error al eliminar los archivos seleccionados.' );
+		} finally {
+			deletingFileId      = null;
+			$globalLoadingStore = false;
+		}
+	}
+
+	// ─── Submit Handlers ──────────────────────────────────────────────────────────
 	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
@@ -154,14 +207,20 @@
 		formData.append( 'includeMobileLabs', 'false' );
 		formData.append( 'technical_specs', formSpecs );
 
-		// Sync file items
-		formData.append( 'imagesInfo', uploaderFilesInfo || '[]' );
+		// Sync file items metadata
+		const clientImages = uploaderFiles.map( ( uf ) => ( {
+			id     : uf.file ? undefined : uf.id,
+			alt    : uf.alt,
+			isMain : uf.isMain,
+			order  : uf.order,
+		} ) );
+		formData.append( 'imagesInfo', JSON.stringify( clientImages ) );
 
-		uploaderFiles.forEach( ( u ) => {
-			if ( u.file ) {
-				formData.append( 'files', u.file );
+		uploaderFiles.forEach( ( uf ) => {
+			if ( uf.file ) {
+				formData.append( 'files', uf.file );
 			}
-		});
+		} );
 
 		productMutation.mutate( { isEditing, editingId, formData } );
 	}
@@ -245,10 +304,11 @@
                     </div>
 
                     <!-- Technical specs (Visual Editor) -->
-                    <div class="space-y-1.5">
+                    <div class="space-y-1.5 font-bold">
                         <label for="prod-specs" class="font-bold text-brand">Especificaciones Técnicas (Clave : Valor)</label>
                         <KeyValueEditor id="prod-specs" bind:value={ formSpecs } />
                     </div>
+
                 </div>
 
                 <!-- Custom Shared File Uploader (Dropzone area) -->
@@ -257,6 +317,10 @@
                     <FileUploader
                         bind:files={ uploaderFiles }
                         bind:filesInfo={ uploaderFilesInfo }
+						isEditing={ isEditing }
+						deletingFileId={ deletingFileId }
+						onDeleteSingle={ handleDeleteSingleFile }
+						onDeleteMultiple={ handleDeleteMultipleFiles }
                     />
                 </div>
             </div>
@@ -275,17 +339,17 @@
 			<!-- Actions -->
 			<div class="flex items-center justify-end gap-3 border-t border-brand/10 pt-4">
 				<button
-					type="button"
-					onclick={ onCancel }
-					disabled={ productMutation.isPending }
-					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					type     = "button"
+					onclick  = { onCancel }
+					disabled = { productMutation.isPending }
+					class    = "rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					Cancelar
 				</button>
 				<button
-					type="submit"
-					disabled={ productMutation.isPending }
-					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					type     = "submit"
+					disabled = { productMutation.isPending }
+					class    = "rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					{ productMutation.isPending ? 'Guardando...' : 'Guardar Producto' }
 				</button>
