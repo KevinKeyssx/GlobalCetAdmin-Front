@@ -33,11 +33,14 @@ export const EXTERNAL_ENDPOINTS = {
 	PRODUCTS      : {
 		BASE       : '/products',
 		MATERIALS  : {
-			GET_ALL : '/materials',
+			GET_ALL : '/materials/paginated',
+			BASE    : '/materials',
 		},
 		CATEGORIES : {
-			GET_ALL       : '/categories',
-			SUBCATEGORIES : '/subcategories',
+			GET_ALL       : '/categories/paginated',
+			BASE          : '/categories',
+			SUBCATEGORIES : '/sub-categories/paginated',
+			SUB_BASE      : '/sub-categories',
 		},
 	},
 	GLOBAL_SEARCH : {
@@ -46,13 +49,15 @@ export const EXTERNAL_ENDPOINTS = {
 	KITS          : {
 		BASE       : '/kits',
 		CATEGORIES : {
-			GET_ALL : '/kit-categories',
+			GET_ALL : '/kit-categories/paginated',
+			BASE    : '/kit-categories',
 		},
 	},
 	LABS          : {
 		BASE       : '/mobile-labs',
 		CATEGORIES : {
-			GET_ALL : '/lab-categories',
+			GET_ALL : '/lab-categories/paginated',
+			BASE    : '/lab-categories',
 		},
 	}
 };
