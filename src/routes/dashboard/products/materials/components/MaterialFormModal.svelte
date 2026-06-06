@@ -1,11 +1,12 @@
 <script lang="ts">
-	import toast from 'svelte-french-toast';
+	import toast                            from 'svelte-french-toast';
+	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 
-	import connectRequest, { isApiError } from '$lib/services/fetch.service';
-	import { METHOD }                     from '$lib/services/http-codes';
-	import { globalLoadingStore }         from '$lib/state/loading';
-	import DashboardModal                 from '../../../components/DashboardModal.svelte';
-	import Select                         from '$lib/components/shared/Select.svelte';
+	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { METHOD }                       from '$lib/services/http-codes';
+	import { globalLoadingStore }           from '$lib/state/loading';
+	import DashboardModal                   from '../../../components/DashboardModal.svelte';
+	import Select                           from '$lib/components/shared/Select.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface MaterialFormProps {
@@ -55,7 +56,7 @@
 	];
 
 	// ─── Sync initial data when modal opens ───────────────────────────────────────
-	$effect( () => {
+	$effect( ( ) => {
 		if ( show && initialData ) {
 			formName               = initialData.name;
 			formSlug               = initialData.slug;
@@ -77,8 +78,46 @@
 		}
 	} );
 
+	// ─── TanStack Query client & mutation ─────────────────────────────────────────
+	const queryClient = useQueryClient();
+
+	const materialMutation = createMutation( ( ) => ( {
+		mutationFn : async ( payload : any ) : Promise< any > => {
+			const endpoint = isEditing ? `products/materials?id=${ editingId }` : 'products/materials';
+			const method   = isEditing ? METHOD.PUT : METHOD.POST;
+
+			const response = await connectRequest< any >( {
+				endpoint,
+				method,
+				body       : payload,
+				isInternal : true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( response.message );
+			}
+
+			return response;
+		},
+		onSuccess  : ( ) => {
+			toast.success( isEditing ? 'Material modificado con éxito.' : 'Material agregado con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'materials' ] } );
+			onSave();
+		},
+		onError    : ( error : any ) => {
+			toast.error( error.message || 'Error al guardar el material.' );
+		},
+	} ) );
+
+	$effect( ( ) => {
+		$globalLoadingStore = materialMutation.isPending;
+		return ( ) => {
+			$globalLoadingStore = false;
+		};
+	} );
+
 	// ─── Submit Handler ───────────────────────────────────────────────────────────
-	async function handleSubmit( e : Event ) : Promise<void> {
+	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
 		if ( !formName.trim() ) {
@@ -86,7 +125,6 @@
 			return;
 		}
 
-		$globalLoadingStore = true;
 		const payload = {
 			name               : formName,
 			slug               : formSlug || formName.toLowerCase().replace( /[^a-z0-9]+/g, '-' ).replace( /(^-|-$)/g, '' ),
@@ -100,30 +138,7 @@
 			active             : formActive,
 		};
 
-		try {
-			const endpoint = isEditing ? `products/materials?id=${ editingId }` : 'products/materials';
-			const method   = isEditing ? METHOD.PUT : METHOD.POST;
-
-			const response = await connectRequest< any >( {
-				endpoint,
-				method,
-				body       : payload,
-				isInternal : true,
-			} );
-
-			if ( isApiError( response ) ) {
-				toast.error( `Error: ${ response.message }` );
-				return;
-			}
-
-			toast.success( isEditing ? 'Material modificado con éxito.' : 'Material agregado con éxito.' );
-
-			onSave();
-		} catch ( err : any ) {
-			toast.error( 'Error de red al intentar guardar el material.' );
-		} finally {
-			$globalLoadingStore = false;
-		}
+		materialMutation.mutate( payload );
 	}
 </script>
 
@@ -236,15 +251,17 @@
 				<button
 					type="button"
 					onclick={ onCancel }
-					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors"
+					disabled={ materialMutation.isPending }
+					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors disabled:opacity-50"
 				>
 					Cancelar
 				</button>
 				<button
 					type="submit"
-					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors"
+					disabled={ materialMutation.isPending }
+					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors disabled:opacity-50"
 				>
-					Guardar
+					{ materialMutation.isPending ? 'Guardando...' : 'Guardar' }
 				</button>
 			</div>
 		</form>
