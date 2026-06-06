@@ -1,17 +1,19 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
+	import {
+        createQuery,
+        createMutation,
+        useQueryClient
+    }               from '@tanstack/svelte-query';
+	import { Plus } from '@lucide/svelte';
     import toast    from 'svelte-french-toast';
-    import { Plus } from '@lucide/svelte';
 
-	import connectRequest, {
-        isApiError
-    }                               from '$lib/services/fetch.service';
-	import { METHOD }               from '$lib/services/http-codes';
-	import { globalLoadingStore }   from '$lib/state/loading';
-	import TableActions             from '$lib/components/shared/TableActions.svelte';
-	import Status                   from '$lib/components/shared/Status.svelte';
-	import MaterialFormModal        from './components/MaterialFormModal.svelte';
+	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { METHOD }                       from '$lib/services/http-codes';
+	import { globalLoadingStore }           from '$lib/state/loading';
+	import TableActions                     from '$lib/components/shared/TableActions.svelte';
+	import Status                           from '$lib/components/shared/Status.svelte';
+	import Pagination                       from '$lib/components/shared/Pagination.svelte';
+	import MaterialFormModal                from './components/MaterialFormModal.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Material {
@@ -30,73 +32,68 @@
 		updatedAt          : string;
 	}
 
+	interface PaginatedResponse< T > {
+		data : T[];
+		meta : {
+			total      : number;
+			page       : number;
+			size       : number;
+			totalPages : number;
+		};
+	}
+
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	let materials       = $state< Material[] >( [] );
 	let search          = $state( '' );
+	let activeStatus    = $state( 'all' ); // 'all' | 'true' | 'false'
+	let order           = $state( 'name' );
+	let typeOrder       = $state( 'asc' );
+	let page            = $state( 1 );
 	let showModal       = $state( false );
 	let isEditing       = $state( false );
 	let editingId       = $state( '' );
 	let editingMaterial = $state< Material | null >( null );
 
-	// ─── Filtered Materials ───────────────────────────────────────────────────────
-	const filteredMaterials = $derived(
-		materials.filter( ( m ) =>
-			m.name.toLowerCase().includes( search.toLowerCase() ) ||
-			m.slug.toLowerCase().includes( search.toLowerCase() ) ||
-			( m.description || '' ).toLowerCase().includes( search.toLowerCase() )
-		)
-	);
+	// Reset to page 1 on filter changes
+	$effect( ( ) => {
+		page = 1;
+	} );
 
-	// ─── Fetch Data from Backend ──────────────────────────────────────────────────
-	async function loadMaterials() : Promise<void> {
-		$globalLoadingStore = true;
+	// ─── TanStack Query client & queries ──────────────────────────────────────────
+	const queryClient = useQueryClient();
 
-        try {
-			const response = await connectRequest< Material[] >( {
-				endpoint   : 'products/materials/get-all',
-				isInternal : true,
-			});
+	const materialsQuery = createQuery( ( ) => ( {
+		queryKey : [ 'materials', page, search, activeStatus, order, typeOrder ],
+		queryFn  : async ( ) : Promise< PaginatedResponse< Material > > => {
+			const params = new URLSearchParams( {
+				page      : page.toString(),
+				size      : '10',
+				order     : order,
+				typeOrder : typeOrder,
+			} );
 
-			if ( isApiError( response )) {
-				toast.error( 'Error de servidor: No se pudieron cargar los materiales.' );
-				return;
+			if ( search.trim() ) {
+				params.append( 'name', search.trim() );
 			}
 
-			materials = response || [];
-		} catch ( e ) {
-			toast.error( 'Error de red: El servidor de GlobalCET no responde.' );
-		} finally {
-			$globalLoadingStore = false;
-		}
-	}
+			if ( activeStatus !== 'all' ) {
+				params.append( 'active', activeStatus );
+			}
 
+			const response = await connectRequest< PaginatedResponse< Material > >( {
+				endpoint   : `products/materials?${ params.toString() }`,
+				isInternal : true,
+			} );
 
-    onMount( () => {
-		loadMaterials();
-	});
+			if ( isApiError( response ) ) {
+				throw new Error( 'No se pudieron cargar los materiales.' );
+			}
 
-	// ─── Handlers ─────────────────────────────────────────────────────────────────
-	function openCreateModal() : void {
-		isEditing       = false;
-		editingId       = '';
-		editingMaterial = null;
-		showModal       = true;
-	}
+			return response;
+		},
+	} ) );
 
-
-    function openEditModal( item : Material ) : void {
-		isEditing       = true;
-		editingId       = item.id;
-		editingMaterial = item;
-		showModal       = true;
-	}
-
-
-    async function deleteMaterial( id : string ) : Promise<void> {
-		if ( !confirm( '¿Está seguro de que desea eliminar este material?' ) ) return;
-
-		$globalLoadingStore = true;
-		try {
+	const deleteMutation = createMutation( ( ) => ( {
+		mutationFn : async ( id : string ) : Promise< any > => {
 			const response = await connectRequest< any >( {
 				endpoint   : `products/materials?id=${ id }`,
 				method     : METHOD.DELETE,
@@ -104,16 +101,54 @@
 			} );
 
 			if ( isApiError( response ) ) {
-				toast.error( `Error al eliminar: ${ response.message }` );
-				return;
+				throw new Error( response.message );
 			}
 
+			return response;
+		},
+		onSuccess  : ( ) => {
 			toast.success( 'Material eliminado con éxito.' );
-			loadMaterials();
-		} catch ( err ) {
-			toast.error( 'Error de red al intentar eliminar.' );
-		} finally {
+			queryClient.invalidateQueries( { queryKey : [ 'materials' ] } );
+		},
+		onError    : ( error : any ) => {
+			toast.error( error.message || 'Error al intentar eliminar el material.' );
+		},
+	} ) );
+
+	$effect( ( ) => {
+		$globalLoadingStore = materialsQuery.isFetching || deleteMutation.isPending;
+		return ( ) => {
 			$globalLoadingStore = false;
+		};
+	} );
+
+	// ─── Handlers ─────────────────────────────────────────────────────────────────
+	function openCreateModal( ) : void {
+		isEditing       = false;
+		editingId       = '';
+		editingMaterial = null;
+		showModal       = true;
+	}
+
+	function openEditModal( item : Material ) : void {
+		isEditing       = true;
+		editingId       = item.id;
+		editingMaterial = item;
+		showModal       = true;
+	}
+
+	function deleteMaterial( id : string ) : void {
+		if ( !confirm( '¿Está seguro de que desea eliminar este material?' ) ) return;
+
+		deleteMutation.mutate( id );
+	}
+
+	function toggleSort( field : string ) : void {
+		if ( order === field ) {
+			typeOrder = typeOrder === 'asc' ? 'desc' : 'asc';
+		} else {
+			order     = field;
+			typeOrder = 'asc';
 		}
 	}
 </script>
@@ -156,39 +191,60 @@
 			</button>
 		</header>
 
-		<!-- ─── Search Tool ──────────────────────────────────────────────────────── -->
-		<div class="flex items-center max-w-md relative">
-			<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<circle cx="11" cy="11" r="8" />
-				<path d="m21 21-4.35-4.35" />
-			</svg>
+		<!-- ─── Search & Filter Tool ────────────────────────────────────────────── -->
+		<div class="flex flex-col sm:flex-row items-center gap-2 max-w-xl w-full">
+			<select
+				bind:value={ activeStatus }
+				class="w-full sm:w-auto rounded-xl border border-brand/15 bg-input py-2.5 px-3 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10 font-bold"
+			>
+				<option value="all">Todos los estados</option>
+				<option value="true">Activos</option>
+				<option value="false">Inactivos</option>
+			</select>
 
-            <input
-				type="search"
-				placeholder="Buscar material por nombre, slug o descripción..."
-				bind:value={ search }
-				class="w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
-			/>
+			<div class="flex items-center relative w-full">
+				<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="11" cy="11" r="8" />
+					<path d="m21 21-4.35-4.35" />
+				</svg>
+
+				<input
+					type="search"
+					placeholder="Buscar material..."
+					bind:value={ search }
+					class="w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
+				/>
+			</div>
 		</div>
 
 		<!-- ─── Table Content ────────────────────────────────────────────────────── -->
-		<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card">
+		<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card space-y-4 pb-4">
 			<div class="overflow-x-auto">
 				<table class="w-full text-left border-collapse">
 					<thead>
 						<tr class="border-b border-brand/15 bg-brand/5 text-xs font-black uppercase tracking-widest text-text-muted">
-							<th class="px-6 py-4">Nombre</th>
-							<th class="px-6 py-4">Slug</th>
-							<th class="px-6 py-4">Autoclavable</th>
-							<th class="px-6 py-4">Temp. Máx</th>
+							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
+								Nombre { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+							</th>
+							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'slug' ) }>
+								Slug { order === 'slug' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+							</th>
+							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'autoclavable' ) }>
+								Autoclavable { order === 'autoclavable' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+							</th>
+							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'maxTemperature' ) }>
+								Temp. Máx { order === 'maxTemperature' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+							</th>
 							<th class="px-6 py-4">Resist. Química (Ácido / Alcalino)</th>
-							<th class="px-6 py-4">Estado</th>
+							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
+								Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+							</th>
 							<th class="px-6 py-4 text-right">Acciones</th>
 						</tr>
 					</thead>
 
                     <tbody class="divide-y divide-brand/10 font-semibold text-sm">
-						{#each filteredMaterials as item ( item.id ) }
+						{#each ( materialsQuery.data?.data || [] ) as item ( item.id )}
 							<tr class="hover:bg-brand/5 transition-colors duration-150">
 								<td class="px-6 py-4 font-bold text-text">{ item.name }</td>
 
@@ -214,7 +270,7 @@
 
                                 <td class="px-6 py-4 text-right">
 									<TableActions
-										item            = { item }
+										{ item }
 										openEditModal   = { openEditModal }
 										deleteItem      = { ( m ) => deleteMaterial( m.id ) }
 									/>
@@ -223,13 +279,23 @@
 						{:else}
 							<tr>
 								<td colspan="7" class="px-6 py-12 text-center text-text-muted leading-relaxed">
-									No se encontraron materiales registrados. Compruebe la conexión con el servidor.
+									No se encontraron materiales registrados.
 								</td>
 							</tr>
 						{/each}
 					</tbody>
 				</table>
 			</div>
+
+			{#if ( materialsQuery.data?.meta && materialsQuery.data.meta.totalPages > 1 )}
+				<div class="flex justify-center pt-2">
+					<Pagination
+						count={ materialsQuery.data.meta.total }
+						perPage={ materialsQuery.data.meta.size }
+						bind:page={ page }
+					/>
+				</div>
+			{/if}
 		</section>
 
 		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
@@ -248,11 +314,10 @@
 					alkalineResistance : editingMaterial.chemicalResistance?.alkaline || 'good',
 					active             : editingMaterial.active,
 				} : null }
-				onSave={ () => {
+				onSave={ ( ) => {
 					showModal = false;
-					loadMaterials();
 				} }
-				onCancel={ () => {
+				onCancel={ ( ) => {
 					showModal = false;
 				} }
 			/>
