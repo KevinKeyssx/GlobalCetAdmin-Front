@@ -11,3 +11,9 @@ export interface Material {
 	maxTemperature     : number;
 	chemicalResistance : ChemicalResistance;
 }
+
+export interface MaterialInfo {
+	id   : string;
+	name : string;
+}
+
