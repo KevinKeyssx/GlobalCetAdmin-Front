@@ -34,7 +34,7 @@
 	function handleSearch( value: string ): void {
 		$searchStore = value;
 
-        if ( value && page.url.pathname !== '/catalog' ) {
+        if ( value && ( page.url.pathname as string ) !== '/catalog' ) {
 			goto( '/catalog' );
 		}
 	}
