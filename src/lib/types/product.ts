@@ -60,3 +60,37 @@ export interface ProductInitial {
 	technicalSpecs : string;
 	files?         : InitialFile[];
 }
+
+// ─── Admin View Interfaces ─────────────────────────────────────────────────────
+
+export interface AdminProductFile {
+	id     : string;
+	url    : string;
+	alt    : string;
+	isMain : boolean;
+}
+
+export interface AdminProduct {
+	id          : string;
+	sku         : string;
+	name        : string;
+	description : string;
+	active      : boolean;
+	files       : AdminProductFile[];
+	subcategory : {
+		id   : string;
+		name : string;
+	};
+	material    : {
+		id   : string;
+		name : string;
+		slug : string;
+	};
+}
+
+export interface CategoryInfo {
+	id            : string;
+	name          : string;
+	subCategories : Array<{ id : string; name : string }>;
+}
+
