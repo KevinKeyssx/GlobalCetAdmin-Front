@@ -1,112 +1,122 @@
 <script lang="ts">
 	import toast                            from 'svelte-french-toast';
-	import { Plus }                         from '@lucide/svelte';
+	import { BrushCleaning }                from '@lucide/svelte';
 	import { createQuery, useQueryClient }  from '@tanstack/svelte-query';
 	import { PUBLIC_NOT_FOUND_IMAGE }       from '$env/static/public';
 
+	import type {
+        AdminProduct,
+        CategoryInfo
+    }                                       from '$lib/types/product';
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
+	import Select                           from '$lib/components/shared/Select.svelte';
+	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
+	import type { MaterialInfo }            from '$lib/types/material';
+	import type { SubCategory }             from '$lib/types/category';
 	import ProductFormModal                 from './components/ProductFormModal.svelte';
+	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
 
-	// ─── Interfaces ───────────────────────────────────────────────────────────────
-	interface Product {
-		id          : string;
-		sku         : string;
-		name        : string;
-		description : string;
-		active      : boolean;
-		files       : Array<{ id : string; url : string; alt : string; isMain : boolean }>;
-		subcategory : {
-			id       : string;
-			name     : string;
-			// category : { id : string; name : string };
-		};
-		material    : {
-			id   : string;
-			name : string;
-			slug : string;
-		};
-	}
-
-	interface MaterialInfo {
-		id   : string;
-		name : string;
-	}
-
-	interface CategoryInfo {
-		id            : string;
-		name          : string;
-		subCategories : Array<{ id : string; name : string }>;
-	}
+	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
+	let search                = $state( '' );
+	let selectedMaterials     = $state( new Set< string >() );
+	let selectedSubcategories = $state( new Set< string >() );
+	let activeStatus          = $state( 'all' );
+	let showModal             = $state( false );
+	let isEditing             = $state( false );
+	let editingId             = $state( '' );
 
 	// ─── TanStack Query client & queries ──────────────────────────────────────────
 	const queryClient = useQueryClient();
 
-	const productsQuery = createQuery( () => ( {
-		queryKey	: [ 'admin-products' ],
-		queryFn		: async () : Promise<Product[]> => {
+	const productsQuery = createQuery( ( ) => ( {
+		queryKey : [ 'admin-products', Array.from( selectedMaterials ), Array.from( selectedSubcategories ), activeStatus ],
+		queryFn  : async ( ) : Promise< AdminProduct[] > => {
+			const params = new URLSearchParams( {
+				size : '50',
+			});
+
+			selectedMaterials.forEach( ( id ) => params.append( 'materials', id ) );
+			selectedSubcategories.forEach( ( id ) => params.append( 'subcategories', id ) );
+
+			if ( activeStatus !== 'all' ) {
+				params.append( 'active', activeStatus );
+			}
+
 			const prodResponse = await connectRequest<any>({
-				endpoint	: `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=50`,
-				isInternal	: true,
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?${ params.toString() }`,
+				isInternal : true,
 			});
 
 			if ( isApiError( prodResponse )) {
 				throw new Error( 'Error al cargar productos.' );
 			}
 
-            return prodResponse.data || [];
+			return prodResponse.data || [];
 		},
 	}));
 
 
-    const materialsQuery = createQuery( () => ({
-		queryKey	: [ 'materials' ],
-		queryFn		: async () : Promise<MaterialInfo[]> => {
+    const materialsQuery = createQuery( ( ) => ( {
+		queryKey : [ 'materials' ],
+		queryFn  : async ( ) : Promise<MaterialInfo[]> => {
 			const matResponse = await connectRequest<MaterialInfo[]>({
-				endpoint	: INTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.GET_ALL,
-				isInternal	: true,
-			});
+				endpoint   : INTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.GET_ALL,
+				isInternal : true,
+			} );
 
-            if ( isApiError( matResponse )) {
+			if ( isApiError( matResponse )) {
 				throw new Error( 'Error al cargar materiales.' );
 			}
 
-            return matResponse;
+			return matResponse;
 		},
 	}));
 
 
-    const categoriesQuery = createQuery( () => ( {
-		queryKey	: [ 'categories' ],
-		queryFn		: async () : Promise<CategoryInfo[]> => {
+    const categoriesQuery = createQuery( ( ) => ({
+		queryKey : [ 'categories' ],
+		queryFn  : async ( ) : Promise< CategoryInfo[] > => {
 			const catResponse = await connectRequest<CategoryInfo[]>({
-				endpoint	: INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL,
-				isInternal	: true,
+				endpoint   : INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL,
+				isInternal : true,
 			});
 
-            if ( isApiError( catResponse )) {
+			if ( isApiError( catResponse ) ) {
 				throw new Error( 'Error al cargar categorías.' );
 			}
 
-            return catResponse;
+			return catResponse;
 		},
 	}));
 
-	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	const products   = $derived( productsQuery.data   || [] );
-	const materials  = $derived( materialsQuery.data  || [] );
-	const categories = $derived( categoriesQuery.data || [] );
 
-	let search    = $state( '' );
-	let showModal = $state( false );
-	let isEditing = $state( false );
-	let editingId = $state( '' );
+    const subcategoriesQuery = createQuery( ( ) => ( {
+		queryKey : [ 'subcategories-all' ],
+		queryFn  : async ( ) : Promise< SubCategory[] > => {
+			const subResponse = await connectRequest< SubCategory[] >( {
+				endpoint   : INTERNAL_ENDPOINTS.PRODUCTS.SUBCATEGORIES.GET_ALL,
+				isInternal : true,
+			} );
 
-	const editingProduct = $derived.by( () => {
+			if ( isApiError( subResponse ) ) {
+				throw new Error( 'Error al cargar subcategorías.' );
+			}
+
+			return subResponse;
+		},
+	}));
+
+	const products      = $derived( productsQuery.data || [] );
+	const materials     = $derived( materialsQuery.data || [] );
+	const categories    = $derived( categoriesQuery.data || [] );
+	const subcategories = $derived( subcategoriesQuery.data || [] );
+
+	const editingProduct = $derived.by( ( ) => {
 		if ( !isEditing || !editingId ) {
 			return null;
 		}
@@ -118,26 +128,33 @@
 		}
 
 		return {
-			name			: item.name,
-			sku				: item.sku,
-			description		: item.description,
-			materialId		: item.material?.id || '',
-			subcategoryId	: item.subcategory?.id || '',
-			active			: item.active,
-			technicalSpecs	: '{"color":"verde"}',
-			files			: ( item.files || [] )
+			name           : item.name,
+			sku            : item.sku,
+			description    : item.description,
+			materialId     : item.material?.id || '',
+			subcategoryId  : item.subcategory?.id || '',
+			active         : item.active,
+			technicalSpecs : '{"color":"verde"}',
+			files          : ( item.files || [] )
 				.filter( ( f ) => f.id !== 'placeholder' )
 				.map( ( f, index ) => ( {
-					id		: f.id,
-					url		: f.url,
-					alt		: f.alt || '',
-					isMain	: f.isMain || false,
-					order	: ( f as any ).order ?? index,
+					id     : f.id,
+					url    : f.url,
+					alt    : f.alt || '',
+					isMain : f.isMain || false,
+					order  : ( f as any ).order ?? index,
 				} ) ),
 		};
 	} );
 
-	// ─── Filtered View ────────────────────────────────────────────────────────────
+
+    const statusOptions = [
+		{ id : 'all',   name : 'Todos' },
+		{ id : 'true',  name : 'Activos' },
+		{ id : 'false', name : 'Inactivos' },
+	];
+
+	// ─── Filtered View (client side search) ──────────────────────────────────────────
 	const filteredProducts = $derived(
 		products.filter( ( p ) =>
 			p.name.toLowerCase().includes( search.toLowerCase() ) ||
@@ -147,36 +164,39 @@
 	);
 
 	// Sincronizar cargando global con queries
-	$effect( () => {
-		$globalLoadingStore = productsQuery.isFetching || materialsQuery.isFetching || categoriesQuery.isFetching;
-		return () => {
+	$effect( ( ) => {
+		$globalLoadingStore = productsQuery.isFetching || materialsQuery.isFetching || categoriesQuery.isFetching || subcategoriesQuery.isFetching;
+
+        return ( ) => {
 			$globalLoadingStore = false;
 		};
-	});
+	} );
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
-	function openCreateModal() : void {
+	function openCreateModal( ) : void {
 		isEditing = false;
 		editingId = '';
 		showModal = true;
 	}
 
-	function openEditModal( item : Product ) : void {
+
+    function openEditModal( item : AdminProduct ) : void {
 		isEditing = true;
 		editingId = item.id;
 		showModal = true;
 	}
 
-	async function deleteProduct( id : string ) : Promise<void> {
+
+    async function deleteProduct( id : string ) : Promise< void > {
 		if ( !confirm( '¿Está seguro de que desea eliminar este producto del catálogo?' ) ) return;
 
 		$globalLoadingStore = true;
 
-        try {
+		try {
 			const response = await connectRequest< any >( {
-				endpoint	: `products?id=${ id }`,
-				method		: METHOD.DELETE,
-				isInternal	: true,
+				endpoint   : `products?id=${ id }`,
+				method     : METHOD.DELETE,
+				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -201,6 +221,16 @@
 			? mainFile.url
 			: PUBLIC_NOT_FOUND_IMAGE;
 	}
+
+
+    function clearFilters( ) : void {
+		selectedMaterials.clear();
+		selectedSubcategories.clear();
+		selectedMaterials     = new Set< string >();
+		selectedSubcategories = new Set< string >();
+		activeStatus          = 'all';
+		search                = '';
+	}
 </script>
 
 
@@ -211,49 +241,82 @@
 <main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
 	<div class="mx-auto max-w-6xl space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
-		<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-6">
-			<div class="space-y-1">
-				<div class="flex items-center gap-2 text-text-muted">
-					<a href="/dashboard" class="hover:text-brand">Dashboard</a>
+		<HeaderPage
+			title       = "Catálogo de Productos"
+			description = "Administre reactivos cromatográficos, borosilicato, instrumental médico y equipos analíticos."
+			breadcrumb  = { [
+				{
+					label : 'Dashboard',
+					href  : '/dashboard'
+				},
+				{
+					label : 'Productos'
+				}
+			] }
+			buttonText  = "Agregar Producto"
+			onclick     = { openCreateModal }
+		/>
 
-                    <span>/</span>
 
-                    <span class="text-brand font-bold">Productos</span>
-				</div>
+		<!-- ─── Search & Filters Tool ────────────────────────────────────────────── -->
+		<div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl">
+			<!-- Search -->
+			<div class="space-y-1.5 w-full">
+				<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider">Buscar</label>
 
-                <h1 class="font-display text-xl md:text-3xl font-black text-text uppercase tracking-wide">
-					Catálogo de Productos
-				</h1>
-
-                <p class="text-text-muted">
-					Administre reactivos cromatográficos, borosilicato, instrumental médico y equipos analíticos.
-				</p>
+				<SearchInput
+					bind:value={ search }
+					placeholder="Por SKU o Nombre..."
+				/>
 			</div>
 
-			<button
-				onclick={ openCreateModal }
-				class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-xs font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
-			>
-                <Plus class="size-4"/>
+			<!-- Materials Select -->
+			<div class="space-y-1.5 w-full font-bold text-xs text-text-muted">
+				<label for="materials-select" class="uppercase tracking-wider">Materiales</label>
 
-                <span class="hidden sm:flex">
-                    Agregar Producto
-                </span>
-			</button>
-		</div>
+                <Select
+					options={ materials }
+					bind:selected={ selectedMaterials }
+					multiple={ true }
+					placeholder="Todos los materiales"
+				/>
+			</div>
 
-		<!-- ─── Search Tool ──────────────────────────────────────────────────────── -->
-		<div class="flex items-center max-w-md relative">
-			<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<circle cx="11" cy="11" r="8" />
-				<path d="m21 21-4.35-4.35" />
-			</svg>
-			<input
-				type="search"
-				placeholder="Buscar por SKU, Nombre o Descripción..."
-				bind:value={ search }
-				class="w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
-			/>
+			<!-- Subcategories Select -->
+			<div class="space-y-1.5 w-full font-bold text-xs text-text-muted">
+				<label for="subcategories-select" class="uppercase tracking-wider">Subcategorías</label>
+
+                <Select
+					bind:selected={ selectedSubcategories }
+					options     = { subcategories }
+					multiple    = { true }
+					placeholder = "Todas las subcategorías"
+				/>
+			</div>
+
+			<!-- Status and Reset -->
+			<div class="flex flex-col sm:flex-row gap-2 w-full font-semibold text-xs text-text-muted items-center">
+				<div class="space-y-1.5 flex-1">
+					<span class="font-bold uppercase tracking-wider block mb-1.5">Estado</span>
+
+                    <Select
+						bind:value={ activeStatus }
+						options     = { statusOptions }
+						multiple    = { false }
+						searching   = { false }
+						placeholder = "Todos los estados"
+					/>
+				</div>
+
+				{#if ( selectedMaterials.size > 0 || selectedSubcategories.size > 0 || activeStatus !== 'all' || search )}
+					<button
+						onclick={ clearFilters }
+						class="rounded-xl border border-brand/20 bg-surface/30 px-3 py-2.5 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 hover:text-brand transition-colors h-[42px] mt-auto"
+					>
+                        <BrushCleaning class="size-4" />
+					</button>
+				{/if}
+			</div>
 		</div>
 
 		<!-- ─── Table Content ────────────────────────────────────────────────────── -->

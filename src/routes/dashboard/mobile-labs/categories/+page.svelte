@@ -8,6 +8,10 @@
 	import CategoryFormModal                                from '$lib/components/shared/CategoryFormModal.svelte';
 	import TableActions                                     from '$lib/components/shared/TableActions.svelte';
 	import Pagination                                       from '$lib/components/shared/Pagination.svelte';
+	import HeaderPage                                       from '$lib/components/shared/HeaderPage.svelte';
+	import Select                                           from '$lib/components/shared/Select.svelte';
+	import SearchInput                                      from '$lib/components/shared/SearchInput.svelte';
+
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface LabCategory {
@@ -28,6 +32,7 @@
 
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
 	let search          = $state( '' );
+	let debouncedSearch = $state( '' );
 	let activeStatus    = $state( 'all' ); // 'all' | 'true' | 'false'
 	let order           = $state( 'name' );
 	let typeOrder       = $state( 'asc' );
@@ -38,8 +43,24 @@
 	let editingId       = $state( '' );
 	let editingCategory = $state< LabCategory | null >( null );
 
+	const statusOptions = [
+		{
+			id   : 'all',
+			name : 'Todos los estados'
+		},
+		{
+			id   : 'true',
+			name : 'Activos'
+		},
+		{
+			id   : 'false',
+			name : 'Inactivos'
+		}
+	];
+
 	// Reset to page 1 on filter changes
 	$effect( ( ) => {
+		const _ = [ debouncedSearch, activeStatus ];
 		page = 1;
 	} );
 
@@ -47,7 +68,7 @@
 	const queryClient = useQueryClient();
 
 	const categoriesQuery = createQuery( ( ) => ( {
-		queryKey : [ 'lab-categories', page, search, activeStatus, order, typeOrder ],
+		queryKey : [ 'lab-categories', page, debouncedSearch, activeStatus, order, typeOrder ],
 		queryFn  : async ( ) : Promise< PaginatedResponse< LabCategory > > => {
 			const params = new URLSearchParams( {
 				page      : page.toString(),
@@ -56,8 +77,8 @@
 				typeOrder : typeOrder,
 			} );
 
-			if ( search.trim() ) {
-				params.append( 'name', search.trim() );
+			if ( debouncedSearch.trim() ) {
+				params.append( 'name', debouncedSearch.trim() );
 			}
 
 			if ( activeStatus !== 'all' ) {
@@ -145,58 +166,38 @@
 <main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
 	<div class="mx-auto max-w-5xl space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
-		<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-6">
-			<div class="space-y-1">
-				<div class="flex items-center gap-2 text-text-muted">
-					<a href="/dashboard" class="hover:text-brand">Dashboard</a>
-					<span>/</span>
-					<span>Laboratorios Móviles</span>
-					<span>/</span>
-					<span class="text-brand font-bold">Categorías</span>
-				</div>
-				<h1 class="font-display text-3xl font-black text-text uppercase tracking-wide">
-					Categorías de Laboratorios
-				</h1>
-				<p class="text-text-muted">
-					Gestione las áreas científicas e infraestructuras de sus carros y laboratorios móviles.
-				</p>
-			</div>
+		<HeaderPage
+			title       = "Categorías de Laboratorios"
+			description = "Gestione las áreas científicas e infraestructuras de sus carros y laboratorios móviles."
+			breadcrumb  = { [
+				{
+					label : 'Dashboard',
+					href  : '/dashboard'
+				},
+				{
+					label : 'Categorías de Laboratorios'
+				}
+			] }
+			buttonText  = "Agregar Categoría"
+			onclick     = { openCreateModal }
+		/>
 
-			<button
-				onclick={ openCreateModal }
-				class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
-			>
-				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<line x1="12" y1="5" x2="12" y2="19" />
-					<line x1="5" y1="12" x2="19" y2="12" />
-				</svg>
-				Agregar Categoría
-			</button>
-		</div>
 
 		<!-- ─── Search Tool ──────────────────────────────────────────────────────── -->
 		<div class="flex flex-col sm:flex-row items-center gap-2 max-w-xl w-full">
-			<select
-				bind:value={ activeStatus }
-				class="w-full sm:w-auto rounded-xl border border-brand/15 bg-input py-2.5 px-3 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10 font-bold"
-			>
-				<option value="all">Todos los estados</option>
-				<option value="true">Activos</option>
-				<option value="false">Inactivos</option>
-			</select>
+			<Select
+				bind:value  = { activeStatus }
+				options     = { statusOptions }
+				multiple    = { false }
+				searching   = { false }
+				placeholder = "Todos los estados"
+			/>
 
-			<div class="flex items-center relative w-full">
-				<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="11" cy="11" r="8" />
-					<path d="m21 21-4.35-4.35" />
-				</svg>
-				<input
-					type="search"
-					placeholder="Buscar categoría de laboratorios..."
-					bind:value={ search }
-					class="w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
-				/>
-			</div>
+			<SearchInput
+				bind:value          = { search }
+				bind:debouncedValue = { debouncedSearch }
+				placeholder         = "Buscar categoría de laboratorios..."
+			/>
 		</div>
 
 		<!-- ─── Table Content ────────────────────────────────────────────────────── -->

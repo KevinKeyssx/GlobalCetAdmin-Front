@@ -4,7 +4,8 @@
         createMutation,
         useQueryClient
     }               from '@tanstack/svelte-query';
-	import toast    from 'svelte-french-toast';
+	import toast                            from 'svelte-french-toast';
+	import { BrushCleaning }                from '@lucide/svelte';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
@@ -12,6 +13,9 @@
 	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
+	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import Select                           from '$lib/components/shared/Select.svelte';
+	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
 	import type { Category, SubCategory }   from '$lib/types/category';
 
 	// ─── Paginated Response Interface ──────────────────────────────────────────────
@@ -28,6 +32,7 @@
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
 	let activeTab         = $state( 'categories' ); // 'categories' | 'subcategories'
 	let search            = $state( '' );
+	let debouncedSearch   = $state( '' );
 	let activeStatus      = $state( 'all' ); // 'all' | 'true' | 'false'
 	let order             = $state( 'name' );
 	let typeOrder         = $state( 'asc' );
@@ -37,9 +42,26 @@
 	let isEditing         = $state( false );
 	let editingId         = $state( '' );
 	let editingCategory   = $state<{ name : string; parentCatId? : string; } | null>( null );
+	let selectedCategories = $state( new Set< string >() );
+
+	const statusOptions = [
+		{
+			id   : 'all',
+			name : 'Todos los estados'
+		},
+		{
+			id   : 'true',
+			name : 'Activos'
+		},
+		{
+			id   : 'false',
+			name : 'Inactivos'
+		}
+	];
 
 	// Reset to page 1 on filter changes
 	$effect( ( ) => {
+		const _ = [ debouncedSearch, activeStatus, Array.from( selectedCategories ) ];
 		categoriesPage    = 1;
 		subcategoriesPage = 1;
 	});
@@ -48,18 +70,19 @@
 	const queryClient = useQueryClient();
 
 	const categoriesQuery = createQuery( ( ) => ( {
-		queryKey : [ 'categories', categoriesPage, search, activeStatus, order, typeOrder ],
-		queryFn  : async ( ) : Promise< PaginatedResponse< Category > > => {
+		queryKey : [ 'categories', categoriesPage, debouncedSearch, activeStatus, order, typeOrder ],
+		queryFn  : async ( ) : Promise< PaginatedResponse<Category>> => {
 			const params = new URLSearchParams( {
-				type      : 'category',
-				page      : categoriesPage.toString(),
-				size      : '10',
-				order     : order,
-				typeOrder : typeOrder,
-			} );
+				type                    : 'category',
+				page                    : categoriesPage.toString(),
+				size                    : '10',
+				order                   : order,
+				typeOrder               : typeOrder,
+				includeSubcategories    : 'true',
+			});
 
-			if ( search.trim() ) {
-				params.append( 'name', search.trim() );
+			if ( debouncedSearch.trim() ) {
+				params.append( 'name', debouncedSearch.trim() );
 			}
 
 			if ( activeStatus !== 'all' ) {
@@ -69,9 +92,9 @@
 			const response = await connectRequest< PaginatedResponse< Category > >( {
 				endpoint   : `products/categories?${ params.toString() }`,
 				isInternal : true,
-			} );
+			});
 
-			if ( isApiError( response ) ) {
+			if ( isApiError( response )) {
 				throw new Error( 'No se pudieron cargar las categorías.' );
 			}
 
@@ -79,6 +102,7 @@
 		},
 		enabled  : activeTab === 'categories',
 	} ) );
+
 
 	const allCategoriesQuery = createQuery( ( ) => ( {
 		queryKey : [ 'categories', 'all' ],
@@ -94,10 +118,12 @@
 
 			return response || [];
 		},
-	} ) );
+	}));
+
+	const allCategories = $derived( allCategoriesQuery.data || [] );
 
 	const subcategoriesQuery = createQuery( ( ) => ( {
-		queryKey : [ 'subcategories', subcategoriesPage, search, activeStatus, order, typeOrder ],
+		queryKey : [ 'subcategories', subcategoriesPage, debouncedSearch, activeStatus, Array.from( selectedCategories ), order, typeOrder ],
 		queryFn  : async ( ) : Promise< PaginatedResponse< SubCategory > > => {
 			const params = new URLSearchParams( {
 				type            : 'subcategory',
@@ -108,13 +134,17 @@
 				includeCategory : 'true',
 			} );
 
-			if ( search.trim() ) {
-				params.append( 'name', search.trim() );
+			if ( debouncedSearch.trim() ) {
+				params.append( 'name', debouncedSearch.trim() );
 			}
 
 			if ( activeStatus !== 'all' ) {
 				params.append( 'active', activeStatus );
 			}
+
+			Array.from( selectedCategories ).forEach( ( id ) => {
+				params.append( 'categoryIds', id );
+			} );
 
 			const response = await connectRequest< PaginatedResponse< SubCategory > >( {
 				endpoint   : `products/categories?${ params.toString() }`,
@@ -130,7 +160,8 @@
 		enabled  : activeTab === 'subcategories',
 	} ) );
 
-	const deleteMutation = createMutation( ( ) => ( {
+
+    const deleteMutation = createMutation( ( ) => ( {
 		mutationFn : async ( id : string ) : Promise< any > => {
 			const isSub    = activeTab === 'subcategories';
 			const path     = isSub ? 'products/categories?type=subcategory' : 'products/categories';
@@ -156,12 +187,20 @@
 		},
 	} ) );
 
-	$effect( ( ) => {
+
+    $effect( ( ) => {
 		$globalLoadingStore = categoriesQuery.isFetching || subcategoriesQuery.isFetching || deleteMutation.isPending;
 		return ( ) => {
 			$globalLoadingStore = false;
 		};
-	} );
+	});
+
+	function clearFilters( ) : void {
+		search             = '';
+		debouncedSearch    = '';
+		activeStatus       = 'all';
+		selectedCategories = new Set< string >();
+	}
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
 	function openCreateModal( ) : void {
@@ -205,83 +244,86 @@
 <main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
 	<div class="mx-auto max-w-6xl space-y-4 sm:space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
-		<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-3 sm:pb-6">
-			<div class="space-y-1">
-				<div class="flex items-center gap-2 text-text-muted">
-					<a href="/dashboard" class="hover:text-brand">Dashboard</a>
+		<HeaderPage
+			title       = "Categorías de Productos"
+			description = "Administre las categorías analíticas y subcategorías estructuradas de sus productos científicos."
+			breadcrumb  = { [
+				{
+					label : 'Dashboard',
+					href  : '/dashboard'
+				},
+				{
+					label : 'Categorías & Subcategorías de Productos'
+				}
+			] }
+			buttonText  = { activeTab === 'categories' ? 'Agregar Categoría' : 'Agregar Subcategoría' }
+			onclick     = { openCreateModal }
+		/>
 
-                    <span>/</span>
 
-                    <span>Productos</span>
-
-                    <span>/</span>
-
-                    <span class="text-brand font-bold">Categorías & Subcategorías</span>
-				</div>
-
-                <h1 class="font-display text-3xl font-black text-text uppercase tracking-wide">
-					Categorías de Productos
-				</h1>
-
-                <p class="text-text-muted">
-					Administre las categorías analíticas y subcategorías estructuradas de sus productos científicos.
-				</p>
-			</div>
-
+		<!-- ─── Tab Switcher ────────────────────────────────────────────────────── -->
+		<div class="flex rounded-xl bg-input p-1 border border-brand/10 max-w-xs gap-1 text-xs">
 			<button
-				onclick={ openCreateModal }
-				class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
+				onclick={ ( ) => { activeTab = 'categories'; } }
+				class="flex-1 rounded-lg px-4 py-1 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'categories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
 			>
-				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<line x1="12" y1="5" x2="12" y2="19" />
-					<line x1="5" y1="12" x2="19" y2="12" />
-				</svg>
-
-                Agregar { activeTab === 'categories' ? 'Categoría' : 'Subcategoría' }
+				Categorías
+			</button>
+			<button
+				onclick={ ( ) => { activeTab = 'subcategories'; } }
+				class="flex-1 rounded-lg px-4 py-1 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'subcategories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
+			>
+				Subcategorías
 			</button>
 		</div>
 
-		<!-- ─── Tab Switcher & Search Bar ───────────────────────────────────────── -->
-		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 text-xs">
-			<!-- Tabs -->
-			<div class="grid sm:flex rounded-xl bg-input p-1 border border-brand/10 max-w-xs gap-1">
-				<button
-					onclick={ ( ) => { activeTab = 'categories'; } }
-					class="flex-1 rounded-lg px-4 py-1 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'categories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
-				>
-					Categorías
-				</button>
-				<button
-					onclick={ ( ) => { activeTab = 'subcategories'; } }
-					class="flex-1 rounded-lg px-4 py-1 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'subcategories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"
-				>
-					Subcategorías
-				</button>
+		<!-- ─── Search & Filter Tool ────────────────────────────────────────────── -->
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs">
+			<!-- Search -->
+			<div class="space-y-1.5 w-full { activeTab === 'categories' ? 'sm:col-span-2 md:col-span-3' : 'sm:col-span-2 md:col-span-2' }">
+				<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider block mb-1.5">Buscar</label>
+				<SearchInput
+					bind:value          = { search }
+					bind:debouncedValue = { debouncedSearch }
+					placeholder         = "Buscar..."
+				/>
 			</div>
 
-			<!-- Filters -->
-			<div class="flex flex-col sm:flex-row items-center gap-2 max-w-md w-full">
-				<select
-					bind:value={ activeStatus }
-					class="w-full sm:w-auto rounded-xl border border-brand/15 bg-input py-2 px-3 text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10 font-bold"
-				>
-					<option value="all">Todos los estados</option>
-					<option value="true">Activos</option>
-					<option value="false">Inactivos</option>
-				</select>
-
-				<div class="flex items-center relative w-full">
-					<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<circle cx="11" cy="11" r="8" />
-						<path d="m21 21-4.35-4.35" />
-					</svg>
-					<input
-						type="search"
-						placeholder="Buscar..."
-						bind:value={ search }
-						class="w-full rounded-xl border border-brand/15 bg-input py-2 pl-10 pr-4 text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
+			<!-- Categories Select (only for subcategories) -->
+			{#if ( activeTab === 'subcategories' )}
+				<div class="space-y-1.5 w-full sm:col-span-1 md:col-span-1">
+					<span class="text-xs font-bold text-text-muted uppercase tracking-wider block mb-1.5">Categorías</span>
+					<Select
+						options       = { allCategories }
+						bind:selected = { selectedCategories }
+						multiple      = { true }
+						placeholder   = "Categorías"
 					/>
 				</div>
+			{/if}
+
+			<!-- Status Select and Reset -->
+			<div class="flex flex-col sm:flex-row gap-2 w-full font-semibold text-text-muted items-center sm:col-span-1 md:col-span-1">
+				<div class="space-y-1.5 flex-1 w-full">
+					<span class="font-bold uppercase tracking-wider block mb-1.5">Estado</span>
+					<Select
+						bind:value  = { activeStatus }
+						options     = { statusOptions }
+						multiple    = { false }
+						searching   = { false }
+						placeholder = "Todos los estados"
+					/>
+				</div>
+
+				{#if ( activeStatus !== 'all' || selectedCategories.size > 0 || search ) }
+					<button
+						onclick = { clearFilters }
+						class   = "p-2.5 rounded-xl border border-brand/15 bg-brand/10 text-brand hover:bg-brand hover:text-surface-dark transition-all duration-300 shadow-sm self-end h-[42px] aspect-square flex items-center justify-center"
+						title   = "Limpiar Filtros"
+					>
+						<BrushCleaning class="size-4" />
+					</button>
+				{/if}
 			</div>
 		</div>
 

@@ -4,8 +4,8 @@
         createMutation,
         useQueryClient
     }               from '@tanstack/svelte-query';
-	import { Plus } from '@lucide/svelte';
-    import toast    from 'svelte-french-toast';
+	import toast                            from 'svelte-french-toast';
+	import { BrushCleaning }                from '@lucide/svelte';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
@@ -14,6 +14,9 @@
 	import Status                           from '$lib/components/shared/Status.svelte';
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import MaterialFormModal                from './components/MaterialFormModal.svelte';
+	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import Select                           from '$lib/components/shared/Select.svelte';
+	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Material {
@@ -43,18 +46,40 @@
 	}
 
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	let search          = $state( '' );
-	let activeStatus    = $state( 'all' ); // 'all' | 'true' | 'false'
-	let order           = $state( 'name' );
-	let typeOrder       = $state( 'asc' );
-	let page            = $state( 1 );
-	let showModal       = $state( false );
-	let isEditing       = $state( false );
-	let editingId       = $state( '' );
-	let editingMaterial = $state< Material | null >( null );
+	let search             = $state( '' );
+	let debouncedSearch    = $state( '' );
+	let activeStatus       = $state( 'all' ); // 'all' | 'true' | 'false'
+	let autoclavableStatus = $state( 'all' ); // 'all' | 'true' | 'false'
+	let order              = $state( 'name' );
+	let typeOrder          = $state( 'asc' );
+	let page               = $state( 1 );
+	let showModal          = $state( false );
+	let isEditing          = $state( false );
+	let editingId          = $state( '' );
+	let editingMaterial    = $state< Material | null >( null );
+
+	const statusOptions = [
+		{ id : 'all',   name : 'Todos los estados' },
+		{ id : 'true',  name : 'Activos' },
+		{ id : 'false', name : 'Inactivos' }
+	];
+
+	const autoclavableOptions = [
+		{ id : 'all',   name : 'Todos (Autoclavable)' },
+		{ id : 'true',  name : 'Autoclavable' },
+		{ id : 'false', name : 'No Autoclavable' }
+	];
+
+	function clearFilters( ) : void {
+		search             = '';
+		debouncedSearch    = '';
+		activeStatus       = 'all';
+		autoclavableStatus = 'all';
+	}
 
 	// Reset to page 1 on filter changes
 	$effect( ( ) => {
+		const _ = [ debouncedSearch, activeStatus, autoclavableStatus ];
 		page = 1;
 	} );
 
@@ -62,7 +87,7 @@
 	const queryClient = useQueryClient();
 
 	const materialsQuery = createQuery( ( ) => ( {
-		queryKey : [ 'materials', page, search, activeStatus, order, typeOrder ],
+		queryKey : [ 'materials', page, debouncedSearch, activeStatus, autoclavableStatus, order, typeOrder ],
 		queryFn  : async ( ) : Promise< PaginatedResponse< Material > > => {
 			const params = new URLSearchParams( {
 				page      : page.toString(),
@@ -71,12 +96,16 @@
 				typeOrder : typeOrder,
 			} );
 
-			if ( search.trim() ) {
-				params.append( 'name', search.trim() );
+			if ( debouncedSearch.trim() ) {
+				params.append( 'name', debouncedSearch.trim() );
 			}
 
 			if ( activeStatus !== 'all' ) {
 				params.append( 'active', activeStatus );
+			}
+
+			if ( autoclavableStatus !== 'all' ) {
+				params.append( 'autoclavable', autoclavableStatus );
 			}
 
 			const response = await connectRequest< PaginatedResponse< Material > >( {
@@ -160,62 +189,75 @@
 <main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
 	<div class="mx-auto max-w-6xl space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
-		<header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-6">
-			<div class="space-y-1">
-				<div class="flex items-center gap-2 text-text-muted">
-					<a href="/dashboard" class="hover:text-brand">Dashboard</a>
-					<span>/</span>
-					<span>Productos</span>
-					<span>/</span>
-					<span class="text-brand font-bold">Materiales</span>
-				</div>
+		<HeaderPage
+			title       = "Administración de Materiales"
+			description = "Gestione las propiedades mecánicas y térmicas de los materiales de catálogo (vidrio, metales, plásticos)."
+			breadcrumb  = { [
+				{
+					label : 'Dashboard',
+					href  : '/dashboard'
+				},
+				{
+					label : 'Materiales de Productos'
+				}
+			] }
+			buttonText  = "Agregar Material"
+			onclick     = { openCreateModal }
+		/>
 
-                <h1 class="font-display text-3xl font-black text-text uppercase tracking-wide">
-					Administración de Materiales
-				</h1>
-
-                <p class="text-text-muted">
-					Gestione las propiedades mecánicas y térmicas de los materiales de catálogo (vidrio, metales, plásticos).
-				</p>
-			</div>
-
-			<button
-				onclick={ openCreateModal }
-				class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 font-bold text-xs uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
-			>
-				<Plus class="size-4" />
-
-                <span class="hidden sm:flex">
-                    Agregar Material
-                </span>
-			</button>
-		</header>
 
 		<!-- ─── Search & Filter Tool ────────────────────────────────────────────── -->
-		<div class="flex flex-col sm:flex-row items-center gap-2 max-w-xl w-full">
-			<select
-				bind:value={ activeStatus }
-				class="w-full sm:w-auto rounded-xl border border-brand/15 bg-input py-2.5 px-3 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10 font-bold"
-			>
-				<option value="all">Todos los estados</option>
-				<option value="true">Activos</option>
-				<option value="false">Inactivos</option>
-			</select>
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs">
+			<!-- Search -->
+			<div class="space-y-1.5 w-full sm:col-span-2 md:col-span-2">
+				<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider">Buscar</label>
 
-			<div class="flex items-center relative w-full">
-				<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="11" cy="11" r="8" />
-					<path d="m21 21-4.35-4.35" />
-				</svg>
-
-				<input
-					type="search"
-					placeholder="Buscar material..."
-					bind:value={ search }
-					class="w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
+				<SearchInput
+					bind:value          = { search }
+					bind:debouncedValue = { debouncedSearch }
+					placeholder         = "Buscar material..."
 				/>
 			</div>
+
+			<!-- Autoclavable Select -->
+			<div class="space-y-1.5 w-full sm:col-span-1 md:col-span-1">
+				<label for="autoclavable-select" class="uppercase tracking-wider">Autoclavable</label>
+
+				<Select
+					bind:value  = { autoclavableStatus }
+					options     = { autoclavableOptions }
+					multiple    = { false }
+					searching   = { false }
+					placeholder = "Todos"
+				/>
+			</div>
+
+			<!-- Status Select and Reset -->
+			<div class="flex flex-col sm:flex-row gap-2 w-full font-semibold text-text-muted items-center sm:col-span-1 md:col-span-1">
+				<div class="space-y-1.5 flex-1 w-full">
+					<span class="font-bold uppercase tracking-wider block mb-1.5">Estado</span>
+
+					<Select
+						bind:value  = { activeStatus }
+						options     = { statusOptions }
+						multiple    = { false }
+						searching   = { false }
+						placeholder = "Todos los estados"
+					/>
+				</div>
+
+				{#if ( activeStatus !== 'all' || autoclavableStatus !== 'all' || search ) }
+					<button
+						onclick = { clearFilters }
+						class   = "rounded-xl border border-brand/20 bg-surface/30 px-3 py-2.5 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 hover:text-brand transition-colors h-[42px] mt-auto w-full sm:w-auto flex items-center justify-center"
+					>
+						<BrushCleaning class="size-4" />
+					</button>
+				{/if}
+			</div>
 		</div>
+
+
 
 		<!-- ─── Table Content ────────────────────────────────────────────────────── -->
 		<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card space-y-4 pb-4">
