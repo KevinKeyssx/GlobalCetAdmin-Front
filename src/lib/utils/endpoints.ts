@@ -9,6 +9,9 @@ export const INTERNAL_ENDPOINTS = {
 		CATEGORIES     : {
 			GET_ALL : 'products/categories/get-all',
 		},
+		SUBCATEGORIES  : {
+			GET_ALL : 'products/sub-categories',
+		},
 	},
 	KITS : {
 		FILTERS    : 'kits/filters',
