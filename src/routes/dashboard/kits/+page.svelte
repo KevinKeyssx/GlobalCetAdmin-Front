@@ -9,6 +9,8 @@
 	import KitFormModal                     from './components/KitFormModal.svelte';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
+	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductRelation {
@@ -189,44 +191,27 @@
 <main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
 	<div class="mx-auto max-w-6xl space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
-		<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand/10 pb-6">
-			<div class="space-y-1">
-				<div class="flex items-center gap-2 text-text-muted">
-					<a href="/dashboard" class="hover:text-brand">Dashboard</a>
-					<span>/</span>
-					<span class="text-brand font-bold">Kits</span>
-				</div>
-				<h1 class="font-display text-3xl font-black text-text uppercase tracking-wide">
-					Gestión de Kits Pedagógicos
-				</h1>
-				<p class="text-text-muted">
-					Administre sets pedagógicos y kits de laboratorio combinando reactivos, borosilicato e instrumentos.
-				</p>
-			</div>
+		<HeaderPage
+			title       = "Gestión de Kits Pedagógicos"
+			description = "Administre sets pedagógicos y kits de laboratorio combinando reactivos, borosilicato e instrumentos."
+			breadcrumb  = { [
+				{
+					label : 'Dashboard',
+					href  : '/dashboard'
+				},
+				{
+					label : 'Kits'
+				}
+			] }
+			buttonText  = "Agregar Kit"
+			onclick     = { openCreateModal }
+		/>
 
-			<button
-				onclick={ openCreateModal }
-				class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
-			>
-				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<line x1="12" y1="5" x2="12" y2="19" />
-					<line x1="5" y1="12" x2="19" y2="12" />
-				</svg>
-				Agregar Kit
-			</button>
-		</div>
 
-		<!-- ─── Search Tool ──────────────────────────────────────────────────────── -->
 		<div class="flex items-center max-w-md relative">
-			<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<circle cx="11" cy="11" r="8" />
-				<path d="m21 21-4.35-4.35" />
-			</svg>
-			<input
-				type="search"
-				placeholder="Buscar kit por SKU o Nombre..."
+			<SearchInput
 				bind:value={ search }
-				class="w-full rounded-xl border border-brand/15 bg-input py-2.5 pl-10 pr-4 text-sm text-text outline-none transition-all duration-300 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/10"
+				placeholder="Buscar kit por SKU o Nombre..."
 			/>
 		</div>
 
