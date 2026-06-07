@@ -23,6 +23,7 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 	const size          = url.searchParams.get( 'size' ) || '10';
 	const subcategories = url.searchParams.getAll( 'subcategories' );
 	const materials     = url.searchParams.getAll( 'materials' );
+	const active        = url.searchParams.get( 'active' );
 
 	const params = new URLSearchParams({
 		page,
@@ -32,6 +33,10 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 
 	subcategories.forEach(( id ) => params.append( 'subcategories', id ));
 	materials.forEach(( id ) => params.append( 'materials', id ));
+
+	if ( active !== null && active !== 'all' ) {
+		params.append( 'active', active );
+	}
 
 	const response = await connectRequest<PaginatedProductsResponse>( {
 		endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }?${ params.toString() }`,
