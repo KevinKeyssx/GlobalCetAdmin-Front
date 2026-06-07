@@ -1,21 +1,12 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 
-	// ─── Interfaces ───────────────────────────────────────────────────────────────
-	// interface OptionMeta {
-	// 	autoclavable?       : boolean;
-	// 	maxTemperature?     : number;
-	// 	chemicalResistance? : {
-	// 		acid     : string;
-	// 		alkaline : string;
-	// 	};
-	// }
 
-	interface Option {
+    interface Option {
 		id   : string;
 		name : string;
-		// meta?: OptionMeta;
 	}
+
 
 	interface Props {
 		options      : Option[];
@@ -23,14 +14,17 @@
 		value?       : string;
 		placeholder? : string;
 		multiple?    : boolean;
+		searching?   : boolean;
 	}
 
-	let {
+
+    let {
 		options     = [],
 		selected    = $bindable( new Set<string>() ),
 		value       = $bindable( '' ),
 		placeholder = 'Seleccionar...',
 		multiple    = true,
+		searching   = true,
 	}: Props = $props();
 
 	// ─── Reactive States ──────────────────────────────────────────────────────────
@@ -41,18 +35,22 @@
 	// ─── Derived State: Search Filter ─────────────────────────────────────────────
 	const filteredOptions = $derived.by( () => {
 		const query = searchVal.trim().toLowerCase();
-		if ( !query ) return options;
-		return options.filter( ( opt ) => opt.name.toLowerCase().includes( query ) );
-	} );
+
+        if ( !query ) return options;
+
+        return options.filter(( opt ) => opt.name.toLowerCase().includes( query ));
+	});
 
 	// ─── Derived: Selected Items List ─────────────────────────────────────────────
 	const selectedItems = $derived.by( () => {
 		if ( multiple ) {
 			return options.filter( ( opt ) => selected.has( opt.id ) );
 		}
-		const found = options.find( ( opt ) => opt.id === value );
-		return found ? [ found ] : [];
-	} );
+
+        const found = options.find( ( opt ) => opt.id === value );
+
+        return found ? [ found ] : [];
+    });
 
 	// ─── Derived: Check if option is checked ──────────────────────────────────────
 	const isChecked = $derived.by( () => {
@@ -60,45 +58,56 @@
 			if ( multiple ) {
 				return selected.has( id );
 			}
-			return value === id;
+
+            return value === id;
 		};
-	} );
+	});
 
 	// ─── Actions ──────────────────────────────────────────────────────────────────
 	function toggleOption( id: string ) {
 		if ( multiple ) {
 			const next = new Set( selected );
-			if ( next.has( id ) ) {
+
+            if ( next.has( id ) ) {
 				next.delete( id );
 			} else {
 				next.add( id );
 			}
-			selected = next;
+
+            selected = next;
 		} else {
 			value  = id;
 			isOpen = false;
 		}
 	}
 
-	function removeOption( id: string, event: MouseEvent ) {
+
+    function removeOption( id: string, event: MouseEvent ) {
 		event.stopPropagation();
-		if ( multiple ) {
+
+        if ( multiple ) {
 			const next = new Set( selected );
-			next.delete( id );
-			selected = next;
+
+            next.delete( id );
+
+            selected = next;
 		} else {
 			value = '';
 		}
 	}
 
-	function clearAll( event: MouseEvent ): void {
+
+    function clearAll( event: MouseEvent ): void {
 		event.stopPropagation();
-		if ( multiple ) {
+
+        if ( multiple ) {
 			const next: Set<string> = new Set( selected );
-			for ( const opt of options ) {
+
+            for ( const opt of options ) {
 				next.delete( opt.id );
 			}
-			selected = next;
+
+            selected = next;
 		} else {
 			value = '';
 		}
@@ -109,14 +118,6 @@
 		if ( isOpen && container && !container.contains( event.target as Node ) ) {
 			isOpen = false;
 		}
-	}
-
-	// Dynamic icon resolver for chemical resistance
-	function getResistanceIcon( level: string ): string {
-		const lower = level.toLowerCase();
-		if ( lower === 'excellent' || lower === 'excelente' ) return '🟢';
-		if ( lower === 'good' || lower === 'bueno' ) return '🟡';
-		return '🔴';
 	}
 </script>
 
@@ -199,18 +200,20 @@
 			class="absolute left-0 right-0 z-50 mt-2 flex flex-col gap-2 rounded-2xl border border-brand/20 dark:border-brand/10 bg-surface/95 backdrop-blur-2xl p-3 shadow-[0_20px_50px_rgba(0,0,0,0.35)] ring-1 ring-white/5"
 		>
 			<!-- Search Field -->
-			<div class="relative flex items-center">
-				<svg class="absolute left-3.5 h-3.5 w-3.5 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-					<circle cx="11" cy="11" r="8"></circle>
-					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-				</svg>
-				<input
-					type="text"
-					bind:value={searchVal}
-					placeholder="Buscar..."
-					class="w-full rounded-xl border border-brand/10 bg-surface/50 py-2 pl-9 pr-4 text-text placeholder-text-muted/65 outline-none transition-all duration-300 focus:border-brand/40 focus:ring-1 focus:ring-brand/20"
-				/>
-			</div>
+			{#if ( searching )}
+				<div class="relative flex items-center">
+					<svg class="absolute left-3.5 h-3.5 w-3.5 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<circle cx="11" cy="11" r="8"></circle>
+						<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+					</svg>
+					<input
+						type="text"
+						bind:value={searchVal}
+						placeholder="Buscar..."
+						class="w-full rounded-xl border border-brand/10 bg-surface/50 py-2 pl-9 pr-4 text-text placeholder-text-muted/65 outline-none transition-all duration-300 focus:border-brand/40 focus:ring-1 focus:ring-brand/20"
+					/>
+				</div>
+			{/if}
 
 			<!-- Options List -->
 			<div class="max-h-48 overflow-y-auto pr-1 flex flex-col gap-1.5 custom-scrollbar">
@@ -241,26 +244,6 @@
 								</div>
 								<div class="flex flex-col">
 									<span class="leading-tight">{opt.name}</span>
-									<!-- Detailed option meta details (Autoclave, Temperature, Chemical Resistance) -->
-									<!-- {#if opt.meta}
-										<div class="flex flex-wrap items-center gap-2 mt-1 text-[9px] font-bold text-text-muted/70 tracking-wider">
-											{#if opt.meta.autoclavable !== undefined}
-												<span class="flex items-center gap-0.5 bg-brand/5 px-1.5 py-0.5 rounded border border-brand/10">
-													🧪 {opt.meta.autoclavable ? 'AUTOCLAVABLE' : 'NO AUTOCLAVABLE'}
-												</span>
-											{/if}
-											{#if opt.meta.maxTemperature !== undefined}
-												<span class="bg-amber-500/5 px-1.5 py-0.5 rounded border border-amber-500/10 text-amber-500">
-													🔥 TMAX: {opt.meta.maxTemperature}°C
-												</span>
-											{/if}
-											{#if opt.meta.chemicalResistance}
-												<span class="flex items-center gap-1 bg-sky-500/5 px-1.5 py-0.5 rounded border border-sky-500/10 text-sky-400">
-													🛡️ ÁCIDO: {getResistanceIcon( opt.meta.chemicalResistance.acid )} | ÁLK: {getResistanceIcon( opt.meta.chemicalResistance.alkaline )}
-												</span>
-											{/if}
-										</div>
-									{/if} -->
 								</div>
 							</div>
 						</button>
