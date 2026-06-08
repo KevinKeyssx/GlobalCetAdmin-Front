@@ -113,7 +113,7 @@
 		</div>
 
 		<!-- ─── Global Live Metrics Cards ────────────────────────────────────────── -->
-		<section class="grid grid-cols-2 gap-4 md:grid-cols-5">
+		<section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
 			<!-- Products metric -->
 			<div class="rounded-2xl border border-brand/10 bg-card p-5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25">
 				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Productos</p>
