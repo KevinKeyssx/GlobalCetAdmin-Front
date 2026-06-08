@@ -1,19 +1,18 @@
 <script lang="ts">
 	import './layout.css';
 	import { dev, browser } from '$app/environment';
-	import { page }         from '$app/state';
-	import { goto }         from '$app/navigation';
 
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { Toaster }             from 'svelte-french-toast';
 
-    import Header           from '$lib/components/home/Header.svelte';
-    import Footer           from '$lib/components/home/Footer.svelte';
-	import { searchStore }  from '$lib/state/search';
+    import Header   from '$lib/components/home/Header.svelte';
+    import Footer   from '$lib/components/home/Footer.svelte';
 
 	// ─── Dark Mode State ──────────────────────────────────────────────────────────
-	const initialDark = browser ? ( localStorage.getItem( 'theme' ) === 'dark' || ( !localStorage.getItem( 'theme' ) && window.matchMedia( '(prefers-color-scheme: dark)' ).matches ) ) : false;
+	const initialDark = browser
+        ? ( localStorage.getItem( 'theme' ) === 'dark' || ( !localStorage.getItem( 'theme' ) && window.matchMedia( '(prefers-color-scheme: dark)' ).matches ))
+        : false;
 
 	// ─── Props ────────────────────────────────────────────────────────────────────
 	let { data, children } = $props();
@@ -29,15 +28,6 @@
 			localStorage.setItem( 'theme', 'light' );
 		}
 	});
-
-
-	function handleSearch( value: string ): void {
-		$searchStore = value;
-
-        if ( value && ( page.url.pathname as string ) !== '/catalog' ) {
-			goto( '/catalog' );
-		}
-	}
 </script>
 
 <svelte:head>
@@ -73,9 +63,7 @@
 	<!-- ─── App Shell ─────────────────────────────────────────────────────────────── -->
 	<main class="min-h-screen bg-surface text-text transition-colors duration-300 font-sans">
 		<Header
-			search={ $searchStore }
 			{ darkMode }
-			onSearch={ handleSearch }
 			onToggle={ () => { darkMode = !darkMode; } }
 		/>
 
