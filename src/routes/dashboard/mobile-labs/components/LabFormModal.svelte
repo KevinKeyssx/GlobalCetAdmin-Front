@@ -1,15 +1,25 @@
 <script lang="ts">
-	import toast                            from 'svelte-french-toast';
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import {
+        createMutation,
+        useQueryClient
+    }               from '@tanstack/svelte-query';
+	import toast    from 'svelte-french-toast';
 
-	import FileUploader, { type UploadedFileItem } from '$lib/components/shared/FileUploader.svelte';
-	import { globalLoadingStore }                   from '$lib/state/loading';
-	import connectRequest, { isApiError }           from '$lib/services/fetch.service';
-	import { METHOD }                               from '$lib/services/http-codes';
-	import DashboardModal                           from '../../components/DashboardModal.svelte';
-	import Select                                   from '$lib/components/shared/Select.svelte';
-
-	import type { LabInitial, LabProduct, LabKit } from '$lib/types/lab';
+	import FileUploader, {
+        type UploadedFileItem
+    }                                       from '$lib/components/shared/FileUploader.svelte';
+	import type {
+        LabInitial,
+        LabProduct,
+        LabKit
+    }                                       from '$lib/types/lab';
+	import { globalLoadingStore }           from '$lib/state/loading';
+	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { METHOD }                       from '$lib/services/http-codes';
+	import DashboardModal                   from '../../components/DashboardModal.svelte';
+	import ConfirmationModal                from '$lib/components/shared/ConfirmationModal.svelte';
+	import RelationManager                  from '$lib/components/shared/RelationManager.svelte';
+	import Select                           from '$lib/components/shared/Select.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface LabCategory {
@@ -87,29 +97,13 @@
 	}
 
 	// Relations list state (Selected products and kits in this lab)
-	let formProducts        = $state< LabProduct[] >( [] );
-	let formKits            = $state< LabKit[] >( [] );
-	let selectedAddProd     = $state( '' );
-	let selectedAddKit      = $state( '' );
-	let uploaderFiles       = $state< UploadedFileItem[] >( [] );// File Uploader state
-	let uploaderFilesInfo   = $state( '' );
-
-	const mappedProducts = $derived.by( () => {
-		return catalogProducts.map( ( prod ) => ( {
-			id   : prod.id,
-			name : `[${ prod.sku }] ${ prod.name }`,
-		} ) );
-	} );
-
-	const mappedKits = $derived.by( () => {
-		return catalogKits.map( ( kit ) => ( {
-			id   : kit.id,
-			name : `[${ kit.sku }] ${ kit.name }`,
-		} ) );
-	} );
+	let formProducts      = $state< LabProduct[] >( [] );
+	let formKits          = $state< LabKit[] >( [] );
+	let uploaderFiles     = $state< UploadedFileItem[] >( [] );// File Uploader state
+	let uploaderFilesInfo = $state( '' );
 
 	// ─── Sync data on open ────────────────────────────────────────────────────────
-	$effect( ( ) => {
+	$effect( () => {
 		if ( show && initialData ) {
 			formName          = initialData.name;
 			formSku           = initialData.sku;
@@ -122,8 +116,6 @@
 			formActive        = initialData.active;
 			formProducts      = initialData.products || [];
 			formKits          = initialData.kits || [];
-			selectedAddProd   = catalogProducts[ 0 ]?.id || '';
-			selectedAddKit    = catalogKits[ 0 ]?.id || '';
 			if ( isEditing && initialData.files ) {
 				uploaderFiles = initialData.files.map( ( f ) => ( {
 					id		: f.id,
@@ -148,72 +140,42 @@
 			formActive        = true;
 			formProducts      = [];
 			formKits          = [];
-			selectedAddProd   = '';
-			selectedAddKit    = '';
 			uploaderFiles     = [];
 			uploaderFilesInfo = '';
 		}
 	} );
 
 	// ─── Relation Helpers ─────────────────────────────────────────────────────────
-	function addProductToForm() : void {
-		if ( !selectedAddProd ) return;
 
-		// Check if already added
-		if ( formProducts.some( ( p ) => p.productId === selectedAddProd ) ) {
-			toast.error( 'Este producto ya está agregado al laboratorio.' );
-			return;
-		}
+	let productToDelete = $state<{ productId : string; name : string } | null>( null );
+	let kitToDelete     = $state<{ kitId : string; name : string } | null>( null );
 
-		const match = catalogProducts.find( ( p ) => p.id === selectedAddProd );
-		if ( match ) {
-			formProducts = [
-				...formProducts,
-				{
-					productId : selectedAddProd,
-					quantity  : 1,
-					product   : {
-						id   : match.id,
-						name : match.name,
-						sku  : match.sku,
-					},
-				},
-			];
+	function removeProductFromForm( id : string, name : string ) : void {
+		if ( isEditing && initialData?.products?.some( ( p ) => p.productId === id ) ) {
+			productToDelete = { productId : id, name };
+		} else {
+			formProducts = formProducts.filter( ( p ) => p.productId !== id );
 		}
 	}
 
-	function addKitToForm() : void {
-		if ( !selectedAddKit ) return;
-
-		// Check if already added
-		if ( formKits.some( ( k ) => k.kitId === selectedAddKit ) ) {
-			toast.error( 'Este kit ya está agregado al laboratorio.' );
-			return;
-		}
-
-		const match = catalogKits.find( ( k ) => k.id === selectedAddKit );
-		if ( match ) {
-			formKits = [
-				...formKits,
-				{
-					kitId    : selectedAddKit,
-					quantity : 1,
-					kit      : {
-						id   : match.id,
-						name : match.name,
-						sku  : match.sku,
-					},
-				},
-			];
+	function removeKitFromForm( id : string, name : string ) : void {
+		if ( isEditing && initialData?.kits?.some( ( k ) => k.kitId === id ) ) {
+			kitToDelete = { kitId : id, name };
+		} else {
+			formKits = formKits.filter( ( k ) => k.kitId !== id );
 		}
 	}
 
-	function removeProductFromForm( id : string ) : void {
-		formProducts = formProducts.filter( ( p ) => p.productId !== id );
-	}
-
-	function removeKitFromForm( id : string ) : void {
-		formKits = formKits.filter( ( k ) => k.kitId !== id );
+	function confirmDeleteProduct() : void {
+		if ( !productToDelete ) return;
+		deleteProductMutation.mutate( {
+			labId     : editingId,
+			productId : productToDelete.productId,
+		}, {
+			onSuccess : () => {
+				productToDelete = null;
+			}
+		} );
 	}
 
 	// ─── TanStack Query client & mutation ─────────────────────────────────────────
@@ -247,8 +209,68 @@
 		},
 	} ) );
 
+	const deleteProductMutation = createMutation( () => ( {
+		mutationFn : async ( { labId, productId } : { labId : string; productId : string } ) : Promise< any > => {
+			const response = await connectRequest< any >( {
+				endpoint	: `labs?id=${ labId }&productId=${ productId }`,
+				method		: METHOD.DELETE,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( response.message );
+			}
+
+			return response;
+		},
+		onSuccess  : ( data, variables ) => {
+			toast.success( 'Producto eliminado del laboratorio con éxito.' );
+			formProducts = formProducts.filter( ( p ) => p.productId !== variables.productId );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-labs' ] } );
+		},
+		onError    : ( error : any ) => {
+			toast.error( error.message || 'Error al eliminar el producto.' );
+		},
+	} ) );
+
+	const deleteKitMutation = createMutation( () => ( {
+		mutationFn : async ( { labId, kitId } : { labId : string; kitId : string } ) : Promise< any > => {
+			const response = await connectRequest< any >( {
+				endpoint	: `labs?id=${ labId }&kitId=${ kitId }`,
+				method		: METHOD.DELETE,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( response.message );
+			}
+
+			return response;
+		},
+		onSuccess  : ( data, variables ) => {
+			toast.success( 'Kit eliminado del laboratorio con éxito.' );
+			formKits = formKits.filter( ( k ) => k.kitId !== variables.kitId );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-labs' ] } );
+		},
+		onError    : ( error : any ) => {
+			toast.error( error.message || 'Error al eliminar el kit.' );
+		},
+	} ) );
+
+	function confirmDeleteKit() : void {
+		if ( !kitToDelete ) return;
+		deleteKitMutation.mutate( {
+			labId : editingId,
+			kitId : kitToDelete.kitId,
+		}, {
+			onSuccess : () => {
+				kitToDelete = null;
+			}
+		} );
+	}
+
 	$effect( () => {
-		$globalLoadingStore = labMutation.isPending;
+		$globalLoadingStore = labMutation.isPending || deleteProductMutation.isPending || deleteKitMutation.isPending;
 		return () => {
 			$globalLoadingStore = false;
 		};
@@ -299,249 +321,292 @@
 
 <DashboardModal
 	{ show }
-	title={ isEditing ? 'Modificar Laboratorio Móvil' : 'Crear Nuevo Laboratorio' }
-	onClose={ onCancel }
-	maxWidth="max-w-2xl"
+	title    = { isEditing ? 'Modificar Laboratorio Móvil' : 'Crear Nuevo Laboratorio' }
+	onClose  = { onCancel }
+	maxWidth = "max-w-6xl"
 >
 	{#snippet body()}
-		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<!-- Name -->
-				<div class="space-y-1.5">
-					<label for="lab-name">Nombre del Laboratorio</label>
-					<input
-						id="lab-name"
-						type="text"
-						bind:value={ formName }
-						placeholder="Ej: Laboratorio Móvil de Física"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
-					/>
+		<form
+			onsubmit={ handleSubmit }
+			class="flex flex-col gap-5 text-[0.8125rem] font-semibold text-text-muted"
+		>
+
+			<!-- ── Two-panel grid: fields left / uploader right ── -->
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+
+				<!-- ── LEFT PANEL: Fields ── -->
+				<div class="flex flex-col gap-3">
+
+					<!-- Section: Identificación -->
+					<fieldset
+						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 0ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Identificación
+						</legend>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+							<!-- Name -->
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-name">
+									Nombre del Laboratorio
+								</label>
+								<input
+									id="lab-name"
+									type="text"
+									bind:value={ formName }
+									placeholder="Ej: Laboratorio Móvil de Física"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+								/>
+							</div>
+
+							<!-- SKU -->
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-sku">
+									SKU Identificador
+								</label>
+								<input
+									id="lab-sku"
+									type="text"
+									bind:value={ formSku }
+									placeholder="Ej: CLAB-001"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+								/>
+							</div>
+						</div>
+					</fieldset>
+
+					<!-- Section: Dimensiones -->
+					<fieldset
+						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 60ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Dimensiones (Largo x Ancho x Alto en metros)
+						</legend>
+						<div class="grid grid-cols-3 gap-3">
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.55rem] font-bold tracking-wider text-text-muted uppercase" for="dim-length">
+									Largo (m)
+								</label>
+								<input
+									id="dim-length"
+									type="number"
+									step="0.1"
+									min="0"
+									bind:value={ dimLength }
+									placeholder="Largo"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+								/>
+							</div>
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.55rem] font-bold tracking-wider text-text-muted uppercase" for="dim-width">
+									Ancho (m)
+								</label>
+								<input
+									id="dim-width"
+									type="number"
+									step="0.1"
+									min="0"
+									bind:value={ dimWidth }
+									placeholder="Ancho"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+								/>
+							</div>
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.55rem] font-bold tracking-wider text-text-muted uppercase" for="dim-height">
+									Alto (m)
+								</label>
+								<input
+									id="dim-height"
+									type="number"
+									step="0.1"
+									min="0"
+									bind:value={ dimHeight }
+									placeholder="Alto"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+								/>
+							</div>
+						</div>
+					</fieldset>
+
+					<!-- Section: Clasificación (z-index elevado para que el dropdown no quede por debajo) -->
+					<fieldset
+						class="fade-in relative z-10 m-0 overflow-visible rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 120ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Clasificación
+						</legend>
+						<div class="flex flex-col gap-1">
+							<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-cat">
+								Categoría Científica
+							</label>
+							<Select
+								options     = { categories }
+								bind:value  = { formCategoryId }
+								multiple    = { false }
+								placeholder = "Seleccionar categoría..."
+							/>
+						</div>
+					</fieldset>
+
+					<!-- Section: Descripción -->
+					<fieldset
+						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 180ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Descripción
+						</legend>
+						<div class="flex flex-col gap-1">
+							<label class="sr-only" for="lab-desc">Descripción Completa del Laboratorio</label>
+							<textarea
+								id="lab-desc"
+								bind:value={ formDescription }
+								placeholder="Describa la infraestructura técnica, conexiones eléctricas, suministro de agua, etc..."
+								rows="3"
+								class="w-full resize-none rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+							></textarea>
+						</div>
+					</fieldset>
+
+					<!-- Section: Elementos Asociados -->
+					<!-- <div class="fade-in grid grid-cols-1 sm:grid-cols-2 gap-3" style="--delay: 240ms"> -->
+					<div class="fade-in gap-4 grid" style="--delay: 240ms">
+						<!-- PRODUCTS RELATION -->
+						<RelationManager
+							bind:items           = { formProducts }
+							catalogItems         = { catalogProducts }
+							title                = "Productos / Insumos Individuales"
+							placeholder          = "Seleccionar producto..."
+							idKey                = "productId"
+							metaKey              = "product"
+							isEditing            = { isEditing }
+							initialDataRelations = { initialData?.products }
+							duplicateMessage     = "Este producto ya está agregado al laboratorio."
+							onRemove             = { removeProductFromForm }
+						/>
+
+						<!-- KITS RELATION -->
+						<RelationManager
+							bind:items           = { formKits }
+							catalogItems         = { catalogKits }
+							title                = "Kits Pedagógicos Integrados"
+							placeholder          = "Seleccionar kit..."
+							idKey                = "kitId"
+							metaKey              = "kit"
+							isEditing            = { isEditing }
+							initialDataRelations = { initialData?.kits }
+							duplicateMessage     = "Este kit ya está agregado al laboratorio."
+							onRemove             = { removeKitFromForm }
+						/>
+					</div>
 				</div>
 
-				<!-- SKU -->
-				<div class="space-y-1.5">
-					<label for="lab-sku">SKU Identificador</label>
-
-                    <input
-						id="lab-sku"
-						type="text"
-						bind:value={ formSku }
-						placeholder="Ej: CLAB-001"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
+				<!-- ── RIGHT PANEL: File Uploader ── -->
+				<div class="fade-in flex flex-col" style="--delay: 80ms">
+					<p class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+						Carga de Imágenes Catálogo
+					</p>
+					<FileUploader
+						bind:files     = { uploaderFiles }
+						bind:filesInfo = { uploaderFilesInfo }
+						isEditing      = { isEditing }
 					/>
 				</div>
 			</div>
 
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<!-- Dimensions -->
-				<div class="space-y-1.5">
-					<label for="dim-length">Dimensiones (Largo x Ancho x Alto en metros)</label>
-
-                    <div class="grid grid-cols-3 gap-2">
+			<!-- ── Footer: Toggle + Actions ── -->
+			<div
+				class="fade-in flex flex-col gap-3 border-t border-brand/10 pt-4 sm:flex-row sm:items-center sm:justify-between"
+				style="--delay: 280ms"
+			>
+				<!-- Custom toggle -->
+				<label class="flex cursor-pointer select-none items-center gap-2.5" for="lab-active">
+					<!-- Track -->
+					<span
+						class="relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-200 { formActive ? 'bg-brand/30 border-brand' : 'bg-input border-brand/20' }"
+					>
 						<input
-							id="dim-length"
-							type="number"
-							step="0.1"
-							min="0"
-							bind:value={ dimLength }
-							placeholder="Largo"
-							class="w-full rounded-xl border border-brand/15 bg-input px-3 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
+							id="lab-active"
+							type="checkbox"
+							bind:checked={ formActive }
+							class="sr-only"
 						/>
+						<!-- Thumb -->
+						<span
+							class="absolute top-0.5 left-0.5 h-3.5 w-3.5 rounded-full transition-all duration-200 { formActive ? 'translate-x-4 bg-brand shadow-[0_0_8px_rgba(0,230,118,0.55)]' : 'bg-text-muted translate-x-0' }"
+						></span>
+					</span>
+					<!-- Label text -->
+					<span
+						class="text-[0.72rem] font-bold tracking-wide transition-colors duration-200"
+						class:text-brand={ formActive }
+						class:text-text-muted={ !formActive }
+					>
+						{ formActive ? 'Habilitado en Catálogo Público' : 'Deshabilitado del Catálogo' }
+					</span>
+				</label>
 
-                        <input
-							id="dim-width"
-							type="number"
-							step="0.1"
-							min="0"
-							bind:value={ dimWidth }
-							placeholder="Ancho"
-							class="w-full rounded-xl border border-brand/15 bg-input px-3 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
-						/>
-
-                        <input
-							id="dim-height"
-							type="number"
-							step="0.1"
-							min="0"
-							bind:value={ dimHeight }
-							placeholder="Alto"
-							class="w-full rounded-xl border border-brand/15 bg-input px-3 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
-						/>
-					</div>
-				</div>
-
-				<!-- Category Select -->
-				<div class="space-y-1.5">
-					<label for="lab-cat">Categoría Científica</label>
-
-                    <Select
-						options={ categories }
-						bind:value={ formCategoryId }
-						multiple={ false }
-						placeholder="Seleccionar categoría..."
-					/>
-				</div>
-			</div>
-
-			<!-- Description -->
-			<div class="space-y-1.5">
-				<label for="lab-desc">Descripción Completa del Laboratorio</label>
-
-                <textarea
-					id="lab-desc"
-					bind:value={ formDescription }
-					placeholder="Describa la infraestructura técnica, conexiones eléctricas, suministro de agua, etc..."
-					rows="3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-none"
-				></textarea>
-			</div>
-
-			<!-- DUAL SELECTOR IN FORM: PRODUCTS AND KITS -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<!-- PRODUCTS RELATION -->
-				<div class="space-y-3 rounded-2xl border border-brand/15 bg-surface/20 p-4 flex flex-col h-[280px]">
-					<span class="text-[10px] uppercase font-black tracking-wider text-brand">Productos / Insumos Individuales</span>
-
-					<div class="flex gap-1.5">
-						<Select
-							options={ mappedProducts }
-							bind:value={ selectedAddProd }
-							multiple={ false }
-							placeholder="Seleccionar producto..."
-						/>
-
-                        <button
-							type="button"
-							onclick={ addProductToForm }
-							class="rounded-xl border border-brand bg-brand/10 hover:bg-brand hover:text-surface-dark px-3 py-2 transition-colors font-bold uppercase text-[10px]"
-						>
-							+
-						</button>
-					</div>
-
-					<div class="flex-1 overflow-y-auto space-y-2 border-t border-brand/5 pt-2">
-						{#each formProducts as item ( item.productId )}
-							<div class="flex items-center justify-between rounded-xl bg-input p-2 border border-brand/5 text-[10px]">
-								<div class="space-y-0.5 max-w-[60%]">
-									<span class="font-bold text-text truncate block">{ item.product?.name || 'Insumo' }</span>
-								</div>
-
-                                <div class="flex items-center gap-2">
-									<input
-										type="number"
-										min="1"
-										bind:value={ item.quantity }
-										class="w-10 text-center rounded-lg border border-brand/15 bg-card py-0.5 text-text font-bold"
-									/>
-
-                                    <button
-										type="button"
-										onclick={ () => removeProductFromForm( item.productId ) }
-										class="text-red-400 font-bold"
-									>
-										×
-									</button>
-								</div>
-							</div>
+				<!-- Action buttons -->
+				<div class="flex items-center gap-2.5">
+					<button
+						type     = "button"
+						onclick  = { onCancel }
+						disabled = { labMutation.isPending }
+						class    = "cursor-pointer rounded-lg border border-brand/20 bg-card/70 px-4 py-1.5 font-display text-[0.7rem] font-bold uppercase tracking-[0.08em] text-text-muted transition-all hover:border-brand/35 hover:bg-brand/10 hover:text-brand disabled:cursor-not-allowed disabled:opacity-45"
+					>
+						Cancelar
+					</button>
+					<button
+						type     = "submit"
+						disabled = { labMutation.isPending }
+						class    = "flex cursor-pointer items-center gap-1.5 rounded-lg border-none bg-linear-to-tr from-brand via-brand-bright to-brand px-5 py-1.5 font-display text-[0.7rem] font-black uppercase tracking-[0.08em] text-white dark:text-brand-dark shadow-[0_0_16px_color-mix(in_srgb,var(--color-brand)_30%,transparent)] transition-all hover:shadow-[0_0_26px_color-mix(in_srgb,var(--color-brand)_50%,transparent)] disabled:cursor-not-allowed disabled:opacity-55"
+					>
+						{#if labMutation.isPending}
+							<span class="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+							Guardando…
 						{:else}
-							<div class="text-center py-8 text-text-muted text-[10px]">Sin insumos agregados.</div>
-						{/each}
-					</div>
+							{ isEditing ? 'Guardar Cambios' : 'Guardar Laboratorio' }
+						{/if}
+					</button>
 				</div>
-
-				<!-- KITS RELATION -->
-				<div class="space-y-3 rounded-2xl border border-brand/15 bg-surface/20 p-4 flex flex-col h-[280px]">
-					<span class="text-[10px] uppercase font-black tracking-wider text-brand">Kits Pedagógicos Integrados</span>
-
-					<div class="flex gap-1.5">
-						<Select
-							options={ mappedKits }
-							bind:value={ selectedAddKit }
-							multiple={ false }
-							placeholder="Seleccionar kit..."
-						/>
-
-                        <button
-							type="button"
-							onclick={ addKitToForm }
-							class="rounded-xl border border-brand bg-brand/10 hover:bg-brand hover:text-surface-dark px-3 py-2 transition-colors font-bold uppercase text-[10px]"
-						>
-							+
-						</button>
-					</div>
-
-					<div class="flex-1 overflow-y-auto space-y-2 border-t border-brand/5 pt-2">
-						{#each formKits as item ( item.kitId )}
-							<div class="flex items-center justify-between rounded-xl bg-input p-2 border border-brand/5 text-[10px]">
-								<div class="space-y-0.5 max-w-[60%]">
-									<span class="font-bold text-text truncate block">{ item.kit?.name || 'Kit' }</span>
-								</div>
-
-                                <div class="flex items-center gap-2">
-									<input
-										type="number"
-										min="1"
-										bind:value={ item.quantity }
-										class="w-10 text-center rounded-lg border border-brand/15 bg-card py-0.5 text-text font-bold"
-									/>
-
-                                    <button
-										type="button"
-										onclick={ () => removeKitFromForm( item.kitId ) }
-										class="text-red-400 font-bold"
-									>
-										×
-									</button>
-								</div>
-							</div>
-						{:else}
-							<div class="text-center py-8 text-text-muted text-[10px]">Sin kits agregados.</div>
-						{/each}
-					</div>
-				</div>
-			</div>
-
-			<!-- Image Dropzone Area -->
-			<div class="space-y-1.5 border-t border-brand/5 pt-3">
-				<span class="text-[10px] uppercase font-black tracking-wider text-brand">Imágenes del Laboratorio</span>
-
-                <FileUploader
-					bind:files={ uploaderFiles }
-					bind:filesInfo={ uploaderFilesInfo }
-				/>
-			</div>
-
-			<!-- Active Checkbox -->
-			<div class="flex items-center gap-3 pt-2">
-				<input
-					id="lab-active"
-					type="checkbox"
-					bind:checked={ formActive }
-					class="accent-brand h-4 w-4 cursor-pointer"
-				/>
-
-                <label for="lab-active" class="cursor-pointer select-none">Habilitar en Catálogo Público</label>
-			</div>
-
-			<!-- Actions -->
-			<div class="flex items-center justify-end gap-3 border-t border-brand/10 pt-4">
-				<button
-					type="button"
-					onclick={ onCancel }
-					disabled={ labMutation.isPending }
-					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					Cancelar
-				</button>
-
-                <button
-					type="submit"
-					disabled={ labMutation.isPending }
-					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					{ labMutation.isPending ? 'Guardando...' : 'Guardar Laboratorio' }
-				</button>
 			</div>
 		</form>
 	{/snippet}
 </DashboardModal>
+
+<ConfirmationModal
+	show        = { productToDelete !== null }
+	title       = "Confirmar Eliminación"
+	message     = { `¿Estás seguro de que deseas eliminar "${ productToDelete?.name }" de este laboratorio? Esta acción no se puede deshacer.` }
+	confirmText = "Eliminar"
+	onConfirm   = { confirmDeleteProduct }
+	onCancel    = { ( ) => { productToDelete = null; } }
+	isPending   = { deleteProductMutation.isPending }
+/>
+
+<ConfirmationModal
+	show        = { kitToDelete !== null }
+	title       = "Confirmar Eliminación"
+	message     = { `¿Estás seguro de que deseas eliminar "${ kitToDelete?.name }" de este laboratorio? Esta acción no se puede deshacer.` }
+	confirmText = "Eliminar"
+	onConfirm   = { confirmDeleteKit }
+	onCancel    = { ( ) => { kitToDelete = null; } }
+	isPending   = { deleteKitMutation.isPending }
+/>
+
+<style>
+	/* Solo el keyframe de entrada — no es posible definirlo con Tailwind sin modificar la config global */
+	@keyframes fadeSlideUp {
+		from { opacity: 0; transform: translateY( 8px ); }
+		to   { opacity: 1; transform: translateY( 0 ); }
+	}
+
+	.fade-in {
+		animation       : fadeSlideUp 0.35s ease both;
+		animation-delay : var( --delay, 0ms );
+	}
+</style>
