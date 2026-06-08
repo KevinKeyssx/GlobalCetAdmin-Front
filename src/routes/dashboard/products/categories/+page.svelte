@@ -42,6 +42,7 @@
 	let isEditing         = $state( false );
 	let editingId         = $state( '' );
 	let editingCategory   = $state<{ name : string; parentCatId? : string; } | null>( null );
+	let deletingId        = $state( '' );
 	let selectedCategories = $state( new Set< string >() );
 
 	const statusOptions = [
@@ -221,10 +222,12 @@
 	}
 
 	function deleteItem( id : string ) : void {
-		const label = activeTab === 'subcategories' ? 'esta subcategoría' : 'esta categoría y todas sus subcategorías';
-		if ( !confirm( `¿Está seguro de que desea eliminar ${ label }?` ) ) return;
-
-		deleteMutation.mutate( id );
+		deletingId = id;
+		deleteMutation.mutate( id, {
+			onSettled : ( ) => {
+				deletingId = '';
+			}
+		} );
 	}
 
 	function toggleSort( field : string ) : void {
@@ -278,7 +281,7 @@
 		</div>
 
 		<!-- ─── Search & Filter Tool ────────────────────────────────────────────── -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs">
+		<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs">
 			<!-- Search -->
 			<div class="space-y-1.5 w-full { activeTab === 'categories' ? 'sm:col-span-2 md:col-span-3' : 'sm:col-span-2 md:col-span-2' }">
 				<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider block mb-1.5">Buscar</label>
@@ -303,7 +306,7 @@
 			{/if}
 
 			<!-- Status Select and Reset -->
-			<div class="flex flex-col sm:flex-row gap-2 w-full font-semibold text-text-muted items-center sm:col-span-1 md:col-span-1">
+			<div class="flex flex-row gap-2 w-full font-semibold text-text-muted items-end sm:col-span-1 md:col-span-1">
 				<div class="space-y-1.5 flex-1 w-full">
 					<span class="font-bold uppercase tracking-wider block mb-1.5">Estado</span>
 					<Select
@@ -318,7 +321,7 @@
 				{#if ( activeStatus !== 'all' || selectedCategories.size > 0 || search ) }
 					<button
 						onclick = { clearFilters }
-						class   = "p-2.5 rounded-xl border border-brand/15 bg-brand/10 text-brand hover:bg-brand hover:text-surface-dark transition-all duration-300 shadow-sm self-end h-[42px] aspect-square flex items-center justify-center"
+						class   = "p-2.5 rounded-xl border border-brand/15 bg-brand/10 text-brand hover:bg-brand hover:text-surface-dark transition-all duration-300 shadow-sm h-[46px] aspect-square flex items-center justify-center cursor-pointer"
 						title   = "Limpiar Filtros"
 					>
 						<BrushCleaning class="size-4" />
@@ -367,9 +370,12 @@
 									</td>
 									<td class="px-6 py-4 text-right">
 										<TableActions
-											item={ cat }
-											openEditModal={ openEditModal }
-											deleteItem={ ( c ) => deleteItem( c.id ) }
+											item            = { cat }
+											openEditModal   = { openEditModal }
+											deleteItem      = { ( c ) => deleteItem( c.id ) }
+											isDeleteLoading = { deletingId === cat.id }
+											confirmTitle    = "¿Eliminar categoría?"
+											confirmMessage  = "¿Está seguro de que desea eliminar esta categoría y todas sus subcategorías? Esta acción no se puede deshacer."
 										/>
 									</td>
 								</tr>
@@ -425,9 +431,12 @@
 									</td>
 									<td class="px-6 py-4 text-right">
 										<TableActions
-											item={ sub }
-											openEditModal={ openEditModal }
-											deleteItem={ ( s ) => deleteItem( s.id ) }
+											item            = { sub }
+											openEditModal   = { openEditModal }
+											deleteItem      = { ( s ) => deleteItem( s.id ) }
+											isDeleteLoading = { deletingId === sub.id }
+											confirmTitle    = "¿Eliminar subcategoría?"
+											confirmMessage  = "¿Está seguro de que desea eliminar esta subcategoría? Esta acción no se puede deshacer."
 										/>
 									</td>
 								</tr>
