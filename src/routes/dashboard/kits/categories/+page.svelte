@@ -9,9 +9,7 @@
 	import TableActions                                     from '$lib/components/shared/TableActions.svelte';
 	import Pagination                                       from '$lib/components/shared/Pagination.svelte';
 	import HeaderPage                                       from '$lib/components/shared/HeaderPage.svelte';
-	import Select                                           from '$lib/components/shared/Select.svelte';
-	import SearchInput                                      from '$lib/components/shared/SearchInput.svelte';
-
+	import CategoryFilters                                  from '$lib/components/shared/CategoryFilters.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface KitCategory {
@@ -41,21 +39,7 @@
 	let isEditing       = $state( false );
 	let editingId       = $state( '' );
 	let editingCategory = $state< KitCategory | null >( null );
-
-	const statusOptions = [
-		{
-			id   : 'all',
-			name : 'Todos los estados'
-		},
-		{
-			id   : 'true',
-			name : 'Activos'
-		},
-		{
-			id   : 'false',
-			name : 'Inactivos'
-		}
-	];
+	let deletingId      = $state( '' );
 
 	// Reset to page 1 on filter changes
 	$effect( ( ) => {
@@ -143,9 +127,12 @@
 	}
 
 	function deleteCategory( id : string ) : void {
-		if ( !confirm( '¿Está seguro de que desea eliminar esta categoría de kits? Los kits en esta categoría podrían quedar huérfanos.' ) ) return;
-
-		deleteMutation.mutate( id );
+		deletingId = id;
+		deleteMutation.mutate( id, {
+			onSettled : ( ) => {
+				deletingId = '';
+			}
+		} );
 	}
 
 	// ─── Sorting Helper ───────────────────────────────────────────────────────────
@@ -164,7 +151,7 @@
 </svelte:head>
 
 <main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
-	<div class="mx-auto max-w-5xl space-y-8">
+	<div class="mx-auto max-w-6xl space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
 			title       = "Categorías de Kits"
@@ -183,22 +170,13 @@
 		/>
 
 
-		<!-- ─── Search Tool ──────────────────────────────────────────────────────── -->
-		<div class="flex flex-col sm:flex-row items-center gap-2 max-w-xl w-full">
-			<Select
-				bind:value  = { activeStatus }
-				options     = { statusOptions }
-				multiple    = { false }
-				searching   = { false }
-				placeholder = "Todos los estados"
-			/>
-
-			<SearchInput
-				bind:value          = { search }
-				bind:debouncedValue = { debouncedSearch }
-				placeholder         = "Buscar categoría de kits..."
-			/>
-		</div>
+		<!-- ─── Search & Filters Tool ────────────────────────────────────────────── -->
+		<CategoryFilters
+			bind:search          = { search }
+			bind:debouncedSearch = { debouncedSearch }
+			bind:activeStatus    = { activeStatus }
+			placeholder          = "Buscar categoría de kits..."
+		/>
 
 		<!-- ─── Table Content ────────────────────────────────────────────────────── -->
 		<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card space-y-4 pb-4">
@@ -227,8 +205,11 @@
 								<td class="px-6 py-4 text-right">
 									<TableActions
 										{ item }
-										openEditModal={ openEditModal }
-										deleteItem={ ( c ) => deleteCategory( c.id ) }
+										openEditModal   = { openEditModal }
+										deleteItem      = { ( c ) => deleteCategory( c.id ) }
+										isDeleteLoading = { deletingId === item.id }
+										confirmTitle    = "¿Eliminar categoría?"
+										confirmMessage  = "¿Está seguro de que desea eliminar esta categoría de kits? Los kits en esta categoría podrían quedar huérfanos. Esta acción no se puede deshacer."
 									/>
 								</td>
 							</tr>
