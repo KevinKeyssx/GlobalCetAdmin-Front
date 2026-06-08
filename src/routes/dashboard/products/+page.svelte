@@ -23,22 +23,24 @@
 
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
 	let search                = $state( '' );
+	let debouncedSearch       = $state( '' );
 	let selectedMaterials     = $state( new Set< string >() );
 	let selectedSubcategories = $state( new Set< string >() );
 	let activeStatus          = $state( 'all' );
 	let showModal             = $state( false );
 	let isEditing             = $state( false );
 	let editingId             = $state( '' );
+	let deletingId            = $state( '' );
 
 	// ─── TanStack Query client & queries ──────────────────────────────────────────
 	const queryClient = useQueryClient();
 
 	const productsQuery = createQuery( ( ) => ( {
-		queryKey : [ 'admin-products', Array.from( selectedMaterials ), Array.from( selectedSubcategories ), activeStatus ],
+		queryKey : [ 'admin-products', Array.from( selectedMaterials ), Array.from( selectedSubcategories ), activeStatus, debouncedSearch ],
 		queryFn  : async ( ) : Promise< AdminProduct[] > => {
 			const params = new URLSearchParams( {
 				size : '50',
-			});
+			} );
 
 			selectedMaterials.forEach( ( id ) => params.append( 'materials', id ) );
 			selectedSubcategories.forEach( ( id ) => params.append( 'subcategories', id ) );
@@ -47,18 +49,22 @@
 				params.append( 'active', activeStatus );
 			}
 
-			const prodResponse = await connectRequest<any>({
+			if ( debouncedSearch ) {
+				params.append( 'query', debouncedSearch );
+			}
+
+			const prodResponse = await connectRequest<any>( {
 				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?${ params.toString() }`,
 				isInternal : true,
-			});
+			} );
 
-			if ( isApiError( prodResponse )) {
+			if ( isApiError( prodResponse ) ) {
 				throw new Error( 'Error al cargar productos.' );
 			}
 
 			return prodResponse.data || [];
 		},
-	}));
+	} ) );
 
 
     const materialsQuery = createQuery( ( ) => ( {
@@ -188,9 +194,7 @@
 
 
     async function deleteProduct( id : string ) : Promise< void > {
-		if ( !confirm( '¿Está seguro de que desea eliminar este producto del catálogo?' ) ) return;
-
-		$globalLoadingStore = true;
+		deletingId = id;
 
 		try {
 			const response = await connectRequest< any >( {
@@ -209,7 +213,7 @@
 		} catch ( err ) {
 			toast.error( 'Error de red al intentar eliminar.' );
 		} finally {
-			$globalLoadingStore = false;
+			deletingId = '';
 		}
 	}
 
@@ -223,13 +227,14 @@
 	}
 
 
-    function clearFilters( ) : void {
+	function clearFilters() : void {
 		selectedMaterials.clear();
 		selectedSubcategories.clear();
 		selectedMaterials     = new Set< string >();
 		selectedSubcategories = new Set< string >();
 		activeStatus          = 'all';
 		search                = '';
+		debouncedSearch       = '';
 	}
 </script>
 
@@ -259,13 +264,14 @@
 
 
 		<!-- ─── Search & Filters Tool ────────────────────────────────────────────── -->
-		<div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl">
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl">
 			<!-- Search -->
 			<div class="space-y-1.5 w-full">
 				<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider">Buscar</label>
 
 				<SearchInput
 					bind:value={ search }
+					bind:debouncedValue={ debouncedSearch }
 					placeholder="Por SKU o Nombre..."
 				/>
 			</div>
@@ -295,11 +301,11 @@
 			</div>
 
 			<!-- Status and Reset -->
-			<div class="flex flex-col sm:flex-row gap-2 w-full font-semibold text-xs text-text-muted items-center">
-				<div class="space-y-1.5 flex-1">
+			<div class="flex flex-col sm:flex-row gap-2 w-full font-semibold text-xs text-text-muted items-stretch sm:items-end">
+				<div class="space-y-1.5 flex-1 w-full">
 					<span class="font-bold uppercase tracking-wider block mb-1.5">Estado</span>
 
-                    <Select
+					<Select
 						bind:value={ activeStatus }
 						options     = { statusOptions }
 						multiple    = { false }
@@ -311,9 +317,9 @@
 				{#if ( selectedMaterials.size > 0 || selectedSubcategories.size > 0 || activeStatus !== 'all' || search )}
 					<button
 						onclick={ clearFilters }
-						class="rounded-xl border border-brand/20 bg-surface/30 px-3 py-2.5 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 hover:text-brand transition-colors h-[42px] mt-auto"
+						class="rounded-xl border border-brand/20 bg-surface/30 px-3 py-2.5 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 hover:text-brand transition-colors h-[42px] flex items-center justify-center w-full sm:w-auto cursor-pointer"
 					>
-                        <BrushCleaning class="size-4" />
+						<BrushCleaning class="size-4" />
 					</button>
 				{/if}
 			</div>
@@ -372,6 +378,9 @@
 										item            = { prod }
 										openEditModal   = { openEditModal }
 										deleteItem      = { ( p ) => deleteProduct( p.id ) }
+										isDeleteLoading = { deletingId === prod.id }
+										confirmTitle    = "¿Eliminar producto?"
+										confirmMessage  = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
 									/>
 								</td>
 							</tr>
