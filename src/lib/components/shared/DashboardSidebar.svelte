@@ -1,6 +1,9 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import { slide } from 'svelte/transition';
+	import { page }             from '$app/state';
+    import { slide, fade, fly } from 'svelte/transition';
+	import { cubicOut }         from 'svelte/easing';
+
+    import { LayoutDashboard, Menu, X } from '@lucide/svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface NavChild {
@@ -53,10 +56,19 @@
 		products : true,
 		kits     : true,
 		labs     : true,
-	} );
+	});
+
+	// ─── Drawer Open State (Svelte 5 Runes) ───────────────────────────────────────
+	let isDrawerOpen = $state( false );
 
 	// ─── Derived: Current Path ────────────────────────────────────────────────────
 	const currentPath = $derived( page.url.pathname );
+
+	$effect( ( ) => {
+		if ( currentPath ) {
+			isDrawerOpen = false;
+		}
+	});
 
 	// ─── Helpers ──────────────────────────────────────────────────────────────────
 	function toggleSection( id : string ) : void {
@@ -78,20 +90,67 @@
 <!-- ─── Sidebar Navigation Panel ──────────────────────────────────────────────── -->
 <aside
 	id="dashboard-sidebar"
-	class="sticky top-0 flex flex-col w-[260px] min-w-[260px] h-screen py-5 bg-sidebar border-r border-brand/12 shadow-sidebar overflow-y-auto animate-sidebar-slide-in"
+	class="hidden md:flex sticky top-0 flex-col w-[260px] min-w-[260px] h-screen py-5 bg-sidebar border-r border-brand/12 shadow-sidebar overflow-y-auto animate-sidebar-slide-in"
 >
+	{@render sidebarContent( false )}
+</aside>
+
+<!-- Floating Menu Button (Mobile only) -->
+<button
+	type        = "button"
+	onclick     = { ( ) => { isDrawerOpen = true; } }
+	class       = "fixed top-[95%] left-6 z-55 md:hidden flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar border border-brand/15 shadow-[0_4px_12px_color-mix(in_srgb,var(--color-brand)_10%,transparent)] text-brand hover:scale-105 active:scale-95 transition-all cursor-pointer animate-fade-in"
+	aria-label  = "Abrir menú"
+>
+	<Menu class="h-4.5 w-4.5" />
+</button>
+
+<!-- Mobile Drawer Portal / Overlays -->
+{#if isDrawerOpen }
+	<!-- Backdrop Overlay -->
+	<div
+		role       = "button"
+		tabindex   = "0"
+		onclick    = { ( ) => { isDrawerOpen = false; } }
+		onkeydown  = { ( e ) => { if ( e.key === 'Escape' ) isDrawerOpen = false; } }
+		class      = "fixed inset-0 bg-background/80 backdrop-blur-xs z-40 md:hidden cursor-pointer"
+		transition:fade={ { duration : 200 } }
+		aria-label = "Cerrar menú"
+	></div>
+
+	<!-- Drawer Sidebar Panel -->
+	<aside
+		id="dashboard-sidebar-drawer"
+		class="fixed top-0 left-0 flex flex-col w-[260px] h-screen py-5 bg-sidebar border-r border-brand/12 shadow-sidebar z-50 overflow-y-auto md:hidden"
+		transition:fly={ { x : -260, duration : 300, easing : cubicOut } }
+	>
+		{@render sidebarContent( true )}
+	</aside>
+{/if}
+
+{#snippet sidebarContent( isDrawer : boolean )}
+	<!-- ─── Close Button (Drawer Only) ──────────────────────────────────────── -->
+	{#if isDrawer }
+		<div class="absolute top-4 right-4 md:hidden">
+			<button
+				type    = "button"
+				onclick = { ( ) => { isDrawerOpen = false; } }
+				class   = "flex h-8 w-8 items-center justify-center rounded-lg border border-brand/10 bg-brand/5 text-text-muted transition-colors hover:bg-brand/10 hover:text-brand cursor-pointer"
+				aria-label = "Cerrar menú"
+			>
+				<X class="h-4 w-4" />
+			</button>
+		</div>
+	{/if}
+
 	<!-- ─── Header ──────────────────────────────────────────────────────────── -->
 	<div class="px-5 pb-3">
 		<a href="/dashboard" class="group flex items-center gap-3 no-underline px-2.5 py-2 rounded-xl transition-all duration-300 hover:bg-brand/8">
 			<div class="flex items-center justify-center w-9 h-9 rounded-xl bg-brand/12 text-brand transition-all duration-300 group-hover:scale-105 group-hover:bg-brand/20">
-				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<rect x="3" y="3" width="7" height="7" rx="1.5" />
-					<rect x="14" y="3" width="7" height="7" rx="1.5" />
-					<rect x="3" y="14" width="7" height="7" rx="1.5" />
-					<rect x="14" y="14" width="7" height="7" rx="1.5" />
-				</svg>
+				<LayoutDashboard class="size-5" />
 			</div>
-			<div class="flex flex-col leading-tight">
+
+            <div class="flex flex-col leading-tight">
 				<span class="font-display font-black text-base tracking-wider uppercase text-text">Panel Admin</span>
 				<span class="text-[11px] font-bold text-brand/80">GlobalCET</span>
 			</div>
@@ -129,7 +188,7 @@
 				</button>
 
 				<!-- Section Children -->
-				{#if ( expandedSections[ section.id ] )}
+				{#if expandedSections[ section.id ] }
 					<div
 						id="sidebar-section-{ section.id }"
 						class="flex flex-col gap-0.5 pt-1 pb-1 pl-1.5 ml-4.5 border-l border-brand/15"
@@ -142,7 +201,7 @@
 								aria-current={ isActive( child.href ) ? 'page' : undefined }
 							>
 								<!-- Active Indicator Bar -->
-								{#if ( isActive( child.href ) )}
+								{#if isActive( child.href ) }
 									<span class="absolute left-[-11px] top-1/2 -translate-y-1/2 w-0.5 h-3/5 rounded-full bg-brand animate-bar-pulse"></span>
 								{/if}
 
@@ -150,7 +209,7 @@
 								<span class="flex-1">{ child.label }</span>
 
 								<!-- Active Arrow -->
-								{#if ( isActive( child.href ) )}
+								{#if isActive( child.href ) }
 									<svg
 										class="w-3 h-3 text-brand opacity-70 animate-arrow-bounce"
 										viewBox="0 0 24 24"
@@ -168,18 +227,7 @@
 			</div>
 		{/each}
 	</nav>
-
-	<!-- ─── Bottom Divider + Back Link ──────────────────────────────────────── -->
-	<!-- <div class="mt-auto px-3 pb-1">
-		<div class="h-px my-2 mx-5 bg-linear-to-r from-transparent via-brand/20 to-transparent"></div>
-		<a href="/dashboard" class="flex items-center gap-2 px-2.5 py-2 mt-2 rounded-lg no-underline font-display text-[11px] font-bold tracking-wider uppercase text-text-muted transition-all duration-250 hover:bg-brand/8 hover:text-brand hover:-translate-x-0.5">
-			<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-				<polyline points="15 18 9 12 15 6" />
-			</svg>
-			<span>Volver al Hub</span>
-		</a>
-	</div> -->
-</aside>
+{/snippet}
 
 <style>
 	.animate-sidebar-slide-in {
