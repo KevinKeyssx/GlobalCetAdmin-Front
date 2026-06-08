@@ -21,15 +21,28 @@ interface PaginatedKitsResponse {
 export const GET: RequestHandler = async ( { url, fetch } ) => {
 	const page       = url.searchParams.get( 'page' ) || '1';
 	const size       = url.searchParams.get( 'size' ) || '10';
+	const query      = url.searchParams.get( 'query' );
+	const active     = url.searchParams.get( 'active' );
 	const categories = url.searchParams.getAll( 'categories' );
 
 	const params = new URLSearchParams( {
 		page,
 		size,
-		includeImages : 'true',
-	} );
+		includeFiles    : 'true',
+        includeProducts : 'true'
+	});
 
-	categories.forEach( ( id ) => params.append( 'categories', id ) );
+	if ( query ) {
+		params.append( 'query', query );
+	}
+
+	if ( active ) {
+		params.append( 'active', active );
+	}
+
+	categories.forEach(( id ) => {
+		params.append( 'categories', id );
+	});
 
 	const response = await connectRequest<PaginatedKitsResponse>( {
 		endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }?${ params.toString() }`,
@@ -38,14 +51,14 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 			'x-secret' : ENV.INTERNAL_SECRET_KEY,
 		},
 		fetch,
-	} );
+	});
 
-	if ( isApiError( response ) ) {
-		return json( { error : response.message }, { status : response.status || 500 } );
+	if ( isApiError( response )) {
+		return json({ error : response.message }, { status : response.status || 500 });
 	}
 
 	return json( {
 		data : mapKits( response.data || [] ),
 		meta : response.meta,
-	} );
+	});
 };
