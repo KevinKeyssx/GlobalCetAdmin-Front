@@ -20,9 +20,11 @@
 
 <style>
 	.dashboard-shell {
+		position   : relative;
 		display    : flex;
 		min-height : calc( 100vh - 80px );
 		width      : 100%;
+		overflow-x : hidden;
 	}
 
 	.dashboard-content {
