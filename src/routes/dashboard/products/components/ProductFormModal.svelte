@@ -186,7 +186,7 @@
 		}
 	}
 
-	// ─── Submit Handlers ──────────────────────────────────────────────────────────
+	// ─── Submit Handler ───────────────────────────────────────────────────────────
 	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
@@ -207,7 +207,6 @@
 		formData.append( 'includeMobileLabs', 'false' );
 		formData.append( 'technical_specs', formSpecs );
 
-		// Sync file items metadata
 		const clientImages = uploaderFiles.map( ( uf ) => ( {
 			id     : uf.file ? undefined : uf.id,
 			alt    : uf.alt,
@@ -228,132 +227,222 @@
 
 <DashboardModal
 	{ show }
-	title       = { isEditing ? 'Modificar Producto' : 'Crear Nuevo Producto' }
-	onClose     = { onCancel }
-	maxWidth    = "max-w-6xl"
+	title    = { isEditing ? 'Modificar Producto' : 'Crear Nuevo Producto' }
+	onClose  = { onCancel }
+	maxWidth = "max-w-6xl"
 >
 	{#snippet body()}
-		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
-            <div class="grid grid-cols-2 gap-4 items-start">
-                <div class="space-y-2">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Name -->
-                        <div class="space-y-1.5">
-                            <label class="font-bold text-brand" for="prod-name">Nombre del Producto</label>
+		<form
+			onsubmit={ handleSubmit }
+			class="flex flex-col gap-5 text-[0.8125rem] font-semibold text-text-muted"
+		>
 
-                            <input
-                                id="prod-name"
-                                type="text"
-                                bind:value={ formName }
-                                placeholder="Ej: Vaso de Precipitado 250ml"
-                                class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
-                            />
-                        </div>
+			<!-- ── Two-panel grid: fields left / uploader right ── -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
 
-                        <!-- SKU -->
-                        <div class="space-y-1.5">
-                            <label class="font-bold text-brand" for="prod-sku">SKU Identificador</label>
+				<!-- ── LEFT PANEL: Fields ── -->
+				<div class="flex flex-col gap-3">
 
-                            <input
-                                id="prod-sku"
-                                type="text"
-                                bind:value={ formSku }
-                                placeholder="Ej: CPRODUCT-002"
-                                class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
-                            />
-                        </div>
-                    </div>
+					<!-- Section: Identificación -->
+					<fieldset
+						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 0ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Identificación
+						</legend>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-                    <!-- Description -->
-                    <div class="space-y-1.5">
-                        <label class="font-bold text-brand" for="prod-desc">Descripción Completa</label>
+							<!-- Name -->
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-name">
+									Nombre del Producto
+								</label>
+								<input
+									id="prod-name"
+									type="text"
+									bind:value={ formName }
+									placeholder="Ej: Vaso de Precipitado 250ml"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+								/>
+							</div>
 
-                        <textarea
-                            id="prod-desc"
-                            bind:value={ formDescription }
-                            placeholder="Describa el grado de pureza, dimensiones o aplicación pedagógica..."
-                            rows="3"
-                            class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-none"
-                        ></textarea>
-                    </div>
+							<!-- SKU -->
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-sku">
+									SKU Identificador
+								</label>
+								<input
+									id="prod-sku"
+									type="text"
+									bind:value={ formSku }
+									placeholder="Ej: CPRODUCT-002"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+								/>
+							</div>
+						</div>
+					</fieldset>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Material select -->
-                        <div class="space-y-1.5">
-                            <label class="font-bold text-brand" for="prod-material">Material</label>
+					<!-- Section: Descripción -->
+					<fieldset
+						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 60ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Descripción
+						</legend>
+						<div class="flex flex-col gap-1">
+							<label class="sr-only" for="prod-desc">Descripción Completa</label>
+							<textarea
+								id="prod-desc"
+								bind:value={ formDescription }
+								placeholder="Describa el grado de pureza, dimensiones o aplicación pedagógica..."
+								rows="3"
+								class="w-full resize-none rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+							></textarea>
+						</div>
+					</fieldset>
 
-                            <Select
-                                options={ materials }
-                                bind:value={ formMaterialId }
-                                multiple={ false }
-                                placeholder="Seleccionar material..."
-                            />
-                        </div>
+					<!-- Section: Clasificación (z-index elevado para que el dropdown no quede por debajo) -->
+					<fieldset
+						class="fade-in relative z-10 m-0 overflow-visible rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 120ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Clasificación
+						</legend>
 
-                        <!-- Subcategory select -->
-                        <div class="space-y-1.5">
-                            <label class="font-bold text-brand" for="prod-subcat">Subcategoría</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-3">
 
-                            <Select
-                                options     = { mappedSubcategories }
-                                bind:value  = { formSubcategoryId }
-                                multiple    = { false }
-                                placeholder = "Seleccionar subcategoría..."
-                            />
-                        </div>
-                    </div>
+							<!-- Material -->
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-material">
+									Material
+								</label>
 
-                    <!-- Technical specs (Visual Editor) -->
-                    <div class="space-y-1.5 font-bold">
-                        <label for="prod-specs" class="font-bold text-brand">Especificaciones Técnicas (Clave : Valor)</label>
-                        <KeyValueEditor id="prod-specs" bind:value={ formSpecs } />
-                    </div>
+                                <Select
+									options={ materials }
+									bind:value={ formMaterialId }
+									multiple={ false }
+									placeholder="Seleccionar material..."
+								/>
+							</div>
 
-                </div>
+							<!-- Subcategory -->
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-subcat">
+									Subcategoría
+								</label>
+								<Select
+									options     = { mappedSubcategories }
+									bind:value  = { formSubcategoryId }
+									multiple    = { false }
+									placeholder = "Seleccionar subcategoría..."
+								/>
+							</div>
+						</div>
+					</fieldset>
 
-                <!-- Custom Shared File Uploader (Dropzone area) -->
-                <div class="space-y-1.5">
-                    <span class="text-sm text-brand">Carga de Imágenes Catálogo</span>
-                    <FileUploader
-                        bind:files={ uploaderFiles }
-                        bind:filesInfo={ uploaderFilesInfo }
+					<!-- Section: Especificaciones Técnicas -->
+					<fieldset
+						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 180ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Especificaciones Técnicas
+						</legend>
+						<div class="flex flex-col gap-1">
+							<label class="sr-only" for="prod-specs">Clave : Valor</label>
+							<KeyValueEditor id="prod-specs" bind:value={ formSpecs } />
+						</div>
+					</fieldset>
+				</div>
+
+				<!-- ── RIGHT PANEL: File Uploader ── -->
+				<div class="fade-in flex flex-col" style="--delay: 80ms">
+					<p class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+						Carga de Imágenes Catálogo
+					</p>
+					<FileUploader
+						bind:files={ uploaderFiles }
+						bind:filesInfo={ uploaderFilesInfo }
 						isEditing={ isEditing }
 						deletingFileId={ deletingFileId }
 						onDeleteSingle={ handleDeleteSingleFile }
 						onDeleteMultiple={ handleDeleteMultipleFiles }
-                    />
-                </div>
-            </div>
-
-			<!-- Active checkbox -->
-			<div class="flex items-center gap-3 pt-2">
-				<input
-					id="prod-active"
-					type="checkbox"
-					bind:checked={ formActive }
-					class="accent-brand h-4 w-4 cursor-pointer"
-				/>
-				<label for="prod-active" class="font-bold text-brand cursor-pointer select-none">Habilitar en Catálogo Público</label>
+					/>
+				</div>
 			</div>
 
-			<!-- Actions -->
-			<div class="flex items-center justify-end gap-3 border-t border-brand/10 pt-4">
-				<button
-					type     = "button"
-					onclick  = { onCancel }
-					disabled = { productMutation.isPending }
-					class    = "rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					Cancelar
-				</button>
-				<button
-					type     = "submit"
-					disabled = { productMutation.isPending }
-					class    = "rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					{ productMutation.isPending ? 'Guardando...' : 'Guardar Producto' }
-				</button>
+			<!-- ── Footer: Toggle + Actions ── -->
+			<div
+				class="fade-in flex flex-col gap-3 border-t border-brand/10 pt-4 sm:flex-row sm:items-center sm:justify-between"
+				style="--delay: 220ms"
+			>
+				<!-- Custom toggle -->
+				<label class="flex cursor-pointer select-none items-center gap-2.5" for="prod-active">
+					<!-- Track -->
+					<span
+						class="relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-200 { formActive ? 'bg-brand/30 border-brand' : 'bg-input border-brand/20' }"
+					>
+						<input
+							id="prod-active"
+							type="checkbox"
+							bind:checked={ formActive }
+							class="sr-only"
+						/>
+						<!-- Thumb -->
+						<span
+							class="absolute top-0.5 left-0.5 h-3.5 w-3.5 rounded-full transition-all duration-200 { formActive ? 'translate-x-4 bg-brand shadow-[0_0_8px_rgba(0,230,118,0.55)]' : 'bg-text-muted translate-x-0' }"
+						></span>
+					</span>
+					<!-- Label text -->
+					<span
+						class="text-[0.72rem] font-bold tracking-wide transition-colors duration-200"
+						class:text-brand={ formActive }
+						class:text-text-muted={ !formActive }
+					>
+						{ formActive ? 'Habilitado en Catálogo Público' : 'Deshabilitado del Catálogo' }
+					</span>
+				</label>
+
+				<!-- Action buttons -->
+				<div class="flex items-center gap-2.5">
+					<button
+						type     = "button"
+						onclick  = { onCancel }
+						disabled = { productMutation.isPending }
+						class    = "cursor-pointer rounded-lg border border-brand/20 bg-card/70 px-4 py-1.5 font-display text-[0.7rem] font-bold uppercase tracking-[0.08em] text-text-muted transition-all hover:border-brand/35 hover:bg-brand/10 hover:text-brand disabled:cursor-not-allowed disabled:opacity-45"
+					>
+						Cancelar
+					</button>
+					<button
+						type     = "submit"
+						disabled = { productMutation.isPending }
+						class    = "flex cursor-pointer items-center gap-1.5 rounded-lg border-none bg-linear-to-tr from-brand via-brand-bright to-brand px-5 py-1.5 font-display text-[0.7rem] font-black uppercase tracking-[0.08em] text-white dark:text-brand-dark shadow-[0_0_16px_color-mix(in_srgb,var(--color-brand)_30%,transparent)] transition-all hover:shadow-[0_0_26px_color-mix(in_srgb,var(--color-brand)_50%,transparent)] disabled:cursor-not-allowed disabled:opacity-55"
+					>
+						{#if productMutation.isPending}
+							<span class="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+							Guardando…
+						{:else}
+							{ isEditing ? 'Guardar Cambios' : 'Guardar Producto' }
+						{/if}
+					</button>
+				</div>
 			</div>
 		</form>
 	{/snippet}
 </DashboardModal>
+
+<style>
+	/* Solo el keyframe de entrada — no es posible definirlo con Tailwind sin modificar la config global */
+	@keyframes fadeSlideUp {
+		from { opacity: 0; transform: translateY( 8px ); }
+		to   { opacity: 1; transform: translateY( 0 ); }
+	}
+
+	.fade-in {
+		animation       : fadeSlideUp 0.35s ease both;
+		animation-delay : var( --delay, 0ms );
+	}
+</style>
