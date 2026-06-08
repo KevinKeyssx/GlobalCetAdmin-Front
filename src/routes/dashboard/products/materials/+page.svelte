@@ -57,6 +57,7 @@
 	let isEditing          = $state( false );
 	let editingId          = $state( '' );
 	let editingMaterial    = $state< Material | null >( null );
+	let deletingId         = $state( '' );
 
 	const statusOptions = [
 		{ id : 'all',   name : 'Todos los estados' },
@@ -167,9 +168,12 @@
 	}
 
 	function deleteMaterial( id : string ) : void {
-		if ( !confirm( '¿Está seguro de que desea eliminar este material?' ) ) return;
-
-		deleteMutation.mutate( id );
+		deletingId = id;
+		deleteMutation.mutate( id, {
+			onSettled : ( ) => {
+				deletingId = '';
+			}
+		} );
 	}
 
 	function toggleSort( field : string ) : void {
@@ -207,7 +211,7 @@
 
 
 		<!-- ─── Search & Filter Tool ────────────────────────────────────────────── -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs">
+		<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs">
 			<!-- Search -->
 			<div class="space-y-1.5 w-full sm:col-span-2 md:col-span-2">
 				<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider">Buscar</label>
@@ -233,7 +237,7 @@
 			</div>
 
 			<!-- Status Select and Reset -->
-			<div class="flex flex-col sm:flex-row gap-2 w-full font-semibold text-text-muted items-center sm:col-span-1 md:col-span-1">
+			<div class="flex flex-row gap-2 w-full font-semibold text-text-muted items-end sm:col-span-1 md:col-span-1">
 				<div class="space-y-1.5 flex-1 w-full">
 					<span class="font-bold uppercase tracking-wider block mb-1.5">Estado</span>
 
@@ -249,7 +253,7 @@
 				{#if ( activeStatus !== 'all' || autoclavableStatus !== 'all' || search ) }
 					<button
 						onclick = { clearFilters }
-						class   = "rounded-xl border border-brand/20 bg-surface/30 px-3 py-2.5 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 hover:text-brand transition-colors h-[42px] mt-auto w-full sm:w-auto flex items-center justify-center"
+						class   = "rounded-xl border border-brand/20 bg-surface/30 h-[46px] aspect-square flex items-center justify-center cursor-pointer text-text-muted hover:bg-brand/10 hover:text-brand transition-colors"
 					>
 						<BrushCleaning class="size-4" />
 					</button>
@@ -315,6 +319,9 @@
 										{ item }
 										openEditModal   = { openEditModal }
 										deleteItem      = { ( m ) => deleteMaterial( m.id ) }
+										isDeleteLoading = { deletingId === item.id }
+										confirmTitle    = "¿Eliminar material?"
+										confirmMessage  = "¿Está seguro de que desea eliminar este material? Esta acción no se puede deshacer."
 									/>
 								</td>
 							</tr>
