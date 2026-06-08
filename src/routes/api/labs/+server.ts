@@ -234,23 +234,61 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 	}
 };
 
-// ─── DELETE Handler: Remove a mobile lab ──────────────────────────────────────
+// ─── DELETE Handler: Remove a mobile lab or a product/kit relation from it ───
 export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 	try {
-		const id = url.searchParams.get( 'id' ) || '';
+		const id        = url.searchParams.get( 'id' ) || '';
+		const productId = url.searchParams.get( 'productId' ) || '';
+		const kitId     = url.searchParams.get( 'kitId' ) || '';
 
 		if ( !id ) {
 			return json( { error : 'Missing lab ID' }, { status : 400 } );
 		}
 
+		if ( productId ) {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }/products/${ productId }`,
+				method		: METHOD.DELETE,
+				isInternal	: false,
+				headers		: {
+					'x-secret'	: ENV.INTERNAL_SECRET_KEY,
+				},
+				fetch		: fetch,
+			} );
+
+			if ( isApiError( response ) ) {
+				return json( { error : response.message }, { status : response.status || 500 } );
+			}
+
+			return json( response );
+		}
+
+		if ( kitId ) {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }/kits/${ kitId }`,
+				method		: METHOD.DELETE,
+				isInternal	: false,
+				headers		: {
+					'x-secret'	: ENV.INTERNAL_SECRET_KEY,
+				},
+				fetch		: fetch,
+			} );
+
+			if ( isApiError( response ) ) {
+				return json( { error : response.message }, { status : response.status || 500 } );
+			}
+
+			return json( response );
+		}
+
 		const response = await connectRequest< any >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }`,
-			method     : METHOD.DELETE,
-			isInternal : false,
-			headers    : {
-				'x-secret' : ENV.INTERNAL_SECRET_KEY,
+			endpoint	: `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }`,
+			method		: METHOD.DELETE,
+			isInternal	: false,
+			headers		: {
+				'x-secret'	: ENV.INTERNAL_SECRET_KEY,
 			},
-			fetch      : fetch,
+			fetch		: fetch,
 		} );
 
 		if ( isApiError( response ) ) {
@@ -262,3 +300,4 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
 	}
 };
+
