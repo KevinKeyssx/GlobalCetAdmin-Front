@@ -7,7 +7,7 @@
 		description  : string;
 		breadcrumb   : BreadcrumbItem[];
 		buttonText?  : string;
-		onclick?     : ( ) => void;
+		onclick?     : () => void;
 	}
 
 	let {
@@ -35,11 +35,11 @@
 	{#if ( buttonText && onclick ) }
 		<button
 			onclick = { onclick }
-			class   = "inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-xs font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright w-full md:w-auto"
+			class   = "inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 md:px-3 xl:px-5 py-2 xl:py-3 font-display text-xs font-semibold uppercase tracking-wider text-white dark:text-brand-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright w-full md:w-auto"
 		>
-			<Plus class="size-4" />
+			<Plus class="size-3 md:size-4" />
 
-			<span class="hidden sm:inline">
+			<span class="md:hidden xl:inline text-[11px] xl:text-xs">
 				{ buttonText }
 			</span>
 		</button>
