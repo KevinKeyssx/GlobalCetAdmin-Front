@@ -6,7 +6,6 @@ import { EXTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 import { ENV }                          from '$lib/utils/env.server';
 import { mapProducts }                  from '$lib/utils/entityFiles';
 
-
 interface PaginatedProductsResponse {
 	data : GlobalSearchProduct[];
 	meta : {
@@ -18,21 +17,26 @@ interface PaginatedProductsResponse {
 }
 
 // ─── GET Handler ─────────────────────────────────────────────────────────────
-export const GET: RequestHandler = async ( { url, fetch } ) => {
+export const GET : RequestHandler = async ( { url, fetch } ) => {
 	const page          = url.searchParams.get( 'page' ) || '1';
 	const size          = url.searchParams.get( 'size' ) || '10';
 	const subcategories = url.searchParams.getAll( 'subcategories' );
 	const materials     = url.searchParams.getAll( 'materials' );
 	const active        = url.searchParams.get( 'active' );
+	const query         = url.searchParams.get( 'query' );
 
-	const params = new URLSearchParams({
+	const params = new URLSearchParams( {
 		page,
 		size,
 		includeImages : 'true',
-	});
+	} );
 
-	subcategories.forEach(( id ) => params.append( 'subcategories', id ));
-	materials.forEach(( id ) => params.append( 'materials', id ));
+	if ( query ) {
+		params.append( 'query', query );
+	}
+
+	subcategories.forEach( ( id ) => params.append( 'subcategories', id ) );
+	materials.forEach( ( id ) => params.append( 'materials', id ) );
 
 	if ( active !== null && active !== 'all' ) {
 		params.append( 'active', active );
@@ -45,14 +49,14 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 			'x-secret' : ENV.INTERNAL_SECRET_KEY,
 		},
 		fetch,
-	});
+	} );
 
-	if ( isApiError( response )) {
-		return json({ error : response.message }, { status : response.status || 500 });
+	if ( isApiError( response ) ) {
+		return json( { error : response.message }, { status : response.status || 500 } );
 	}
 
-	return json({
+	return json( {
 		data : mapProducts( response.data || [] ),
 		meta : response.meta,
-	});
+	} );
 };
