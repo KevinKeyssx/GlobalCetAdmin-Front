@@ -9,6 +9,8 @@
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import DashboardModal                   from '../../components/DashboardModal.svelte';
+	import ConfirmationModal                from '../../../../lib/components/shared/ConfirmationModal.svelte';
+	import RelationManager                  from '$lib/components/shared/RelationManager.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
 
 	import type { KitInitial, KitProduct }  from '$lib/types/kit';
@@ -56,14 +58,6 @@
 
 	// Relations list state (Selected products in this kit)
 	let formProducts    = $state< KitProduct[] >( [] );
-	let selectedAddProd = $state( '' );
-
-	const mappedProducts = $derived.by( () => {
-		return catalogProducts.map( ( prod ) => ( {
-			id   : prod.id,
-			name : `[${ prod.sku }] ${ prod.name }`,
-		} ) );
-	} );
 
 	// File Uploader state
 	let uploaderFiles     = $state< UploadedFileItem[] >( [] );
@@ -78,7 +72,6 @@
 			formCategoryId    = initialData.categoryId || ( categories[ 0 ]?.id || '' );
 			formActive        = initialData.active;
 			formProducts      = initialData.products || [];
-			selectedAddProd   = catalogProducts[ 0 ]?.id || '';
 			if ( isEditing && initialData.files ) {
 				uploaderFiles = initialData.files.map( ( f ) => ( {
 					id		: f.id,
@@ -95,59 +88,53 @@
 			formName          = '';
 			formSku           = '';
 			formDescription   = '';
-			formCategoryId    = categories[ 0 ]?.id || '';
+			formCategoryId    = '';
 			formActive        = true;
 			formProducts      = [];
-			selectedAddProd   = catalogProducts[ 0 ]?.id || '';
 			uploaderFiles     = [];
 			uploaderFilesInfo = '';
 		}
 	} );
 
 	// ─── Relation Helpers ─────────────────────────────────────────────────────────
-	function addProductToForm() : void {
-		if ( !selectedAddProd ) return;
 
-		// Check if already added
-		if ( formProducts.some( ( p ) => p.productId === selectedAddProd ) ) {
-			toast.error( 'Este producto ya está agregado al kit.' );
-			return;
-		}
+	let productToDelete = $state<{ productId : string; name : string } | null>( null );
 
-		const match = catalogProducts.find( ( p ) => p.id === selectedAddProd );
-		if ( match ) {
-			formProducts = [
-				...formProducts,
-				{
-					productId : selectedAddProd,
-					quantity  : 1,
-					product   : {
-						id   : match.id,
-						name : match.name,
-						sku  : match.sku,
-					},
-				},
-			];
+	function handleRemoveProduct( productId : string, name : string ) : void {
+		if ( isEditing && initialData?.products.some( ( p ) => p.productId === productId ) ) {
+			// Product is already saved in the database, require confirmation & server delete
+			productToDelete = { productId, name };
+		} else {
+			// Local temporary product, remove immediately
+			formProducts = formProducts.filter( ( p ) => p.productId !== productId );
 		}
 	}
 
-	function removeProductFromForm( id : string ) : void {
-		formProducts = formProducts.filter( ( p ) => p.productId !== id );
+	function confirmDeleteProduct( ) : void {
+		if ( !productToDelete ) return;
+		deleteProductMutation.mutate( {
+			kitId     : editingId,
+			productId : productToDelete.productId,
+		}, {
+			onSuccess : ( ) => {
+				productToDelete = null;
+			}
+		} );
 	}
 
-	// ─── TanStack Query client & mutation ─────────────────────────────────────────
+	// ─── TanStack Query client & mutations ────────────────────────────────────────
 	const queryClient = useQueryClient();
 
-	const kitMutation = createMutation( () => ( {
+	const kitMutation = createMutation( ( ) => ( {
 		mutationFn : async ( { isEditing, editingId, formData } : { isEditing : boolean; editingId : string; formData : FormData } ) : Promise< any > => {
 			const endpoint = isEditing ? `kits?id=${ editingId }` : 'kits';
 			const method   = isEditing ? METHOD.PUT : METHOD.POST;
 
 			const response = await connectRequest< any >( {
-				endpoint	: endpoint,
-				method		: method,
-				body		: formData,
-				isInternal	: true,
+				endpoint   : endpoint,
+				method     : method,
+				body       : formData,
+				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -156,19 +143,43 @@
 
 			return response;
 		},
-		onSuccess : () => {
+		onSuccess  : ( ) => {
 			toast.success( isEditing ? 'Kit editado con éxito.' : 'Kit creado con éxito.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-kits' ] } );
-			onSave();
+			onSave( );
 		},
-		onError : ( error : any ) => {
+		onError    : ( error : any ) => {
 			toast.error( error.message || 'Error al guardar.' );
 		},
 	} ) );
 
-	$effect( () => {
-		$globalLoadingStore = kitMutation.isPending;
-		return () => {
+	const deleteProductMutation = createMutation( ( ) => ( {
+		mutationFn : async ( { kitId, productId } : { kitId : string; productId : string } ) : Promise< any > => {
+			const response = await connectRequest< any >( {
+				endpoint   : `kits?id=${ kitId }&productId=${ productId }`,
+				method     : METHOD.DELETE,
+				isInternal : true,
+			} );
+
+			if ( isApiError( response ) ) {
+				throw new Error( response.message );
+			}
+
+			return response;
+		},
+		onSuccess  : ( data, variables ) => {
+			toast.success( 'Producto eliminado del kit con éxito.' );
+			formProducts = formProducts.filter( ( p ) => p.productId !== variables.productId );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-kits' ] } );
+		},
+		onError    : ( error : any ) => {
+			toast.error( error.message || 'Error al eliminar el producto.' );
+		},
+	} ) );
+
+	$effect( ( ) => {
+		$globalLoadingStore = kitMutation.isPending || deleteProductMutation.isPending;
+		return ( ) => {
 			$globalLoadingStore = false;
 		};
 	} );
@@ -210,153 +221,212 @@
 
 <DashboardModal
 	{ show }
-	title={ isEditing ? 'Modificar Kit' : 'Crear Nuevo Kit' }
-	onClose={ onCancel }
-	maxWidth="max-w-2xl"
+	title    = { isEditing ? 'Modificar Kit' : 'Crear Nuevo Kit' }
+	onClose  = { onCancel }
+	maxWidth = "max-w-6xl"
 >
 	{#snippet body()}
-		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<!-- Name -->
-				<div class="space-y-1.5">
-					<label for="kit-name">Nombre del Kit</label>
-					<input
-						id="kit-name"
-						type="text"
-						bind:value={ formName }
-						placeholder="Ej: Kit de Bioquímica Básica"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
-					/>
-				</div>
+		<form
+			onsubmit={ handleSubmit }
+			class="flex flex-col gap-5 text-[0.8125rem] font-semibold text-text-muted"
+		>
 
-				<!-- SKU -->
-				<div class="space-y-1.5">
-					<label for="kit-sku">SKU Identificador</label>
-					<input
-						id="kit-sku"
-						type="text"
-						bind:value={ formSku }
-						placeholder="Ej: CKIT-001"
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
-					/>
-				</div>
-			</div>
+			<!-- ── Two-panel grid: fields left / uploader right ── -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
 
-			<!-- Description -->
-			<div class="space-y-1.5">
-				<label for="kit-desc">Descripción Completa del Kit</label>
-				<textarea
-					id="kit-desc"
-					bind:value={ formDescription }
-					placeholder="Indique los módulos pedagógicos, experimentos integrados o guías de laboratorio incluidas..."
-					rows="3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-none"
-				></textarea>
-			</div>
+				<!-- ── LEFT PANEL: Fields ── -->
+				<div class="flex flex-col gap-3">
 
-			<!-- Category Select -->
-			<div class="space-y-1.5">
-				<label for="kit-category">Categoría Científica</label>
-				<Select
-					options={ categories }
-					bind:value={ formCategoryId }
-					multiple={ false }
-					placeholder="Seleccionar categoría..."
-				/>
-			</div>
-
-			<!-- PRODUCTS SELECTOR IN FORM -->
-			<div class="space-y-3 rounded-2xl border border-brand/15 bg-surface/20 p-4">
-				<span class="text-[10px] uppercase font-black tracking-wider text-brand">Productos Incluidos en este Kit</span>
-
-				<div class="flex items-center gap-2">
-					<Select
-						options={ mappedProducts }
-						bind:value={ selectedAddProd }
-						multiple={ false }
-						placeholder="Seleccionar producto..."
-					/>
-					<button
-						type="button"
-						onclick={ addProductToForm }
-						class="rounded-xl border border-brand bg-brand/10 hover:bg-brand hover:text-surface-dark px-4 py-2.5 transition-colors font-bold uppercase"
+					<!-- Section: Identificación -->
+					<fieldset
+						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 0ms"
 					>
-						Agregar
-					</button>
-				</div>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Identificación
+						</legend>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-				<!-- Selected items list -->
-				<div class="max-h-48 overflow-y-auto space-y-2 border-t border-brand/5 pt-2">
-					{#each formProducts as item ( item.productId )}
-						<div class="flex items-center justify-between rounded-xl bg-input p-2.5 border border-brand/5 text-[11px]">
-							<div class="space-y-0.5 max-w-[70%]">
-								<span class="font-mono text-[9px] text-brand/80 font-bold block">{ item.product?.sku || 'PROD' }</span>
-								<span class="font-bold text-text truncate block">{ item.product?.name || 'Producto' }</span>
+							<!-- Name -->
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="kit-name">
+									Nombre del Kit
+								</label>
+								<input
+									id="kit-name"
+									type="text"
+									bind:value={ formName }
+									placeholder="Ej: Kit de Bioquímica Básica"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+								/>
 							</div>
 
-							<div class="flex items-center gap-3">
-								<div class="flex items-center gap-1.5">
-									<span class="text-[10px] text-text-muted">Cant:</span>
-									<input
-										type="number"
-										min="1"
-										bind:value={ item.quantity }
-										class="w-12 text-center rounded-lg border border-brand/15 bg-card py-1 text-text font-bold"
-									/>
-								</div>
-								<button
-									type="button"
-									onclick={ () => removeProductFromForm( item.productId ) }
-									class="text-red-400 hover:text-red-300 font-bold uppercase text-[10px] tracking-wide"
-								>
-									Eliminar
-								</button>
+							<!-- SKU -->
+							<div class="flex flex-col gap-1">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="kit-sku">
+									SKU Identificador
+								</label>
+								<input
+									id="kit-sku"
+									type="text"
+									bind:value={ formSku }
+									placeholder="Ej: CKIT-001"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+								/>
 							</div>
 						</div>
-					{:else}
-						<div class="text-center py-4 text-text-muted text-[11px]">No hay productos seleccionados para este Kit.</div>
-					{/each}
+					</fieldset>
+
+					<!-- Section: Descripción -->
+					<fieldset
+						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 60ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Descripción
+						</legend>
+						<div class="flex flex-col gap-1">
+							<label class="sr-only" for="kit-desc">Descripción Completa del Kit</label>
+							<textarea
+								id="kit-desc"
+								bind:value={ formDescription }
+								placeholder="Indique los módulos pedagógicos, experimentos integrados o guías de laboratorio incluidas..."
+								rows="3"
+								class="w-full resize-none rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+							></textarea>
+						</div>
+					</fieldset>
+
+					<!-- Section: Clasificación (z-index elevado para que el dropdown no quede por debajo) -->
+					<fieldset
+						class="fade-in relative z-10 m-0 overflow-visible rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
+						style="--delay: 120ms"
+					>
+						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+							Clasificación
+						</legend>
+						<div class="flex flex-col gap-1">
+							<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="kit-category">
+								Categoría Científica
+							</label>
+							<Select
+								options     = { categories }
+								bind:value  = { formCategoryId }
+								multiple    = { false }
+								placeholder = "Seleccionar categoría..."
+							/>
+						</div>
+					</fieldset>
+
+					<!-- Section: Productos Incluidos -->
+					<div class="fade-in" style="--delay: 180ms">
+						<RelationManager
+							bind:items           = { formProducts }
+							catalogItems         = { catalogProducts }
+							title                = "Productos Incluidos en este Kit"
+							placeholder          = "Seleccionar producto..."
+							idKey                = "productId"
+							metaKey              = "product"
+							isEditing            = { isEditing }
+							initialDataRelations = { initialData?.products }
+							duplicateMessage     = "Este producto ya está agregado al kit."
+							onRemove             = { handleRemoveProduct }
+						/>
+					</div>
+				</div>
+
+				<!-- ── RIGHT PANEL: File Uploader ── -->
+				<div class="fade-in flex flex-col" style="--delay: 80ms">
+					<p class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
+						Carga de Imágenes Catálogo
+					</p>
+					<FileUploader
+						bind:files     = { uploaderFiles }
+						bind:filesInfo = { uploaderFilesInfo }
+						isEditing      = { isEditing }
+					/>
 				</div>
 			</div>
 
-			<!-- Image Dropzone Area -->
-			<div class="space-y-1.5 border-t border-brand/5 pt-3">
-				<span class="text-[10px] uppercase font-black tracking-wider text-brand">Imágenes del Kit</span>
-				<FileUploader
-					bind:files={ uploaderFiles }
-					bind:filesInfo={ uploaderFilesInfo }
-				/>
-			</div>
+			<!-- ── Footer: Toggle + Actions ── -->
+			<div
+				class="fade-in flex flex-col gap-3 border-t border-brand/10 pt-4 sm:flex-row sm:items-center sm:justify-between"
+				style="--delay: 220ms"
+			>
+				<!-- Custom toggle -->
+				<label class="flex cursor-pointer select-none items-center gap-2.5" for="kit-active">
+					<!-- Track -->
+					<span
+						class="relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-200 { formActive ? 'bg-brand/30 border-brand' : 'bg-input border-brand/20' }"
+					>
+						<input
+							id="kit-active"
+							type="checkbox"
+							bind:checked={ formActive }
+							class="sr-only"
+						/>
+						<!-- Thumb -->
+						<span
+							class="absolute top-0.5 left-0.5 h-3.5 w-3.5 rounded-full transition-all duration-200 { formActive ? 'translate-x-4 bg-brand shadow-[0_0_8px_rgba(0,230,118,0.55)]' : 'bg-text-muted translate-x-0' }"
+						></span>
+					</span>
+					<!-- Label text -->
+					<span
+						class="text-[0.72rem] font-bold tracking-wide transition-colors duration-200"
+						class:text-brand={ formActive }
+						class:text-text-muted={ !formActive }
+					>
+						{ formActive ? 'Habilitado en Catálogo Público' : 'Deshabilitado del Catálogo' }
+					</span>
+				</label>
 
-			<!-- Active Checkbox -->
-			<div class="flex items-center gap-3 pt-2">
-				<input
-					id="kit-active"
-					type="checkbox"
-					bind:checked={ formActive }
-					class="accent-brand h-4 w-4 cursor-pointer"
-				/>
-				<label for="kit-active" class="cursor-pointer select-none">Habilitar en Catálogo Público</label>
-			</div>
-
-			<!-- Actions -->
-			<div class="flex items-center justify-end gap-3 border-t border-brand/10 pt-4">
-				<button
-					type="button"
-					onclick={ onCancel }
-					disabled={ kitMutation.isPending }
-					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-3 font-bold uppercase tracking-wider text-text-muted hover:bg-brand/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					Cancelar
-				</button>
-				<button
-					type="submit"
-					disabled={ kitMutation.isPending }
-					class="rounded-xl bg-brand px-5 py-3 font-bold uppercase tracking-wider text-surface-dark shadow-card hover:bg-brand-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					{ kitMutation.isPending ? 'Guardando...' : 'Guardar Kit' }
-				</button>
+				<!-- Action buttons -->
+				<div class="flex items-center gap-2.5">
+					<button
+						type     = "button"
+						onclick  = { onCancel }
+						disabled = { kitMutation.isPending }
+						class    = "cursor-pointer rounded-lg border border-brand/20 bg-card/70 px-4 py-1.5 font-display text-[0.7rem] font-bold uppercase tracking-[0.08em] text-text-muted transition-all hover:border-brand/35 hover:bg-brand/10 hover:text-brand disabled:cursor-not-allowed disabled:opacity-45"
+					>
+						Cancelar
+					</button>
+					<button
+						type     = "submit"
+						disabled = { kitMutation.isPending }
+						class    = "flex cursor-pointer items-center gap-1.5 rounded-lg border-none bg-linear-to-tr from-brand via-brand-bright to-brand px-5 py-1.5 font-display text-[0.7rem] font-black uppercase tracking-[0.08em] text-white dark:text-brand-dark shadow-[0_0_16px_color-mix(in_srgb,var(--color-brand)_30%,transparent)] transition-all hover:shadow-[0_0_26px_color-mix(in_srgb,var(--color-brand)_50%,transparent)] disabled:cursor-not-allowed disabled:opacity-55"
+					>
+						{#if kitMutation.isPending}
+							<span class="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+							Guardando…
+						{:else}
+							{ isEditing ? 'Guardar Cambios' : 'Guardar Kit' }
+						{/if}
+					</button>
+				</div>
 			</div>
 		</form>
 	{/snippet}
 </DashboardModal>
+
+<ConfirmationModal
+	show        = { productToDelete !== null }
+	title       = "Confirmar Eliminación"
+	message     = { `¿Estás seguro de que deseas eliminar "${ productToDelete?.name }" de este kit? Esta acción no se puede deshacer.` }
+	confirmText = "Eliminar"
+	onConfirm   = { confirmDeleteProduct }
+	onCancel    = { ( ) => { productToDelete = null; } }
+	isPending   = { deleteProductMutation.isPending }
+/>
+
+<style>
+	/* Solo el keyframe de entrada — no es posible definirlo con Tailwind sin modificar la config global */
+	@keyframes fadeSlideUp {
+		from { opacity: 0; transform: translateY( 8px ); }
+		to   { opacity: 1; transform: translateY( 0 ); }
+	}
+
+	.fade-in {
+		animation       : fadeSlideUp 0.35s ease both;
+		animation-delay : var( --delay, 0ms );
+	}
+</style>
