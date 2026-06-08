@@ -10,7 +10,8 @@
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
-	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
+	import CatalogFilters                   from '$lib/components/shared/CatalogFilters.svelte';
+	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductRelation {
@@ -47,30 +48,76 @@
 		sku  : string;
 	}
 
+	interface PaginatedResponse< T > {
+		data : T[];
+		meta : {
+			total      : number;
+			page       : number;
+			size       : number;
+			totalPages : number;
+		};
+	}
+
+	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
+	let search             = $state( '' );
+	let debouncedSearch    = $state( '' );
+	let activeStatus       = $state( 'all' );
+	let selectedCategories = $state( new Set< string >() );
+	let page               = $state( 1 );
+	let showModal          = $state( false );
+	let isEditing          = $state( false );
+	let editingId          = $state( '' );
+	let editingKit         = $state< any >( null );
+	let deletingId         = $state( '' );
+
+
+	// Reset to page 1 on filter changes
+	$effect( ( ) => {
+		const _ = [ debouncedSearch, activeStatus, Array.from( selectedCategories ) ];
+		page = 1;
+	} );
+
 	// ─── TanStack Query client & queries ──────────────────────────────────────────
 	const queryClient = useQueryClient();
 
-	const kitsQuery = createQuery( () => ( {
-		queryKey	: [ 'admin-kits' ],
-		queryFn		: async () : Promise< Kit[] > => {
-			const response = await connectRequest< any >( {
-				endpoint	: `${ INTERNAL_ENDPOINTS.KITS.FILTERS }?size=50`,
-				isInternal	: true,
+	const kitsQuery = createQuery( ( ) => ( {
+		queryKey : [ 'admin-kits', page, debouncedSearch, activeStatus, Array.from( selectedCategories ) ],
+		queryFn  : async ( ) : Promise< PaginatedResponse< Kit > > => {
+			const params = new URLSearchParams( {
+				page : page.toString(),
+				size : '10',
+			} );
+
+			if ( debouncedSearch.trim() ) {
+				params.append( 'query', debouncedSearch.trim() );
+			}
+
+			if ( activeStatus !== 'all' ) {
+				params.append( 'active', activeStatus );
+			}
+
+			Array.from( selectedCategories ).forEach( ( catId ) => {
+				params.append( 'categories', catId );
+			} );
+
+			const response = await connectRequest< PaginatedResponse< Kit > >( {
+				endpoint   : `${ INTERNAL_ENDPOINTS.KITS.FILTERS }?${ params.toString() }`,
+				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
 				throw new Error( 'Error al cargar kits.' );
 			}
-			return response.data || [];
+			return response;
 		},
 	} ) );
 
-	const catalogProductsQuery = createQuery( () => ( {
-		queryKey	: [ 'catalog-products' ],
-		queryFn		: async () : Promise< CatalogProduct[] > => {
+	const catalogProductsQuery = createQuery( ( ) => ( {
+		queryKey : [ 'catalog-products' ],
+		queryFn  : async ( ) : Promise< CatalogProduct[] > => {
 			const response = await connectRequest< any >( {
-				endpoint	: `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=100`,
-				isInternal	: true,
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=100`,
+				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -80,12 +127,12 @@
 		},
 	} ) );
 
-	const categoriesQuery = createQuery( () => ( {
-		queryKey	: [ 'kit-categories' ],
-		queryFn		: async () : Promise< KitCategory[] > => {
+	const categoriesQuery = createQuery( ( ) => ( {
+		queryKey : [ 'kit-categories' ],
+		queryFn  : async ( ) : Promise< KitCategory[] > => {
 			const response = await connectRequest< KitCategory[] >( {
-				endpoint	: 'kits/categories/get-all',
-				isInternal	: true,
+				endpoint   : 'kits/categories/get-all',
+				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -95,30 +142,16 @@
 		},
 	} ) );
 
-	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	const kits            = $derived( kitsQuery.data            || [] );
+	// ─── Reactive derived states ──────────────────────────────────────────────────
+	const kitsResponse    = $derived( kitsQuery.data );
+	const kits            = $derived( kitsResponse?.data || [] );
 	const catalogProducts = $derived( catalogProductsQuery.data || [] );
 	const categories      = $derived( categoriesQuery.data      || [] );
 
-	let search          = $state( '' );
-	let showModal       = $state( false );
-	let isEditing       = $state( false );
-	let editingId       = $state( '' );
-	let editingKit      = $state< any >( null );
-
-	// ─── Filtered View ────────────────────────────────────────────────────────────
-	const filteredKits = $derived(
-		kits.filter( ( k ) =>
-			k.name.toLowerCase().includes( search.toLowerCase() ) ||
-			k.sku.toLowerCase().includes( search.toLowerCase() ) ||
-			( k.description || '' ).toLowerCase().includes( search.toLowerCase() )
-		)
-	);
-
 	// Sincronizar cargando global con queries
-	$effect( () => {
+	$effect( ( ) => {
 		$globalLoadingStore = kitsQuery.isFetching || catalogProductsQuery.isFetching || categoriesQuery.isFetching;
-		return () => {
+		return ( ) => {
 			$globalLoadingStore = false;
 		};
 	} );
@@ -158,10 +191,9 @@
 		showModal  = true;
 	}
 
-	async function deleteKit( id : string ) : Promise<void> {
-		if ( !confirm( '¿Está seguro de que desea eliminar este kit?' ) ) return;
+	async function deleteKit( id : string ) : Promise< void > {
+		deletingId = id;
 
-		$globalLoadingStore = true;
 		try {
 			const response = await connectRequest< any >( {
 				endpoint	: `kits?id=${ id }`,
@@ -179,7 +211,7 @@
 		} catch ( err ) {
 			toast.error( 'Error de red al intentar eliminar.' );
 		} finally {
-			$globalLoadingStore = false;
+			deletingId = '';
 		}
 	}
 </script>
@@ -192,7 +224,7 @@
 	<div class="mx-auto max-w-6xl space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
-			title       = "Gestión de Kits Pedagógicos"
+			title       = "Catálogo de Kits"
 			description = "Administre sets pedagógicos y kits de laboratorio combinando reactivos, borosilicato e instrumentos."
 			breadcrumb  = { [
 				{
@@ -208,12 +240,16 @@
 		/>
 
 
-		<div class="flex items-center max-w-md relative">
-			<SearchInput
-				bind:value={ search }
-				placeholder="Buscar kit por SKU o Nombre..."
-			/>
-		</div>
+		<!-- ─── Search & Filters Tool ────────────────────────────────────────────── -->
+		<CatalogFilters
+			bind:search             = { search }
+			bind:debouncedSearch    = { debouncedSearch }
+			bind:activeStatus       = { activeStatus }
+			bind:selectedCategories = { selectedCategories }
+			categories              = { categories }
+			searchPlaceholder       = "Buscar kit por SKU o Nombre..."
+			categoriesLabel         = "Categorías de Kits"
+		/>
 
 		<!-- ─── Table Content ────────────────────────────────────────────────────── -->
 		<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card">
@@ -231,7 +267,7 @@
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-brand/10 font-semibold">
-						{#each filteredKits as item ( item.id ) }
+						{#each kits as item ( item.id ) }
 							<tr class="hover:bg-brand/5 transition-colors duration-150">
 								<td class="px-6 py-3">
 									<div class="h-10 w-10 overflow-hidden rounded-lg border border-brand/10 bg-input">
@@ -270,9 +306,12 @@
 								</td>
 								<td class="px-6 py-4 text-right">
 									<TableActions
-										item={ item }
-										openEditModal={ openEditModal }
-										deleteItem={ ( k ) => deleteKit( k.id ) }
+										item            = { item }
+										openEditModal   = { openEditModal }
+										deleteItem      = { ( k ) => deleteKit( k.id ) }
+										isDeleteLoading = { deletingId === item.id }
+										confirmTitle    = "¿Eliminar kit?"
+										confirmMessage  = "¿Está seguro de que desea eliminar este kit? Esta acción no se puede deshacer."
 									/>
 								</td>
 							</tr>
@@ -286,6 +325,16 @@
 					</tbody>
 				</table>
 			</div>
+
+			{#if ( kitsResponse && kitsResponse.meta && kitsResponse.meta.totalPages > 1 )}
+				<div class="border-t border-brand/10 bg-brand/5 p-4 flex justify-end">
+					<Pagination
+						bind:page = { page }
+						count     = { kitsResponse.meta.total }
+						perPage   = { kitsResponse.meta.size }
+					/>
+				</div>
+			{/if}
 		</section>
 
 		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
