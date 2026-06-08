@@ -10,8 +10,8 @@
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
-	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
-
+	import CatalogFilters                   from '$lib/components/shared/CatalogFilters.svelte';
+	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductRelation {
@@ -68,30 +68,76 @@
 		sku  : string;
 	}
 
+	interface PaginatedResponse< T > {
+		data : T[];
+		meta : {
+			total      : number;
+			page       : number;
+			size       : number;
+			totalPages : number;
+		};
+	}
+
+	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
+	let search             = $state( '' );
+	let debouncedSearch    = $state( '' );
+	let activeStatus       = $state( 'all' );
+	let selectedCategories = $state( new Set< string >() );
+	let page               = $state( 1 );
+	let showModal          = $state( false );
+	let isEditing          = $state( false );
+	let editingId          = $state( '' );
+	let editingLab         = $state< any >( null );
+	let deletingId         = $state( '' );
+
+
+	// Reset to page 1 on filter changes
+	$effect( ( ) => {
+		const _ = [ debouncedSearch, activeStatus, Array.from( selectedCategories ) ];
+		page = 1;
+	} );
+
 	// ─── TanStack Query client & queries ──────────────────────────────────────────
 	const queryClient = useQueryClient();
 
-	const labsQuery = createQuery( () => ( {
-		queryKey	: [ 'admin-labs' ],
-		queryFn		: async () : Promise< MobileLab[] > => {
-			const response = await connectRequest< any >( {
-				endpoint	: `${ INTERNAL_ENDPOINTS.LABS.FILTERS }?size=50`,
-				isInternal	: true,
+	const labsQuery = createQuery( ( ) => ( {
+		queryKey : [ 'admin-labs', page, debouncedSearch, activeStatus, Array.from( selectedCategories ) ],
+		queryFn  : async ( ) : Promise< PaginatedResponse< MobileLab > > => {
+			const params = new URLSearchParams( {
+				page : page.toString(),
+				size : '10',
+			} );
+
+			if ( debouncedSearch.trim() ) {
+				params.append( 'query', debouncedSearch.trim() );
+			}
+
+			if ( activeStatus !== 'all' ) {
+				params.append( 'active', activeStatus );
+			}
+
+			Array.from( selectedCategories ).forEach( ( catId ) => {
+				params.append( 'categories', catId );
+			} );
+
+			const response = await connectRequest< PaginatedResponse< MobileLab > >( {
+				endpoint   : `${ INTERNAL_ENDPOINTS.LABS.FILTERS }?${ params.toString() }`,
+				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
 				throw new Error( 'Error al cargar laboratorios.' );
 			}
-			return response.data || [];
+			return response;
 		},
 	} ) );
 
-	const catalogProductsQuery = createQuery( () => ( {
-		queryKey	: [ 'catalog-products' ],
-		queryFn		: async () : Promise< CatalogProduct[] > => {
+	const catalogProductsQuery = createQuery( ( ) => ( {
+		queryKey : [ 'catalog-products' ],
+		queryFn  : async ( ) : Promise< CatalogProduct[] > => {
 			const response = await connectRequest< any >( {
-				endpoint	: `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=100`,
-				isInternal	: true,
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=100`,
+				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -101,12 +147,12 @@
 		},
 	} ) );
 
-	const catalogKitsQuery = createQuery( () => ( {
-		queryKey	: [ 'catalog-kits' ],
-		queryFn		: async () : Promise< CatalogKit[] > => {
+	const catalogKitsQuery = createQuery( ( ) => ( {
+		queryKey : [ 'catalog-kits' ],
+		queryFn  : async ( ) : Promise< CatalogKit[] > => {
 			const response = await connectRequest< any >( {
-				endpoint	: `${ INTERNAL_ENDPOINTS.KITS.FILTERS }?size=100`,
-				isInternal	: true,
+				endpoint   : `${ INTERNAL_ENDPOINTS.KITS.FILTERS }?size=100`,
+				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -116,12 +162,12 @@
 		},
 	} ) );
 
-	const categoriesQuery = createQuery( () => ( {
-		queryKey	: [ 'lab-categories' ],
-		queryFn		: async () : Promise< LabCategory[] > => {
+	const categoriesQuery = createQuery( ( ) => ( {
+		queryKey : [ 'lab-categories' ],
+		queryFn  : async ( ) : Promise< LabCategory[] > => {
 			const response = await connectRequest< LabCategory[] >( {
-				endpoint	: 'labs/categories/get-all',
-				isInternal	: true,
+				endpoint   : 'labs/categories/get-all',
+				isInternal : true,
 			} );
 
 			if ( isApiError( response ) ) {
@@ -131,31 +177,28 @@
 		},
 	} ) );
 
-	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	const labs            = $derived( labsQuery.data            || [] );
+	// ─── Reactive derived states ──────────────────────────────────────────────────
+	const labsResponse    = $derived( labsQuery.data );
+	const labs            = $derived( labsResponse?.data        || [] );
 	const catalogProducts = $derived( catalogProductsQuery.data || [] );
 	const catalogKits     = $derived( catalogKitsQuery.data     || [] );
 	const categories      = $derived( categoriesQuery.data      || [] );
 
-	let search          = $state( '' );
-	let showModal       = $state( false );
-	let isEditing       = $state( false );
-	let editingId       = $state( '' );
-	let editingLab      = $state< any >( null );
+	// Debounce Search
+	$effect( ( ) => {
+		const currentSearch = search;
 
-	// ─── Filtered View ────────────────────────────────────────────────────────────
-	const filteredLabs = $derived(
-		labs.filter( ( l ) =>
-			l.name.toLowerCase().includes( search.toLowerCase() ) ||
-			l.sku.toLowerCase().includes( search.toLowerCase() ) ||
-			( l.description || '' ).toLowerCase().includes( search.toLowerCase() )
-		)
-	);
+		const handler = setTimeout( ( ) => {
+			debouncedSearch = currentSearch;
+		}, 500 );
+
+		return ( ) => clearTimeout( handler );
+	} );
 
 	// Sincronizar cargando global con queries
-	$effect( () => {
+	$effect( ( ) => {
 		$globalLoadingStore = labsQuery.isFetching || catalogProductsQuery.isFetching || catalogKitsQuery.isFetching || categoriesQuery.isFetching;
-		return () => {
+		return ( ) => {
 			$globalLoadingStore = false;
 		};
 	} );
@@ -209,10 +252,9 @@
 		showModal  = true;
 	}
 
-	async function deleteLab( id : string ) : Promise<void> {
-		if ( !confirm( '¿Está seguro de que desea eliminar este laboratorio móvil?' ) ) return;
+	async function deleteLab( id : string ) : Promise< void > {
+		deletingId = id;
 
-		$globalLoadingStore = true;
 		try {
 			const response = await connectRequest< any >( {
 				endpoint	: `labs?id=${ id }`,
@@ -230,7 +272,7 @@
 		} catch ( err ) {
 			toast.error( 'Error de red al intentar eliminar.' );
 		} finally {
-			$globalLoadingStore = false;
+			deletingId = '';
 		}
 	}
 </script>
@@ -243,7 +285,7 @@
 	<div class="mx-auto max-w-6xl space-y-8">
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
-			title       = "Gestión de Laboratorios Móviles"
+			title       = "Catálogo de Laboratorios Móviles"
 			description = "Administre estaciones de ciencias móviles, nodolabs e infraestructuras pedagógicas autónomas."
 			breadcrumb  = { [
 				{
@@ -258,13 +300,16 @@
 			onclick     = { openCreateModal }
 		/>
 
-
-		<div class="flex items-center max-w-md relative">
-			<SearchInput
-				bind:value={ search }
-				placeholder="Buscar laboratorio por SKU o Nombre..."
-			/>
-		</div>
+		<!-- ─── Search & Filters Tool ────────────────────────────────────────────── -->
+		<CatalogFilters
+			bind:search             = { search }
+			bind:debouncedSearch    = { debouncedSearch }
+			bind:activeStatus       = { activeStatus }
+			bind:selectedCategories = { selectedCategories }
+			categories              = { categories }
+			searchPlaceholder       = "Buscar laboratorio por SKU o Nombre..."
+			categoriesLabel         = "Categorías de Laboratorios"
+		/>
 
 		<!-- ─── Table Content ────────────────────────────────────────────────────── -->
 		<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card">
@@ -283,7 +328,7 @@
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-brand/10 font-semibold">
-						{#each filteredLabs as item ( item.id ) }
+						{#each labs as item ( item.id ) }
 							<tr class="hover:bg-brand/5 transition-colors duration-150">
 								<td class="px-6 py-3">
 									<div class="h-10 w-10 overflow-hidden rounded-lg border border-brand/10 bg-input">
@@ -329,9 +374,12 @@
 								</td>
 								<td class="px-6 py-4 text-right">
 									<TableActions
-										item={ item }
-										openEditModal={ openEditModal }
-										deleteItem={ ( l ) => deleteLab( l.id ) }
+										item            = { item }
+										openEditModal   = { openEditModal }
+										deleteItem      = { ( l ) => deleteLab( l.id ) }
+										isDeleteLoading = { deletingId === item.id }
+										confirmTitle    = "¿Eliminar laboratorio móvil?"
+										confirmMessage  = "¿Está seguro de que desea eliminar este laboratorio móvil? Esta acción no se puede deshacer."
 									/>
 								</td>
 							</tr>
@@ -345,6 +393,16 @@
 					</tbody>
 				</table>
 			</div>
+
+			{#if ( labsResponse && labsResponse.meta && labsResponse.meta.totalPages > 1 ) }
+				<div class="border-t border-brand/10 bg-brand/5 p-4 flex justify-end">
+					<Pagination
+						bind:page = { page }
+						count     = { labsResponse.meta.total }
+						perPage   = { labsResponse.meta.size }
+					/>
+				</div>
+			{/if}
 		</section>
 
 		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
