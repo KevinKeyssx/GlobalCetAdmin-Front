@@ -28,7 +28,7 @@ export const GET : RequestHandler = async ( { url, fetch } ) => {
 	const params = new URLSearchParams( {
 		page,
 		size,
-		includeImages : 'true',
+		includeFiles : 'true',
 	} );
 
 	if ( query ) {
