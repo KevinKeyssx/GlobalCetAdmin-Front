@@ -6,7 +6,7 @@ import { ENV }                   from '$lib/utils/env.server';
 
 export const GET: RequestHandler = async ( { fetch } ) => {
 	const response = await connectRequest< any >( {
-		endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.GET_ALL }?size=1000`,
+		endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.GET_ALL }?size=1000&orderBy=name&order=asc`,
 		isInternal : false,
 		headers    : {
 			'x-secret' : ENV.INTERNAL_SECRET_KEY,
