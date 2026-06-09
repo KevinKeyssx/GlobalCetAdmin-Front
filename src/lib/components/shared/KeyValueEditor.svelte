@@ -1,6 +1,6 @@
 <script lang="ts">
 	import toast from 'svelte-french-toast';
-    import { X } from '@lucide/svelte';
+    import { Plus, X } from '@lucide/svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Entry {
@@ -108,13 +108,13 @@
 
 <div class="space-y-3">
 	<!-- Add New Entry Form Row -->
-	<div class="flex items-center gap-2">
+	<div class="grid sm:flex items-center gap-2">
 		<input
             id={id}
 			type="text"
 			bind:value={ newKey }
 			placeholder="Clave (ej: Color)"
-			class="w-1/3 rounded-xl border border-brand/15 bg-input px-3 py-2 text-text outline-none focus:border-brand focus:bg-card"
+			class="w-full sm:w-1/3 rounded-xl border border-brand/15 bg-input px-3 py-2 text-text outline-none focus:border-brand focus:bg-card"
 			onkeydown={ ( e ) => { if ( e.key === 'Enter' ) { e.preventDefault(); addEntry(); } } }
 		/>
 
@@ -129,9 +129,10 @@
         <button
 			type="button"
 			onclick={ addEntry }
-			class="rounded-xl border border-brand bg-brand/10 hover:bg-brand hover:text-surface-dark px-4 py-2 transition-colors font-bold uppercase text-xs"
+			class="flex justify-center items-center gap-2 w-full sm:w-auto rounded-xl border border-brand bg-brand/10 hover:bg-brand hover:text-surface-dark px-2 py-2 transition-colors font-bold uppercase text-xs"
 		>
-			Agregar
+            <Plus class="size-4 sm:hidden block" />
+			<span class="sm:hidden">Agregar</span>
 		</button>
 	</div>
 
