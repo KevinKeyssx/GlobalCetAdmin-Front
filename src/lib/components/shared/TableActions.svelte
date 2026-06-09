@@ -9,6 +9,7 @@
 		isDeleteLoading	: boolean;
 		confirmTitle	: string;
 		confirmMessage	: string;
+        color ? : boolean;
 	}
 
 	let {
@@ -18,6 +19,7 @@
 		isDeleteLoading,
 		confirmTitle,
 		confirmMessage,
+        color = false
 	} : Props< T > = $props();
 
 	let showConfirm = $state( false );
@@ -36,10 +38,10 @@
 	}
 </script>
 
-<div class="flex items-center justify-end gap-2">
+<div class="flex items-center justify-end gap-1.5">
 	<button
 		onclick = { () => openEditModal( item ) }
-		class   = "flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-brand/10 text-brand transition-all duration-200 hover:bg-brand hover:text-surface-dark"
+		class   = "flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 { color ? "bg-brand/80 text-white " : "bg-brand/10 text-brand" } transition-all duration-200 hover:bg-brand hover:text-surface-dark"
 		title   = "Editar"
 	>
 		<Pencil size={ 14 } />
@@ -48,7 +50,7 @@
 	<button
 		onclick  = { triggerDelete }
 		disabled = { isDeleteLoading }
-		class    = "flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 transition-all duration-200 hover:bg-red-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+		class    = "flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 { color ? "bg-red-500/80 text-white" : "bg-red-500/10 text-red-400" } transition-all duration-200 hover:bg-red-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
 		title    = "Eliminar"
 	>
 		{#if ( isDeleteLoading )}
