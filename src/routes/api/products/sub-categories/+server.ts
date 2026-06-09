@@ -8,7 +8,7 @@ import { METHOD }                     from '$lib/services/http-codes';
 export const GET: RequestHandler = async ( { fetch } ) => {
 	try {
 		const response = await connectRequest< any >( {
-			endpoint   : EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.SUB_BASE,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.SUB_BASE }?size=1000&orderBy=name&order=asc`,
 			method     : METHOD.GET,
 			isInternal : false,
 			headers    : {
