@@ -4,11 +4,11 @@
 
 	// ─── Props ────────────────────────────────────────────────────────────────────
 	interface DashboardModalProps {
-		show     : boolean;
-		title    : string;
-		onClose  : () => void;
-		body     : Snippet;
-		maxWidth?: string;
+		show		: boolean;
+		title		: string;
+		onClose		: () => void;
+		body		: Snippet;
+		maxWidth?	: string;
 	}
 
 	let {
@@ -27,18 +27,18 @@
 		transition:fade={ { duration : 150 } }
 	>
 		<div
-			class="w-full { maxWidth } rounded-2xl border border-brand/20 bg-card p-6 shadow-card-hover space-y-6 my-8 text-sm"
+			class="w-full { maxWidth } max-h-[90vh] flex flex-col rounded-2xl border border-brand/20 bg-card p-6 shadow-card-hover text-sm my-8"
 			transition:slide={ { duration : 250 } }
 		>
 			<!-- ─── Header ──────────────────────────────────────────────────────── -->
-			<div class="flex items-center justify-between border-b border-brand/10 pb-4">
+			<div class="flex items-center justify-between border-b border-brand/10 pb-4 shrink-0">
 				<h3 class="font-display text-xl font-black text-brand uppercase tracking-wider">
 					{ title }
 				</h3>
 
 				<button
 					onclick={ onClose }
-					class="h-8 w-8 flex items-center justify-center rounded-lg border border-brand/15 bg-input text-text-muted hover:text-brand transition-colors"
+					class="h-8 w-8 flex items-center justify-center rounded-lg border border-brand/15 bg-input text-text-muted hover:text-brand transition-colors cursor-pointer"
 					aria-label="Cerrar modal"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -49,7 +49,28 @@
 			</div>
 
 			<!-- ─── Body (Snippet Slot) ────────────────────────────────────────── -->
-			{@render body()}
+			<div class="overflow-y-auto flex-1 pr-1.5 mt-4 custom-scrollbar">
+				{@render body()}
+			</div>
 		</div>
 	</div>
 {/if}
+
+<style>
+	.custom-scrollbar::-webkit-scrollbar {
+		width : 4px;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-track {
+		background : transparent;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		background    : color-mix( in srgb, var( --color-brand ) 20%, transparent );
+		border-radius : 4px;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+		background : var( --color-brand );
+	}
+</style>
