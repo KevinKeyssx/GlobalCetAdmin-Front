@@ -20,6 +20,7 @@
 	import ConfirmationModal                from '$lib/components/shared/ConfirmationModal.svelte';
 	import RelationManager                  from '$lib/components/shared/RelationManager.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
+	import RichTextEditor from '$lib/components/editor/RichTextEditor.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface LabCategory {
@@ -462,13 +463,8 @@
 						</legend>
 						<div class="flex flex-col gap-1">
 							<label class="sr-only" for="lab-desc">Descripción Completa del Laboratorio</label>
-							<textarea
-								id="lab-desc"
-								bind:value={ formDescription }
-								placeholder="Describa la infraestructura técnica, conexiones eléctricas, suministro de agua, etc..."
-								rows="3"
-								class="w-full resize-none rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
-							></textarea>
+
+                            <RichTextEditor bind:html={ formDescription } />
 						</div>
 					</fieldset>
 
