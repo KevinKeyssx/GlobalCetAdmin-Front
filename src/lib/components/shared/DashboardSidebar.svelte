@@ -99,7 +99,7 @@
 <button
 	type        = "button"
 	onclick     = { ( ) => { isDrawerOpen = true; } }
-	class       = "fixed top-[95%] left-6 z-55 md:hidden flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar border border-brand/15 shadow-[0_4px_12px_color-mix(in_srgb,var(--color-brand)_10%,transparent)] text-brand hover:scale-105 active:scale-95 transition-all cursor-pointer animate-fade-in"
+	class       = "fixed top-[90%] left-3 sm:left-6 z-55 md:hidden flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar border border-brand/15 shadow-[0_4px_12px_color-mix(in_srgb,var(--color-brand)_10%,transparent)] text-brand hover:scale-105 active:scale-95 transition-all cursor-pointer animate-fade-in"
 	aria-label  = "Abrir menú"
 >
 	<Menu class="h-4.5 w-4.5" />
