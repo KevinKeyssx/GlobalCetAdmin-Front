@@ -20,6 +20,8 @@
 	import type { SubCategory }             from '$lib/types/category';
 	import ProductFormModal                 from './components/ProductFormModal.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import { stripHtml }                    from '$lib/utils/string';
+	import ItemCard                         from '$lib/components/shared/itemCard/ItemCard.svelte';
 
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
 	let search                = $state( '' );
@@ -27,6 +29,7 @@
 	let selectedMaterials     = $state( new Set< string >() );
 	let selectedSubcategories = $state( new Set< string >() );
 	let activeStatus          = $state( 'all' );
+	let view                  = $state< 'cards' | 'list' >( 'cards' );
 	let showModal             = $state( false );
 	let isEditing             = $state( false );
 	let editingId             = $state( '' );
@@ -260,6 +263,7 @@
 			] }
 			buttonText  = "Agregar Producto"
 			onclick     = { openCreateModal }
+			bind:view   = { view }
 		/>
 
 
@@ -325,76 +329,101 @@
 			</div>
 		</div>
 
-		<!-- ─── Table Content ────────────────────────────────────────────────────── -->
-		<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card">
-			<div class="overflow-x-auto">
-				<table class="w-full text-left border-collapse">
-					<thead>
-						<tr class="border-b border-brand/15 bg-brand/5 text-xs font-black uppercase tracking-widest text-text-muted">
-							<th class="px-6 py-4">Imagen</th>
-							<th class="px-6 py-4">SKU</th>
-							<th class="px-6 py-4">Nombre</th>
-							<th class="px-6 py-4">Subcategoría</th>
-							<th class="px-6 py-4">Material</th>
-							<th class="px-6 py-4">Estado</th>
-							<th class="px-6 py-4 text-right">Acciones</th>
-						</tr>
-					</thead>
-
-                    <tbody class="divide-y divide-brand/10 font-semibold text-sm">
-						{#each filteredProducts as prod ( prod.id ) }
-							<tr class="hover:bg-brand/5 transition-colors duration-150">
-								<td class="px-6 py-3">
-									<div class="h-10 w-10 overflow-hidden rounded-lg border border-brand/10 bg-input">
-										{#if ( prod.files && prod.files[ 0 ] ) }
-											<img 
-												src     = { getProductImageUrl( prod.files ) } 
-												alt     = { prod.name } 
-												class   = "h-full w-full object-cover" 
-											/>
-										{:else}
-											<div class="flex h-full w-full items-center justify-center bg-brand/5 text-[10px] text-brand">🔬</div>
-										{/if}
-									</div>
-								</td>
-
-                                <td class="px-6 py-4 font-mono text-brand font-bold">{ prod.sku }</td>
-
-                                <td class="px-6 py-4">
-									<div class="font-bold text-text">{ prod.name }</div>
-									<div class="text-xs text-text-muted font-normal max-w-xs truncate">{ prod.description || 'Sin descripción' }</div>
-								</td>
-
-                                <td class="px-6 py-4 text-text-muted">{ prod.subcategory?.name || 'N/A' }</td>
-
-                                <td class="px-6 py-4 font-bold text-emerald-500">{ prod.material?.name || 'N/A' }</td>
-
-                                <td class="px-6 py-4">
-									<Status status={ prod.active } />
-								</td>
-
-                                <td class="px-6 py-4 text-right">
-									<TableActions
-										item            = { prod }
-										openEditModal   = { openEditModal }
-										deleteItem      = { ( p ) => deleteProduct( p.id ) }
-										isDeleteLoading = { deletingId === prod.id }
-										confirmTitle    = "¿Eliminar producto?"
-										confirmMessage  = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
-									/>
-								</td>
+		<!-- ─── Table/Grid Content ────────────────────────────────────────────────── -->
+		{#if ( view === 'cards' )}
+			{#if ( filteredProducts.length > 0 )}
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+					{#each filteredProducts as item ( item.id )}
+						<ItemCard
+							itemType        = "product"
+							{ item }
+							openEditModal   = { openEditModal }
+							deleteItem      = { ( p ) => deleteProduct( p.id ) }
+							isDeleteLoading = { deletingId === item.id }
+							confirmTitle    = "¿Eliminar producto?"
+							confirmMessage  = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
+						/>
+					{/each}
+				</div>
+			{:else}
+				<div class="rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card p-12 text-center text-text-muted leading-relaxed">
+					No se encontraron productos en el catálogo de GlobalCET.
+				</div>
+			{/if}
+		{:else}
+			<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card">
+				<div class="overflow-x-auto">
+					<table class="w-full text-left border-collapse">
+						<thead>
+							<tr class="border-b border-brand/15 bg-brand/5 text-xs font-black uppercase tracking-widest text-text-muted">
+								<th class="px-6 py-4">Imagen</th>
+								<th class="px-6 py-4">SKU</th>
+								<th class="px-6 py-4">Nombre</th>
+								<th class="px-6 py-4">Subcategoría</th>
+								<th class="px-6 py-4">Material</th>
+								<th class="px-6 py-4">Estado</th>
+								<th class="px-6 py-4 text-right">Acciones</th>
 							</tr>
-						{:else}
-							<tr>
-								<td colspan="7" class="px-6 py-12 text-center text-text-muted leading-relaxed">
-									No se encontraron productos en el catálogo de GlobalCET.
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</section>
+						</thead>
+
+						<tbody class="divide-y divide-brand/10 font-semibold text-sm">
+							{#each filteredProducts as prod ( prod.id ) }
+								<tr class="hover:bg-brand/5 transition-colors duration-150">
+									<td class="px-6 py-3">
+										<div class="h-10 w-10 overflow-hidden rounded-lg border border-brand/10 bg-input">
+											{#if ( prod.files && prod.files[ 0 ] ) }
+												<img 
+													src     = { getProductImageUrl( prod.files ) } 
+													alt     = { prod.name } 
+													class   = "h-full w-full object-cover" 
+												/>
+											{:else}
+												<div class="flex h-full w-full items-center justify-center bg-brand/5 text-[10px] text-brand">🔬</div>
+											{/if}
+										</div>
+									</td>
+
+									<td class="px-6 py-4 font-mono text-brand font-bold">{ prod.sku }</td>
+
+									<td class="px-6 py-4">
+										<div class="font-bold text-text">{ prod.name }</div>
+
+										<div class="text-[11px] text-text-muted font-normal max-w-xs truncate">
+											{ stripHtml( prod.description ) || 'Sin descripción' }
+										</div>
+									</td>
+
+									<td class="px-6 py-4 text-text-muted">{ prod.subcategory?.name || 'N/A' }</td>
+
+									<td class="px-6 py-4 font-bold text-emerald-500">{ prod.material?.name || 'N/A' }</td>
+
+									<td class="px-6 py-4">
+										<Status status={ prod.active } />
+									</td>
+
+									<td class="px-6 py-4 text-right">
+										<TableActions
+											item            = { prod }
+											openEditModal   = { openEditModal }
+											deleteItem      = { ( p ) => deleteProduct( p.id ) }
+											isDeleteLoading = { deletingId === prod.id }
+											confirmTitle    = "¿Eliminar producto?"
+											confirmMessage  = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
+										/>
+									</td>
+								</tr>
+							{:else}
+								<tr>
+									<td colspan="7" class="px-6 py-12 text-center text-text-muted leading-relaxed">
+										No se encontraron productos en el catálogo de GlobalCET.
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</section>
+		{/if}
 
 		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
 		{#if ( showModal )}
