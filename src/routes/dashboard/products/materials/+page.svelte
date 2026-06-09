@@ -17,6 +17,7 @@
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
+	import MaterialCard                     from '$lib/components/shared/itemCard/MaterialCard.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Material {
@@ -53,6 +54,7 @@
 	let order              = $state( 'name' );
 	let typeOrder          = $state( 'asc' );
 	let page               = $state( 1 );
+	let view               = $state< 'cards' | 'list' >( 'cards' );
 	let showModal          = $state( false );
 	let isEditing          = $state( false );
 	let editingId          = $state( '' );
@@ -91,10 +93,10 @@
 		queryKey : [ 'materials', page, debouncedSearch, activeStatus, autoclavableStatus, order, typeOrder ],
 		queryFn  : async ( ) : Promise< PaginatedResponse< Material > > => {
 			const params = new URLSearchParams( {
-				page      : page.toString(),
-				size      : '10',
-				order     : order,
-				typeOrder : typeOrder,
+				page    : page.toString(),
+				size    : '10',
+				orderBy : order,
+				order   : typeOrder,
 			} );
 
 			if ( debouncedSearch.trim() ) {
@@ -207,6 +209,7 @@
 			] }
 			buttonText  = "Agregar Material"
 			onclick     = { openCreateModal }
+			bind:view   = { view }
 		/>
 
 
@@ -263,89 +266,110 @@
 
 
 
-		<!-- ─── Table Content ────────────────────────────────────────────────────── -->
-		<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card space-y-4 pb-4">
-			<div class="overflow-x-auto">
-				<table class="w-full text-left border-collapse">
-					<thead>
-						<tr class="border-b border-brand/15 bg-brand/5 text-xs font-black uppercase tracking-widest text-text-muted">
-							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
-								Nombre { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-							</th>
-							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'slug' ) }>
-								Slug { order === 'slug' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-							</th>
-							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'autoclavable' ) }>
-								Autoclavable { order === 'autoclavable' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-							</th>
-							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'maxTemperature' ) }>
-								Temp. Máx { order === 'maxTemperature' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-							</th>
-							<th class="px-6 py-4">Resist. Química (Ácido / Alcalino)</th>
-							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
-								Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-							</th>
-							<th class="px-6 py-4 text-right">Acciones</th>
-						</tr>
-					</thead>
-
-                    <tbody class="divide-y divide-brand/10 font-semibold text-sm">
-						{#each ( materialsQuery.data?.data || [] ) as item ( item.id )}
-							<tr class="hover:bg-brand/5 transition-colors duration-150">
-								<td class="px-6 py-4 font-bold text-text">{ item.name }</td>
-
-                                <td class="px-6 py-4 font-mono text-text-muted">{ item.slug }</td>
-
-                                <td class="px-6 py-4">
-									<Status
-                                        status      = { item.autoclavable || false }
-                                        textTrue    = "Si"
-                                        textFalse   = "No"
-                                    />
-								</td>
-
-                                <td class="px-6 py-4 font-mono">{ item.maxTemperature || 0 } °C</td>
-
-                                <td class="px-6 py-4 uppercase font-bold text-[10px] text-brand">
-									{ item.chemicalResistance?.acid || 'N/A' } / { item.chemicalResistance?.alkaline || 'N/A' }
-								</td>
-
-                                <td class="px-6 py-4">
-									<Status status={ item.active } />
-								</td>
-
-                                <td class="px-6 py-4 text-right">
-									<TableActions
-										{ item }
-										openEditModal   = { openEditModal }
-										deleteItem      = { ( m ) => deleteMaterial( m.id ) }
-										isDeleteLoading = { deletingId === item.id }
-										confirmTitle    = "¿Eliminar material?"
-										confirmMessage  = "¿Está seguro de que desea eliminar este material? Esta acción no se puede deshacer."
-									/>
-								</td>
-							</tr>
-						{:else}
-							<tr>
-								<td colspan="7" class="px-6 py-12 text-center text-text-muted leading-relaxed">
-									No se encontraron materiales registrados.
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-
-			{#if ( materialsQuery.data?.meta && materialsQuery.data.meta.totalPages > 1 )}
-				<div class="flex justify-center pt-2">
-					<Pagination
-						count={ materialsQuery.data.meta.total }
-						perPage={ materialsQuery.data.meta.size }
-						bind:page={ page }
-					/>
+		<!-- ─── Content ────────────────────────────────────────────────────── -->
+		{#if ( view === 'cards' )}
+			{#if ( materialsQuery.data?.data && materialsQuery.data.data.length > 0 )}
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+					{#each ( materialsQuery.data.data ) as item ( item.id )}
+						<MaterialCard
+							{ item }
+							openEditModal   = { openEditModal }
+							deleteItem      = { ( m ) => deleteMaterial( m.id ) }
+							isDeleteLoading = { deletingId === item.id }
+							confirmTitle    = "¿Eliminar material?"
+							confirmMessage  = "¿Está seguro de que desea eliminar este material? Esta acción no se puede deshacer."
+						/>
+					{/each}
+				</div>
+			{:else}
+				<div class="rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card p-12 text-center text-text-muted leading-relaxed">
+					No se encontraron materiales registrados.
 				</div>
 			{/if}
-		</section>
+		{:else}
+			<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card space-y-4 pb-4">
+				<div class="overflow-x-auto">
+					<table class="w-full text-left border-collapse">
+						<thead>
+							<tr class="border-b border-brand/15 bg-brand/5 text-xs font-black uppercase tracking-widest text-text-muted">
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
+									Nombre { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'slug' ) }>
+									Slug { order === 'slug' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'autoclavable' ) }>
+									Autoclavable { order === 'autoclavable' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'maxTemperature' ) }>
+									Temp. Máx { order === 'maxTemperature' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
+								<th class="px-6 py-4">Resist. Química (Ácido / Alcalino)</th>
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
+									Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
+								<th class="px-6 py-4 text-right">Acciones</th>
+							</tr>
+						</thead>
+
+						<tbody class="divide-y divide-brand/10 font-semibold text-sm">
+							{#each ( materialsQuery.data?.data || [] ) as item ( item.id )}
+								<tr class="hover:bg-brand/5 transition-colors duration-150">
+									<td class="px-6 py-4 font-bold text-text">{ item.name }</td>
+
+									<td class="px-6 py-4 font-mono text-text-muted">{ item.slug }</td>
+
+									<td class="px-6 py-4">
+										<Status
+											status      = { item.autoclavable || false }
+											textTrue    = "Si"
+											textFalse   = "No"
+										/>
+									</td>
+
+									<td class="px-6 py-4 font-mono">{ item.maxTemperature || 0 } °C</td>
+
+									<td class="px-6 py-4 uppercase font-bold text-[10px] text-brand">
+										{ item.chemicalResistance?.acid || 'N/A' } / { item.chemicalResistance?.alkaline || 'N/A' }
+									</td>
+
+									<td class="px-6 py-4">
+										<Status status={ item.active } />
+									</td>
+
+									<td class="px-6 py-4 text-right">
+										<TableActions
+											{ item }
+											openEditModal   = { openEditModal }
+											deleteItem      = { ( m ) => deleteMaterial( m.id ) }
+											isDeleteLoading = { deletingId === item.id }
+											confirmTitle    = "¿Eliminar material?"
+											confirmMessage  = "¿Está seguro de que desea eliminar este material? Esta acción no se puede deshacer."
+										/>
+									</td>
+								</tr>
+							{:else}
+								<tr>
+									<td colspan="7" class="px-6 py-12 text-center text-text-muted leading-relaxed">
+										No se encontraron materiales registrados.
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</section>
+		{/if}
+
+		{#if ( materialsQuery.data?.meta && materialsQuery.data.meta.totalPages > 1 )}
+			<div class="flex justify-center pt-2">
+				<Pagination
+					count={ materialsQuery.data.meta.total }
+					perPage={ materialsQuery.data.meta.size }
+					bind:page={ page }
+				/>
+			</div>
+		{/if}
 
 		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
 		{#if ( showModal )}
