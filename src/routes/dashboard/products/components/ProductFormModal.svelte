@@ -13,6 +13,7 @@
 	import KeyValueEditor                   from '$lib/components/shared/KeyValueEditor.svelte';
 
 	import type { ProductInitial }          from '$lib/types/product';
+	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductFormProps {
@@ -291,15 +292,11 @@
 						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
 							Descripción
 						</legend>
-						<div class="flex flex-col gap-1">
+
+                        <div class="flex flex-col gap-1">
 							<label class="sr-only" for="prod-desc">Descripción Completa</label>
-							<textarea
-								id="prod-desc"
-								bind:value={ formDescription }
-								placeholder="Describa el grado de pureza, dimensiones o aplicación pedagógica..."
-								rows="3"
-								class="w-full resize-none rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
-							></textarea>
+
+                            <RichTextEditor bind:html={ formDescription } />
 						</div>
 					</fieldset>
 
