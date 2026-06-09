@@ -17,6 +17,7 @@
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
 	import type { Category, SubCategory }   from '$lib/types/category';
+	import CategoryCard                     from '$lib/components/shared/itemCard/CategoryCard.svelte';
 
 	// ─── Paginated Response Interface ──────────────────────────────────────────────
 	interface PaginatedResponse< T > {
@@ -38,6 +39,7 @@
 	let typeOrder         = $state( 'asc' );
 	let categoriesPage    = $state( 1 );
 	let subcategoriesPage = $state( 1 );
+	let view              = $state< 'cards' | 'list' >( 'cards' );
 	let showModal         = $state( false );
 	let isEditing         = $state( false );
 	let editingId         = $state( '' );
@@ -72,15 +74,15 @@
 
 	const categoriesQuery = createQuery( ( ) => ( {
 		queryKey : [ 'categories', categoriesPage, debouncedSearch, activeStatus, order, typeOrder ],
-		queryFn  : async ( ) : Promise< PaginatedResponse<Category>> => {
+		queryFn  : async ( ) : Promise< PaginatedResponse< Category > > => {
 			const params = new URLSearchParams( {
-				type                    : 'category',
-				page                    : categoriesPage.toString(),
-				size                    : '10',
-				order                   : order,
-				typeOrder               : typeOrder,
-				includeSubcategories    : 'true',
-			});
+				type                 : 'category',
+				page                 : categoriesPage.toString(),
+				size                 : '10',
+				orderBy              : order,
+				order                : typeOrder,
+				includeSubcategories : 'true',
+			} );
 
 			if ( debouncedSearch.trim() ) {
 				params.append( 'name', debouncedSearch.trim() );
@@ -130,8 +132,8 @@
 				type            : 'subcategory',
 				page            : subcategoriesPage.toString(),
 				size            : '10',
-				order           : order,
-				typeOrder       : typeOrder,
+				orderBy         : order,
+				order           : typeOrder,
 				includeCategory : 'true',
 			} );
 
@@ -261,6 +263,7 @@
 			] }
 			buttonText  = { activeTab === 'categories' ? 'Agregar Categoría' : 'Agregar Subcategoría' }
 			onclick     = { openCreateModal }
+			bind:view   = { view }
 		/>
 
 
@@ -330,127 +333,181 @@
 			</div>
 		</div>
 
-		<!-- ─── Table Lists ──────────────────────────────────────────────────────── -->
+		<!-- ─── Content Lists ──────────────────────────────────────────────────────── -->
 		{#if ( activeTab === 'categories' )}
-			<!-- Categories View -->
-			<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card animate-fade-in space-y-4 pb-4">
-				<div class="overflow-x-auto">
-					<table class="w-full text-left border-collapse">
-						<thead>
-							<tr class="border-b border-brand/15 bg-brand/5 text-[10px] font-black uppercase tracking-widest text-text-muted">
-								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
-									Nombre de Categoría { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-								</th>
-								<th class="px-6 py-4">Subcategorías Asociadas</th>
-								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
-									Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-								</th>
-								<th class="px-6 py-4 text-right">Acciones</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-brand/10 font-semibold">
-							{#each ( categoriesQuery.data?.data || [] ) as cat ( cat.id )}
-								<tr class="hover:bg-brand/5 transition-colors duration-150">
-									<td class="px-6 py-4 font-bold text-text">{ cat.name }</td>
-									<td class="px-6 py-4">
-										<div class="flex flex-wrap gap-1.5">
-											{#each ( cat.subCategories || [] ) as sub ( sub.id )}
-												<span class="rounded-full bg-brand/10 px-2.5 py-0.5 text-[10px] text-brand border border-brand/15">
-													{ sub.name }
-												</span>
-											{:else}
-												<span class="text-text-muted text-[10px]">Sin subcategorías</span>
-											{/each}
-										</div>
-									</td>
-									<td class="px-6 py-4">
-										<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { cat.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
-											{ cat.active ? 'Activo' : 'Inactivo' }
-										</span>
-									</td>
-									<td class="px-6 py-4 text-right">
-										<TableActions
-											item            = { cat }
-											openEditModal   = { openEditModal }
-											deleteItem      = { ( c ) => deleteItem( c.id ) }
-											isDeleteLoading = { deletingId === cat.id }
-											confirmTitle    = "¿Eliminar categoría?"
-											confirmMessage  = "¿Está seguro de que desea eliminar esta categoría y todas sus subcategorías? Esta acción no se puede deshacer."
-										/>
-									</td>
-								</tr>
-							{:else}
-								<tr>
-									<td colspan="4" class="px-6 py-12 text-center text-text-muted leading-relaxed">
-										No hay categorías registradas.
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-
-				{#if ( categoriesQuery.data?.meta && categoriesQuery.data.meta.totalPages > 1 )}
-					<div class="flex justify-center pt-2">
-						<Pagination
-							count={ categoriesQuery.data.meta.total }
-							perPage={ categoriesQuery.data.meta.size }
-							bind:page={ categoriesPage }
-						/>
+			{#if ( view === 'cards' )}
+				{#if ( categoriesQuery.data?.data && categoriesQuery.data.data.length > 0 )}
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+						{#each ( categoriesQuery.data.data ) as cat ( cat.id )}
+							<CategoryCard
+								itemType        = "category"
+								item            = { cat }
+								openEditModal   = { openEditModal }
+								deleteItem      = { ( c ) => deleteItem( c.id ) }
+								isDeleteLoading = { deletingId === cat.id }
+								confirmTitle    = "¿Eliminar categoría?"
+								confirmMessage  = "¿Está seguro de que desea eliminar esta categoría y todas sus subcategorías? Esta acción no se puede deshacer."
+							/>
+						{/each}
+					</div>
+				{:else}
+					<div class="rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card p-12 text-center text-text-muted leading-relaxed">
+						No hay categorías registradas.
 					</div>
 				{/if}
-			</section>
-		{:else}
-			<!-- Subcategories View -->
-			<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card animate-fade-in space-y-4 pb-4">
-				<div class="overflow-x-auto">
-					<table class="w-full text-left border-collapse">
-						<thead>
-							<tr class="border-b border-brand/15 bg-brand/5 text-[10px] font-black uppercase tracking-widest text-text-muted">
-								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
-									Nombre de Subcategoría { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-								</th>
-								<th class="px-6 py-4">Categoría Padre</th>
-								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
-									Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-								</th>
-								<th class="px-6 py-4 text-right">Acciones</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-brand/10 font-semibold">
-							{#each ( subcategoriesQuery.data?.data || [] ) as sub ( sub.id )}
-								<tr class="hover:bg-brand/5 transition-colors duration-150">
-									<td class="px-6 py-4 font-bold text-text">{ sub.name }</td>
-									<td class="px-6 py-4 font-bold text-brand uppercase tracking-wider text-[10px]">
-										{ sub.category?.name || 'Sin Categoría' }
-									</td>
-									<td class="px-6 py-4">
-										<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { sub.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
-											{ sub.active ? 'Activo' : 'Inactivo' }
-										</span>
-									</td>
-									<td class="px-6 py-4 text-right">
-										<TableActions
-											item            = { sub }
-											openEditModal   = { openEditModal }
-											deleteItem      = { ( s ) => deleteItem( s.id ) }
-											isDeleteLoading = { deletingId === sub.id }
-											confirmTitle    = "¿Eliminar subcategoría?"
-											confirmMessage  = "¿Está seguro de que desea eliminar esta subcategoría? Esta acción no se puede deshacer."
-										/>
-									</td>
+			{:else}
+				<!-- Categories View -->
+				<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card animate-fade-in space-y-4 pb-4">
+					<div class="overflow-x-auto">
+						<table class="w-full text-left border-collapse">
+							<thead>
+								<tr class="border-b border-brand/15 bg-brand/5 text-[10px] font-black uppercase tracking-widest text-text-muted">
+									<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
+										Nombre de Categoría { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+									</th>
+									<th class="px-6 py-4">Subcategorías Asociadas</th>
+									<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
+										Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+									</th>
+									<th class="px-6 py-4 text-right">Acciones</th>
 								</tr>
-							{:else}
-								<tr>
-									<td colspan="3" class="px-6 py-12 text-center text-text-muted leading-relaxed">
-										No hay subcategorías registradas. Cree una categoría padre primero.
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
+							</thead>
+							<tbody class="divide-y divide-brand/10 font-semibold">
+								{#each ( categoriesQuery.data?.data || [] ) as cat ( cat.id )}
+									<tr class="hover:bg-brand/5 transition-colors duration-150">
+										<td class="px-6 py-4 font-bold text-text">{ cat.name }</td>
+										<td class="px-6 py-4">
+											<div class="flex flex-wrap gap-1.5">
+												{#each ( cat.subCategories || [] ) as sub ( sub.id )}
+													<span class="rounded-full bg-brand/10 px-2.5 py-0.5 text-[10px] text-brand border border-brand/15">
+														{ sub.name }
+													</span>
+												{:else}
+													<span class="text-text-muted text-[10px]">Sin subcategorías</span>
+												{/each}
+											</div>
+										</td>
+										<td class="px-6 py-4">
+											<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { cat.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
+												{ cat.active ? 'Activo' : 'Inactivo' }
+											</span>
+										</td>
+										<td class="px-6 py-4 text-right">
+											<TableActions
+												item            = { cat }
+												openEditModal   = { openEditModal }
+												deleteItem      = { ( c ) => deleteItem( c.id ) }
+												isDeleteLoading = { deletingId === cat.id }
+												confirmTitle    = "¿Eliminar categoría?"
+												confirmMessage  = "¿Está seguro de que desea eliminar esta categoría y todas sus subcategorías? Esta acción no se puede deshacer."
+											/>
+										</td>
+									</tr>
+								{:else}
+									<tr>
+										<td colspan="4" class="px-6 py-12 text-center text-text-muted leading-relaxed">
+											No hay categorías registradas.
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				</section>
+			{/if}
+
+			{#if ( categoriesQuery.data?.meta && categoriesQuery.data.meta.totalPages > 1 )}
+				<div class="flex justify-center pt-4">
+					<Pagination
+						count={ categoriesQuery.data.meta.total }
+						perPage={ categoriesQuery.data.meta.size }
+						bind:page={ categoriesPage }
+					/>
 				</div>
-			</section>
+			{/if}
+		{:else}
+			{#if ( view === 'cards' )}
+				{#if ( subcategoriesQuery.data?.data && subcategoriesQuery.data.data.length > 0 )}
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+						{#each ( subcategoriesQuery.data.data ) as sub ( sub.id )}
+							<CategoryCard
+								itemType        = "subcategory"
+								item            = { sub }
+								openEditModal   = { openEditModal }
+								deleteItem      = { ( s ) => deleteItem( s.id ) }
+								isDeleteLoading = { deletingId === sub.id }
+								confirmTitle    = "¿Eliminar subcategoría?"
+								confirmMessage  = "¿Está seguro de que desea eliminar esta subcategoría? Esta acción no se puede deshacer."
+							/>
+						{/each}
+					</div>
+				{:else}
+					<div class="rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card p-12 text-center text-text-muted leading-relaxed">
+						No hay subcategorías registradas. Cree una categoría padre primero.
+					</div>
+				{/if}
+			{:else}
+				<!-- Subcategories View -->
+				<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card animate-fade-in space-y-4 pb-4">
+					<div class="overflow-x-auto">
+						<table class="w-full text-left border-collapse">
+							<thead>
+								<tr class="border-b border-brand/15 bg-brand/5 text-[10px] font-black uppercase tracking-widest text-text-muted">
+									<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
+										Nombre de Subcategoría { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+									</th>
+									<th class="px-6 py-4">Categoría Padre</th>
+									<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
+										Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+									</th>
+									<th class="px-6 py-4 text-right">Acciones</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-brand/10 font-semibold">
+								{#each ( subcategoriesQuery.data?.data || [] ) as sub ( sub.id )}
+									<tr class="hover:bg-brand/5 transition-colors duration-150">
+										<td class="px-6 py-4 font-bold text-text">{ sub.name }</td>
+										<td class="px-6 py-4 font-bold text-brand uppercase tracking-wider text-[10px]">
+											{ sub.category?.name || 'Sin Categoría' }
+										</td>
+										<td class="px-6 py-4">
+											<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { sub.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
+												{ sub.active ? 'Activo' : 'Inactivo' }
+											</span>
+										</td>
+										<td class="px-6 py-4 text-right">
+											<TableActions
+												item            = { sub }
+												openEditModal   = { openEditModal }
+												deleteItem      = { ( s ) => deleteItem( s.id ) }
+												isDeleteLoading = { deletingId === sub.id }
+												confirmTitle    = "¿Eliminar subcategoría?"
+												confirmMessage  = "¿Está seguro de que desea eliminar esta subcategoría? Esta acción no se puede deshacer."
+											/>
+										</td>
+									</tr>
+								{:else}
+									<tr>
+										<td colspan="3" class="px-6 py-12 text-center text-text-muted leading-relaxed">
+											No hay subcategorías registradas. Cree una categoría padre primero.
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				</section>
+			{/if}
+
+			{#if ( subcategoriesQuery.data?.meta && subcategoriesQuery.data.meta.totalPages > 1 )}
+				<div class="flex justify-center pt-4">
+					<Pagination
+						count={ subcategoriesQuery.data.meta.total }
+						perPage={ subcategoriesQuery.data.meta.size }
+						bind:page={ subcategoriesPage }
+					/>
+				</div>
+			{/if}
 		{/if}
 
 		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
