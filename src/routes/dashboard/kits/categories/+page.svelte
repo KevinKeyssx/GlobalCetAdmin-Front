@@ -10,6 +10,7 @@
 	import Pagination                                       from '$lib/components/shared/Pagination.svelte';
 	import HeaderPage                                       from '$lib/components/shared/HeaderPage.svelte';
 	import CategoryFilters                                  from '$lib/components/shared/CategoryFilters.svelte';
+	import CategoryCard                                     from '$lib/components/shared/itemCard/CategoryCard.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface KitCategory {
@@ -35,6 +36,7 @@
 	let order           = $state( 'name' );
 	let typeOrder       = $state( 'asc' );
 	let page            = $state( 1 );
+	let view            = $state< 'cards' | 'list' >( 'cards' );
 	let showModal       = $state( false );
 	let isEditing       = $state( false );
 	let editingId       = $state( '' );
@@ -54,10 +56,10 @@
 		queryKey : [ 'kit-categories', page, debouncedSearch, activeStatus, order, typeOrder ],
 		queryFn  : async ( ) : Promise< PaginatedResponse< KitCategory > > => {
 			const params = new URLSearchParams( {
-				page      : page.toString(),
-				size      : '10',
-				order     : order,
-				typeOrder : typeOrder,
+				page    : page.toString(),
+				size    : '10',
+				orderBy : order,
+				order   : typeOrder,
 			} );
 
 			if ( debouncedSearch.trim() ) {
@@ -167,6 +169,7 @@
 			] }
 			buttonText  = "Agregar Categoría"
 			onclick     = { openCreateModal }
+			bind:view   = { view }
 		/>
 
 
@@ -178,62 +181,84 @@
 			placeholder          = "Buscar categoría de kits..."
 		/>
 
-		<!-- ─── Table Content ────────────────────────────────────────────────────── -->
-		<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card space-y-4 pb-4">
-			<div class="overflow-x-auto">
-				<table class="w-full text-left border-collapse">
-					<thead>
-						<tr class="border-b border-brand/15 bg-brand/5 text-[10px] font-black uppercase tracking-widest text-text-muted">
-							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
-								Nombre de la Categoría { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-							</th>
-							<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
-								Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
-							</th>
-							<th class="px-6 py-4 text-right">Acciones</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-brand/10 font-semibold">
-						{#each ( categoriesQuery.data?.data || [] ) as item ( item.id )}
-							<tr class="hover:bg-brand/5 transition-colors duration-150">
-								<td class="px-6 py-4 font-bold text-text">{ item.name }</td>
-								<td class="px-6 py-4">
-									<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { item.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
-										{ item.active ? 'Activo' : 'Inactivo' }
-									</span>
-								</td>
-								<td class="px-6 py-4 text-right">
-									<TableActions
-										{ item }
-										openEditModal   = { openEditModal }
-										deleteItem      = { ( c ) => deleteCategory( c.id ) }
-										isDeleteLoading = { deletingId === item.id }
-										confirmTitle    = "¿Eliminar categoría?"
-										confirmMessage  = "¿Está seguro de que desea eliminar esta categoría de kits? Los kits en esta categoría podrían quedar huérfanos. Esta acción no se puede deshacer."
-									/>
-								</td>
-							</tr>
-						{:else}
-							<tr>
-								<td colspan="3" class="px-6 py-12 text-center text-text-muted leading-relaxed">
-									No se encontraron categorías de kits registradas.
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-
-			{#if ( categoriesQuery.data?.meta && categoriesQuery.data.meta.totalPages > 1 )}
-				<div class="flex justify-center pt-2">
-					<Pagination
-						count={ categoriesQuery.data.meta.total }
-						perPage={ categoriesQuery.data.meta.size }
-						bind:page={ page }
-					/>
+		<!-- ─── Content ────────────────────────────────────────────────────── -->
+		{#if ( view === 'cards' )}
+			{#if ( categoriesQuery.data?.data && categoriesQuery.data.data.length > 0 )}
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+					{#each ( categoriesQuery.data.data ) as item ( item.id )}
+						<CategoryCard
+							itemType        = "kit-category"
+							{ item }
+							openEditModal   = { openEditModal }
+							deleteItem      = { ( c ) => deleteCategory( c.id ) }
+							isDeleteLoading = { deletingId === item.id }
+							confirmTitle    = "¿Eliminar categoría?"
+							confirmMessage  = "¿Está seguro de que desea eliminar esta categoría de kits? Los kits en esta categoría podrían quedar huérfanos. Esta acción no se puede deshacer."
+						/>
+					{/each}
+				</div>
+			{:else}
+				<div class="rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card p-12 text-center text-text-muted leading-relaxed">
+					No se encontraron categorías de kits registradas.
 				</div>
 			{/if}
-		</section>
+		{:else}
+			<section class="overflow-hidden rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card space-y-4 pb-4">
+				<div class="overflow-x-auto">
+					<table class="w-full text-left border-collapse">
+						<thead>
+							<tr class="border-b border-brand/15 bg-brand/5 text-[10px] font-black uppercase tracking-widest text-text-muted">
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'name' ) }>
+									Nombre de la Categoría { order === 'name' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
+								<th class="px-6 py-4 cursor-pointer hover:text-brand select-none" onclick={ ( ) => toggleSort( 'active' ) }>
+									Estado { order === 'active' ? ( typeOrder === 'asc' ? '▲' : '▼' ) : '' }
+								</th>
+								<th class="px-6 py-4 text-right">Acciones</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-brand/10 font-semibold">
+							{#each ( categoriesQuery.data?.data || [] ) as item ( item.id )}
+								<tr class="hover:bg-brand/5 transition-colors duration-150">
+									<td class="px-6 py-4 font-bold text-text">{ item.name }</td>
+									<td class="px-6 py-4">
+										<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { item.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
+											{ item.active ? 'Activo' : 'Inactivo' }
+										</span>
+									</td>
+									<td class="px-6 py-4 text-right">
+										<TableActions
+											{ item }
+											openEditModal   = { openEditModal }
+											deleteItem      = { ( c ) => deleteCategory( c.id ) }
+											isDeleteLoading = { deletingId === item.id }
+											confirmTitle    = "¿Eliminar categoría?"
+											confirmMessage  = "¿Está seguro de que desea eliminar esta categoría de kits? Los kits en esta categoría podrían quedar huérfanos. Esta acción no se puede deshacer."
+										/>
+									</td>
+								</tr>
+							{:else}
+								<tr>
+									<td colspan="3" class="px-6 py-12 text-center text-text-muted leading-relaxed">
+										No se encontraron categorías de kits registradas.
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</section>
+		{/if}
+
+		{#if ( categoriesQuery.data?.meta && categoriesQuery.data.meta.totalPages > 1 )}
+			<div class="flex justify-center pt-2">
+				<Pagination
+					count={ categoriesQuery.data.meta.total }
+					perPage={ categoriesQuery.data.meta.size }
+					bind:page={ page }
+				/>
+			</div>
+		{/if}
 
 		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
 		{#if ( showModal )}
