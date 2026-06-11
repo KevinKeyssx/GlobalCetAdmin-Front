@@ -16,8 +16,10 @@
 		List,
 		ListOrdered,
 		Quote,
-		Trash2
+		Trash2,
+		FileUp
 	}                             from '@lucide/svelte';
+	import toast                from 'svelte-french-toast';
 	import { Editor, Extension }  from '@tiptap/core';
 	import StarterKit             from '@tiptap/starter-kit';
 	import { TextAlign }          from '@tiptap/extension-text-align';
@@ -29,6 +31,7 @@
 	import { TextStyle }          from '@tiptap/extension-text-style';
 	import SoftSelect             from '$lib/components/shared/SoftSelect.svelte';
 	import Popover                from '$lib/components/shared/Popover.svelte';
+	import pdfWorkerURL           from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Props {
@@ -66,6 +69,11 @@
 	let showTablePopover = $state( false );
 	let tableRows        = $state( 3 );
 	let tableCols        = $state( 3 );
+
+	// Document import states and constants
+	const ALLOWED_EXTENSIONS = [ '.txt', '.docx', '.pdf' ];
+	let fileInput            = $state<HTMLInputElement | null>( null );
+	let isDraggingFile       = $state( false );
 
 	// Constants
 	const fontSizes = [ 12, 14, 16, 18, 20, 24, 30, 36, 48 ];
@@ -331,6 +339,134 @@
 			}
 		} );
 	} );
+
+	function handleDragOver( e : DragEvent ) : void {
+		e.preventDefault();
+		if ( e.dataTransfer?.types.includes( 'Files' ) ) {
+			isDraggingFile = true;
+		}
+	}
+
+	function handleDragLeave( ) : void {
+		isDraggingFile = false;
+	}
+
+	function handleDrop( e : DragEvent ) : void {
+		e.preventDefault();
+		isDraggingFile = false;
+		const file = e.dataTransfer?.files?.[ 0 ];
+		if ( file ) {
+			processImportedFile( file );
+		}
+	}
+
+	function handleFileInputChange( e : Event ) : void {
+		const target = e.target as HTMLInputElement;
+		const file   = target.files?.[ 0 ];
+		if ( file ) {
+			processImportedFile( file );
+			target.value = '';
+		}
+	}
+
+	function processImportedFile( file : File ) : void {
+		const name      = file.name.toLowerCase();
+		const extension = ALLOWED_EXTENSIONS.find( ( ext ) => name.endsWith( ext ) );
+
+		if ( !extension ) {
+			toast.error( `Formato no soportado. Formatos admitidos: ${ ALLOWED_EXTENSIONS.join( ', ' ) }` );
+			return;
+		}
+
+		if ( extension === '.txt' ) {
+			readTxtFile( file );
+		} else if ( extension === '.docx' ) {
+			readDocxFile( file );
+		} else if ( extension === '.pdf' ) {
+			readPdfFile( file );
+		}
+	}
+
+	function readTxtFile( file : File ) : void {
+		const reader = new FileReader();
+		reader.onload = ( e : ProgressEvent< FileReader > ) => {
+			const text = e.target?.result as string;
+			if ( text && editor ) {
+				editor.chain().focus().insertContent( text ).run();
+				toast.success( 'Texto del archivo TXT importado con éxito.' );
+			}
+		};
+		reader.onerror = ( ) => {
+			toast.error( 'Error al leer el archivo TXT.' );
+		};
+		reader.readAsText( file );
+	}
+
+	async function readDocxFile( file : File ) : Promise< void > {
+		try {
+			const mammoth = await import( 'mammoth' );
+			const reader  = new FileReader();
+			reader.onload = async ( e : ProgressEvent< FileReader > ) => {
+				try {
+					const arrayBuffer = e.target?.result as ArrayBuffer;
+					const result      = await mammoth.convertToHtml( { arrayBuffer } );
+					const htmlContent = result.value;
+					
+					if ( editor ) {
+						editor.chain().focus().insertContent( htmlContent ).run();
+						toast.success( 'Documento Word importado con éxito.' );
+					}
+				} catch ( err ) {
+					toast.error( 'Error al convertir el archivo Word.' );
+				}
+			};
+			reader.onerror = ( ) => {
+				toast.error( 'Error al leer el archivo Word.' );
+			};
+			reader.readAsArrayBuffer( file );
+		} catch ( err ) {
+			toast.error( 'Error al cargar el importador de Word.' );
+		}
+	}
+
+	async function readPdfFile( file : File ) : Promise< void > {
+		try {
+			const pdfjs = await import( 'pdfjs-dist' );
+			pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerURL;
+
+			const reader = new FileReader();
+			reader.onload = async ( e : ProgressEvent< FileReader > ) => {
+				try {
+					const arrayBuffer = e.target?.result as ArrayBuffer;
+					const loadingTask = pdfjs.getDocument( { data : new Uint8Array( arrayBuffer ) } );
+					const pdf         = await loadingTask.promise;
+					
+					let textContent = '';
+					for ( let i = 1; i <= pdf.numPages; i++ ) {
+						const page    = await pdf.getPage( i );
+						const text    = await page.getTextContent();
+						const strings = text.items.map( ( item : any ) => item.str );
+						textContent  += strings.join( ' ' ) + '\n\n';
+					}
+
+					if ( editor && textContent.trim() ) {
+						editor.chain().focus().insertContent( textContent ).run();
+						toast.success( 'Texto del PDF importado con éxito.' );
+					} else {
+						toast.error( 'No se encontró texto en el archivo PDF.' );
+					}
+				} catch ( err : any ) {
+					toast.error( `Error al extraer texto del PDF: ${ err.message || err }` );
+				}
+			};
+			reader.onerror = ( ) => {
+				toast.error( 'Error al leer el archivo PDF.' );
+			};
+			reader.readAsArrayBuffer( file );
+		} catch ( err ) {
+			toast.error( 'Error al cargar el importador de PDF.' );
+		}
+	}
 </script>
 
 <div class="flex flex-col rounded-2xl border border-brand/10 bg-card/40 backdrop-blur-md overflow-hidden text-xs w-full shadow-md">
@@ -658,14 +794,49 @@
 				<Trash2 class="size-4" />
 			</button>
 		{/if}
+
+		<div class="h-4 w-px bg-brand/10 mx-1"></div>
+
+		<!-- Import File Button -->
+		<button
+			type="button"
+			onclick={ ( ) => { fileInput?.click(); } }
+			class="p-1.5 rounded-lg transition-all cursor-pointer border text-text-muted hover:bg-brand/10 hover:text-text border-transparent"
+			title="Importar Documento (.txt, .docx, .pdf)"
+		>
+			<FileUp class="size-4" />
+		</button>
 	</div>
 
 	<!-- ─── Editor Canvas ───────────────────────────────────────────────────────── -->
 	<div
 		bind:this={ editorElement }
-		class="p-4 min-h-[250px] max-h-[600px] overflow-y-auto"
-	></div>
+		class="p-4 min-h-[250px] max-h-[600px] overflow-y-auto relative { isDraggingFile ? 'ring-2 ring-brand bg-brand/5' : '' }"
+		ondragover={ handleDragOver }
+		ondragleave={ handleDragLeave }
+		ondrop={ handleDrop }
+		role="textbox"
+		tabindex="0"
+		aria-label="Editor de texto enriquecido"
+	>
+		{#if ( isDraggingFile )}
+			<div class="absolute inset-0 flex items-center justify-center bg-brand/5 backdrop-blur-[1px] pointer-events-none z-50">
+				<div class="bg-card border border-brand/20 rounded-xl px-4 py-3 flex items-center gap-2 shadow-lg">
+					<span class="text-brand text-xs font-bold uppercase tracking-wider animate-pulse">Soltar archivo para importar (.txt, .docx, .pdf)</span>
+				</div>
+			</div>
+		{/if}
+	</div>
 </div>
+
+<!-- Hidden file input for document import -->
+<input
+	type="file"
+	accept={ ALLOWED_EXTENSIONS.join( ',' ) }
+	bind:this={ fileInput }
+	onchange={ handleFileInputChange }
+	class="hidden"
+/>
 
 <!-- ─── Modals (Portaled to document.body) ────────────────────────────────────── -->
 
