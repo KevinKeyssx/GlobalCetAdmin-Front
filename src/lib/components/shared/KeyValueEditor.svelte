@@ -129,9 +129,9 @@
         <button
 			type="button"
 			onclick={ addEntry }
-			class="flex justify-center items-center gap-2 w-full sm:w-auto rounded-xl border border-brand bg-brand/10 hover:bg-brand hover:text-surface-dark px-2 py-2 transition-colors font-bold uppercase text-xs"
+			class="flex justify-center items-center gap-2 w-full sm:w-auto rounded-xl sm:rounded-full border border-brand bg-brand/10 hover:bg-brand hover:text-surface-dark px-2 py-2 transition-colors font-bold uppercase text-xs"
 		>
-            <Plus class="size-4 sm:hidden block" />
+            <Plus class="size-4" />
 			<span class="sm:hidden">Agregar</span>
 		</button>
 	</div>
