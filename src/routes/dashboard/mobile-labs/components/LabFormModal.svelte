@@ -20,7 +20,10 @@
 	import ConfirmationModal                from '$lib/components/shared/ConfirmationModal.svelte';
 	import RelationManager                  from '$lib/components/shared/RelationManager.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
-	import RichTextEditor from '$lib/components/editor/RichTextEditor.svelte';
+	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
+	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
+	import InputText                        from '$lib/components/shared/InputText.svelte';
+	import InputNumber                      from '$lib/components/shared/InputNumber.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface LabCategory {
@@ -78,6 +81,11 @@
 
 	const formDimensions = $derived( `${ dimLength }m x ${ dimWidth }m x ${ dimHeight }m` );
 
+	// Error states
+	let nameError       = $state( '' );
+	let skuError        = $state( '' );
+	let categoryError   = $state( '' );
+
 	function parseDimensions( dimStr: string ): { length: number; width: number; height: number } {
 		const regex = /^\s*([0-9.]+)\s*m\s*x\s*([0-9.]+)\s*m\s*x\s*([0-9.]+)\s*m\s*$/i;
 		const match = dimStr.match( regex );
@@ -103,6 +111,9 @@
 	let uploaderFiles     = $state< UploadedFileItem[] >( [] );// File Uploader state
 	let uploaderFilesInfo = $state( '' );
 
+	// Modales de creación rápida
+	let showCategoryModal = $state( false );
+
 	// ─── Sync data on open ────────────────────────────────────────────────────────
 	$effect( () => {
 		if ( show && initialData ) {
@@ -113,7 +124,7 @@
 			dimLength         = parsed.length;
 			dimWidth          = parsed.width;
 			dimHeight         = parsed.height;
-			formCategoryId    = initialData.categoryId || ( categories[ 0 ]?.id || '' );
+			formCategoryId    = initialData.categoryId || '';
 			formActive        = initialData.active;
 			formProducts      = initialData.products || [];
 			formKits          = initialData.kits || [];
@@ -129,6 +140,9 @@
 				uploaderFiles = [];
 			}
 			uploaderFilesInfo = '';
+			nameError         = '';
+			skuError          = '';
+			categoryError     = '';
 		} else if ( show && !initialData ) {
 			formName          = '';
 			formSku           = '';
@@ -143,6 +157,9 @@
 			formKits          = [];
 			uploaderFiles     = [];
 			uploaderFilesInfo = '';
+			nameError         = '';
+			skuError          = '';
+			categoryError     = '';
 		}
 	} );
 
@@ -281,8 +298,27 @@
 	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
-		if ( !formName.trim() || !formSku.trim() ) {
-			toast.error( 'Nombre y SKU son obligatorios.' );
+		nameError     = '';
+		skuError      = '';
+		categoryError = '';
+		let hasError  = false;
+
+		if ( !formName.trim() ) {
+			nameError = 'El nombre es obligatorio.';
+			hasError  = true;
+		}
+
+		if ( !formSku.trim() ) {
+			skuError = 'El SKU es obligatorio.';
+			hasError = true;
+		}
+
+		if ( !formCategoryId ) {
+			categoryError = 'La categoría es obligatoria.';
+			hasError      = true;
+		}
+
+		if ( hasError ) {
 			return;
 		}
 
@@ -296,15 +332,15 @@
 
 		// Format products relation info
 		const mappedRelations = formProducts.map( ( p ) => ( {
-			productId : p.productId,
-			quantity  : Number( p.quantity ) || 1,
+			productId	: p.productId,
+			quantity	: Number( p.quantity ) || 1,
 		} ) );
 		formData.append( 'products', JSON.stringify( mappedRelations ) );
 
 		// Format kits relation info
 		const mappedKits = formKits.map( ( k ) => ( {
-			kitId    : k.kitId,
-			quantity : Number( k.quantity ) || 1,
+			kitId		: k.kitId,
+			quantity	: Number( k.quantity ) || 1,
 		} ) );
 		formData.append( 'kits', JSON.stringify( mappedKits ) );
 
@@ -322,9 +358,10 @@
 
 <DashboardModal
 	{ show }
-	title    = { isEditing ? 'Modificar Laboratorio Móvil' : 'Crear Nuevo Laboratorio' }
-	onClose  = { onCancel }
-	maxWidth = "max-w-6xl"
+	title            = { isEditing ? 'Modificar Laboratorio Móvil' : 'Crear Nuevo Laboratorio' }
+	onClose          = { onCancel }
+	maxWidth         = "max-w-6xl"
+	overflowVisible  = { true }
 >
 	{#snippet body()}
 		<form
@@ -353,12 +390,12 @@
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-name">
 									Nombre del Laboratorio
 								</label>
-								<input
+								<InputText
 									id="lab-name"
-									type="text"
 									bind:value={ formName }
+									error={ nameError }
 									placeholder="Ej: Laboratorio Móvil de Física"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none focus:ring-2 focus:ring-brand/15"
 								/>
 							</div>
 
@@ -367,12 +404,12 @@
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-sku">
 									SKU Identificador
 								</label>
-								<input
+								<InputText
 									id="lab-sku"
-									type="text"
 									bind:value={ formSku }
+									error={ skuError }
 									placeholder="Ej: CLAB-001"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none focus:ring-2 focus:ring-brand/15"
 								/>
 							</div>
 						</div>
@@ -391,42 +428,33 @@
 								<label class="text-[0.55rem] font-bold tracking-wider text-text-muted uppercase" for="dim-length">
 									Largo (m)
 								</label>
-								<input
-									id="dim-length"
-									type="number"
-									step="0.1"
-									min="0"
+								<InputNumber
+									min={ 0 }
 									bind:value={ dimLength }
-									placeholder="Largo"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+									class="w-full h-9 rounded-xl"
+									width="w-full flex-1 text-[14px] font-mono"
 								/>
 							</div>
 							<div class="flex flex-col gap-1">
 								<label class="text-[0.55rem] font-bold tracking-wider text-text-muted uppercase" for="dim-width">
 									Ancho (m)
 								</label>
-								<input
-									id="dim-width"
-									type="number"
-									step="0.1"
-									min="0"
+								<InputNumber
+									min={ 0 }
 									bind:value={ dimWidth }
-									placeholder="Ancho"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+									class="w-full h-9 rounded-xl"
+									width="w-full flex-1 text-[14px] font-mono"
 								/>
 							</div>
 							<div class="flex flex-col gap-1">
 								<label class="text-[0.55rem] font-bold tracking-wider text-text-muted uppercase" for="dim-height">
 									Alto (m)
 								</label>
-								<input
-									id="dim-height"
-									type="number"
-									step="0.1"
-									min="0"
+								<InputNumber
+									min={ 0 }
 									bind:value={ dimHeight }
-									placeholder="Alto"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+									class="w-full h-9 rounded-xl"
+									width="w-full flex-1 text-[14px] font-mono"
 								/>
 							</div>
 						</div>
@@ -441,15 +469,28 @@
 							Clasificación
 						</legend>
 						<div class="flex flex-col gap-1">
-							<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-cat">
-								Categoría Científica
-							</label>
+							<div class="flex items-center justify-between">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-cat">
+									Categoría Científica
+								</label>
+								<button
+									type="button"
+									onclick={ ( ) => { showCategoryModal = true; } }
+									class="cursor-pointer text-brand hover:text-brand-bright transition-colors text-[0.65rem] font-black uppercase tracking-wider"
+								>
+									+ Crear Categoría
+								</button>
+							</div>
 							<Select
 								options     = { categories }
 								bind:value  = { formCategoryId }
 								multiple    = { false }
 								placeholder = "Seleccionar categoría..."
+								hasError    = { !!categoryError }
 							/>
+							{#if ( categoryError )}
+								<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ categoryError }</p>
+							{/if}
 						</div>
 					</fieldset>
 
@@ -573,6 +614,23 @@
 		</form>
 	{/snippet}
 </DashboardModal>
+
+{#if ( showCategoryModal )}
+	<CategoryFormModal
+		show={ showCategoryModal }
+		isEditing={ false }
+		editingId=""
+		context="labs"
+		initialData={ null }
+		onSave={ ( ) => {
+			showCategoryModal = false;
+			queryClient.invalidateQueries( { queryKey : [ 'lab-categories' ] } );
+		} }
+		onCancel={ ( ) => {
+			showCategoryModal = false;
+		} }
+	/>
+{/if}
 
 <ConfirmationModal
 	show        = { productToDelete !== null }
