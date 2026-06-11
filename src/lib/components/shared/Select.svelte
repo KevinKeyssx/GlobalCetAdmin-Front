@@ -9,23 +9,25 @@
 
 
 	interface Props {
-		options      : Option[];
-		selected?    : Set<string>;
-		value?       : string;
-		placeholder? : string;
-		multiple?    : boolean;
-		searching?   : boolean;
+		options		: Option[];
+		selected?	: Set<string>;
+		value?		: string;
+		placeholder?	: string;
+		multiple?	: boolean;
+		searching?	: boolean;
+		hasError?	: boolean;
 	}
 
 
-    let {
+	let {
 		options     = [],
 		selected    = $bindable( new Set<string>() ),
 		value       = $bindable( '' ),
 		placeholder = 'Seleccionar...',
 		multiple    = true,
 		searching   = true,
-	}: Props = $props();
+		hasError    = false,
+	} : Props = $props();
 
 	// ─── Reactive States ──────────────────────────────────────────────────────────
 	let isOpen    = $state( false );
@@ -131,7 +133,7 @@
 		tabindex="0"
 		onclick={ () => isOpen = !isOpen }
 		onkeydown={ ( e ) => { if ( e.key === ' ' || e.key === 'Enter' ) { e.preventDefault(); isOpen = !isOpen; } } }
-		class="flex min-h-[46px] w-full items-center justify-between gap-2 rounded-xl cursor-pointer border border-brand/20 dark:border-brand/10 bg-surface/40 hover:bg-surface/60 backdrop-blur-md px-4 py-2.5 text-text shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none transition-all duration-300 select-none {isOpen ? 'ring-2 ring-brand border-brand/40 shadow-[0_0_12px_rgba(0,230,118,0.1)]' : ''}"
+		class="flex min-h-[46px] w-full items-center justify-between gap-2 rounded-xl cursor-pointer border { hasError ? 'border-red-500 bg-red-500/5 hover:bg-red-500/10' : 'border-brand/20 dark:border-brand/10 bg-surface/40 hover:bg-surface/60' } backdrop-blur-md px-4 py-2.5 text-text shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-none transition-all duration-300 select-none { isOpen ? 'ring-2 ring-brand border-brand/40 shadow-[0_0_12px_rgba(0,230,118,0.1)]' : '' }"
 	>
 		<div class="flex flex-wrap gap-1.5 max-w-[90%] items-center">
 			{#if selectedItems.length === 0}
