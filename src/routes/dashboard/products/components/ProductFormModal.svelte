@@ -1,6 +1,9 @@
 <script lang="ts">
-	import toast                            from 'svelte-french-toast';
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import {
+        createMutation,
+        useQueryClient
+    }               from '@tanstack/svelte-query';
+	import toast    from 'svelte-french-toast';
 
 	import FileUploader, {
 		type UploadedFileItem
@@ -8,12 +11,14 @@
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
-	import DashboardModal                   from '../../components/DashboardModal.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import KeyValueEditor                   from '$lib/components/shared/KeyValueEditor.svelte';
-
+	import InputText                        from '$lib/components/shared/InputText.svelte';
 	import type { ProductInitial }          from '$lib/types/product';
 	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
+	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
+	import MaterialFormModal                from '../materials/components/MaterialFormModal.svelte';
+	import DashboardModal                   from '../../components/DashboardModal.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductFormProps {
@@ -58,10 +63,21 @@
 	let formActive        = $state( true );
 	let formSpecs         = $state( '{}' );
 
+	// Error states
+	let nameError         = $state( '' );
+	let skuError          = $state( '' );
+	let materialError     = $state( '' );
+	let subcategoryError  = $state( '' );
+
 	// File Uploader state
 	let uploaderFiles     = $state< UploadedFileItem[] >( [] );
 	let uploaderFilesInfo = $state( '' );
 	let deletingFileId    = $state< string | null >( null );
+
+	// Modales de creación rápida
+	let showMaterialModal    = $state( false );
+	let showCategoryModal    = $state( false );
+	let showSubcategoryModal = $state( false );
 
 	const mappedSubcategories = $derived.by( () => {
 		return categories.flatMap( ( cat ) => {
@@ -78,7 +94,7 @@
 			formName          = initialData?.name           || '';
 			formSku           = initialData?.sku            || '';
 			formDescription   = initialData?.description    || '';
-			formMaterialId    = initialData?.materialId     || ( materials[ 0 ]?.id || '' );
+			formMaterialId    = initialData?.materialId     || '';
 			formSubcategoryId = initialData?.subcategoryId  || '';
 			formActive        = initialData?.active         || true;
 			formSpecs         = initialData?.technicalSpecs || '{}';
@@ -94,6 +110,10 @@
 				uploaderFiles = [];
 			}
 			uploaderFilesInfo = '';
+			nameError         = '';
+			skuError          = '';
+			materialError     = '';
+			subcategoryError  = '';
 		}
 	} );
 
@@ -191,8 +211,33 @@
 	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
-		if ( !formName.trim() || !formSku.trim() ) {
-			toast.error( 'Nombre y SKU son obligatorios.' );
+		nameError        = '';
+		skuError         = '';
+		materialError    = '';
+		subcategoryError = '';
+		let hasError     = false;
+
+		if ( !formName.trim() ) {
+			nameError = 'El nombre es obligatorio.';
+			hasError  = true;
+		}
+
+		if ( !formSku.trim() ) {
+			skuError = 'El SKU es obligatorio.';
+			hasError = true;
+		}
+
+		if ( !formMaterialId ) {
+			materialError = 'El material es obligatorio.';
+			hasError      = true;
+		}
+
+		if ( !formSubcategoryId ) {
+			subcategoryError = 'La subcategoría es obligatoria.';
+			hasError         = true;
+		}
+
+		if ( hasError ) {
 			return;
 		}
 
@@ -209,10 +254,10 @@
 		formData.append( 'technical_specs', formSpecs );
 
 		const clientImages = uploaderFiles.map( ( uf ) => ( {
-			id     : uf.file ? undefined : uf.id,
-			alt    : uf.alt,
-			isMain : uf.isMain,
-			order  : uf.order,
+			id		: uf.file ? undefined : uf.id,
+			alt		: uf.alt,
+			isMain	: uf.isMain,
+			order	: uf.order,
 		} ) );
 		formData.append( 'imagesInfo', JSON.stringify( clientImages ) );
 
@@ -231,6 +276,7 @@
 	title    = { isEditing ? 'Modificar Producto' : 'Crear Nuevo Producto' }
 	onClose  = { onCancel }
 	maxWidth = "max-w-6xl"
+	overflowVisible = { true }
 >
 	{#snippet body()}
 		<form
@@ -259,12 +305,12 @@
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-name">
 									Nombre del Producto
 								</label>
-								<input
+								<InputText
 									id="prod-name"
-									type="text"
 									bind:value={ formName }
+									error={ nameError }
 									placeholder="Ej: Vaso de Precipitado 250ml"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none focus:ring-2 focus:ring-brand/15"
 								/>
 							</div>
 
@@ -273,12 +319,12 @@
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-sku">
 									SKU Identificador
 								</label>
-								<input
+								<InputText
 									id="prod-sku"
-									type="text"
 									bind:value={ formSku }
+									error={ skuError }
 									placeholder="Ej: CPRODUCT-002"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none focus:ring-2 focus:ring-brand/15"
 								/>
 							</div>
 						</div>
@@ -313,29 +359,65 @@
 
 							<!-- Material -->
 							<div class="flex flex-col gap-1">
-								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-material">
-									Material
-								</label>
+								<div class="flex items-center justify-between">
+									<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-material">
+										Material
+									</label>
+									<button
+										type="button"
+										onclick={ ( ) => { showMaterialModal = true; } }
+										class="cursor-pointer text-brand hover:text-brand-bright transition-colors text-[0.65rem] font-black uppercase tracking-wider"
+									>
+										+ Crear Material
+									</button>
+								</div>
 
-                                <Select
+								<Select
 									options={ materials }
 									bind:value={ formMaterialId }
 									multiple={ false }
 									placeholder="Seleccionar material..."
+									hasError={ !!materialError }
 								/>
+								{#if ( materialError )}
+									<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ materialError }</p>
+								{/if}
 							</div>
 
 							<!-- Subcategory -->
 							<div class="flex flex-col gap-1">
-								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-subcat">
-									Subcategoría
-								</label>
+								<div class="flex items-center justify-between">
+									<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-subcat">
+										Subcategoría
+									</label>
+									<div class="flex items-center gap-2">
+										<button
+											type="button"
+											onclick={ ( ) => { showCategoryModal = true; } }
+											class="cursor-pointer text-brand hover:text-brand-bright transition-colors text-[0.65rem] font-black uppercase tracking-wider"
+										>
+											+ Crear Categoría
+										</button>
+										<span class="text-brand/30">|</span>
+										<button
+											type="button"
+											onclick={ ( ) => { showSubcategoryModal = true; } }
+											class="cursor-pointer text-brand hover:text-brand-bright transition-colors text-[0.65rem] font-black uppercase tracking-wider"
+										>
+											+ Crear Subcategoría
+										</button>
+									</div>
+								</div>
 								<Select
 									options     = { mappedSubcategories }
 									bind:value  = { formSubcategoryId }
 									multiple    = { false }
 									placeholder = "Seleccionar subcategoría..."
+									hasError    = { !!subcategoryError }
 								/>
+								{#if ( subcategoryError )}
+									<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ subcategoryError }</p>
+								{/if}
 							</div>
 						</div>
 					</fieldset>
@@ -430,6 +512,60 @@
 		</form>
 	{/snippet}
 </DashboardModal>
+
+{#if ( showMaterialModal )}
+	<MaterialFormModal
+		show={ showMaterialModal }
+		isEditing={ false }
+		editingId=""
+		initialData={ null }
+		onSave={ ( ) => {
+			showMaterialModal = false;
+			queryClient.invalidateQueries( { queryKey : [ 'materials' ] } );
+		} }
+		onCancel={ ( ) => {
+			showMaterialModal = false;
+		} }
+	/>
+{/if}
+
+{#if ( showCategoryModal )}
+	<CategoryFormModal
+		show={ showCategoryModal }
+		isEditing={ false }
+		editingId=""
+		context="products"
+		activeTab="categories"
+		initialData={ null }
+		onSave={ ( ) => {
+			showCategoryModal = false;
+			queryClient.invalidateQueries( { queryKey : [ 'categories' ] } );
+		} }
+		onCancel={ ( ) => {
+			showCategoryModal = false;
+		} }
+	/>
+{/if}
+
+{#if ( showSubcategoryModal )}
+	<CategoryFormModal
+		show={ showSubcategoryModal }
+		isEditing={ false }
+		editingId=""
+		context="products"
+		activeTab="subcategories"
+		categories={ categories }
+		initialData={ null }
+		onSave={ ( ) => {
+			showSubcategoryModal = false;
+			queryClient.invalidateQueries( { queryKey : [ 'categories' ] } );
+			queryClient.invalidateQueries( { queryKey : [ 'subcategories-all' ] } );
+		} }
+		onCancel={ ( ) => {
+			showSubcategoryModal = false;
+		} }
+	/>
+{/if}
 
 <style>
 	/* Solo el keyframe de entrada — no es posible definirlo con Tailwind sin modificar la config global */
