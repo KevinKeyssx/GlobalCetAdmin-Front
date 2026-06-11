@@ -101,3 +101,25 @@ export interface GlobalSearchResponse {
 	mobileLabs : GlobalSearchMobileLab[];
 	meta       : GlobalSearchMeta;
 }
+
+export interface GlobalSearchTotalsItem {
+	active   : number;
+	inactive : number;
+}
+
+export interface GlobalSearchTotalsResponse {
+	products   : {
+		catalog       : GlobalSearchTotalsItem;
+		subCategories : GlobalSearchTotalsItem;
+		categories    : GlobalSearchTotalsItem;
+		materials     : GlobalSearchTotalsItem;
+	};
+	kits       : {
+		catalog    : GlobalSearchTotalsItem;
+		categories : GlobalSearchTotalsItem;
+	};
+	mobileLabs : {
+		catalog    : GlobalSearchTotalsItem;
+		categories : GlobalSearchTotalsItem;
+	};
+}
