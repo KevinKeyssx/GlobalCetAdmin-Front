@@ -71,17 +71,18 @@ export interface AdminProductFile {
 }
 
 export interface AdminProduct {
-	id          : string;
-	sku         : string;
-	name        : string;
-	description : string;
-	active      : boolean;
-	files       : AdminProductFile[];
-	subcategory : {
+	id	                : string;
+	sku	                : string;
+	name	            : string;
+	description         : string;
+	active	            : boolean;
+	files	            : AdminProductFile[];
+    technical_specs?    : any;
+	subcategory         : {
 		id   : string;
 		name : string;
 	};
-	material    : {
+	material            : {
 		id   : string;
 		name : string;
 		slug : string;
