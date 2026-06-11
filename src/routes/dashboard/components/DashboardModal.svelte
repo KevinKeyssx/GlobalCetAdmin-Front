@@ -4,11 +4,12 @@
 
 	// ─── Props ────────────────────────────────────────────────────────────────────
 	interface DashboardModalProps {
-		show		: boolean;
-		title		: string;
-		onClose		: () => void;
-		body		: Snippet;
-		maxWidth?	: string;
+		show            : boolean;
+		title           : string;
+		onClose         : () => void;
+		body            : Snippet;
+		maxWidth?       : string;
+		overflowVisible?: boolean;
 	}
 
 	let {
@@ -17,17 +18,18 @@
 		onClose,
 		body,
 		maxWidth = 'max-w-lg',
+		overflowVisible = false,
 	} : DashboardModalProps = $props();
 </script>
 
 {#if ( show )}
 	<!-- ─── Modal Backdrop ─────────────────────────────────────────────────────── -->
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-y-auto"
+		class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 backdrop-blur-sm overflow-y-auto"
 		transition:fade={ { duration : 150 } }
 	>
 		<div
-			class="w-full { maxWidth } max-h-[90vh] flex flex-col rounded-2xl border border-brand/20 bg-card p-6 shadow-card-hover text-sm my-8"
+			class="w-full { maxWidth } { overflowVisible ? 'max-h-none' : 'max-h-[90vh]' } flex flex-col rounded-2xl border border-brand/20 bg-card p-6 shadow-card-hover text-sm my-auto"
 			transition:slide={ { duration : 250 } }
 		>
 			<!-- ─── Header ──────────────────────────────────────────────────────── -->
@@ -49,7 +51,7 @@
 			</div>
 
 			<!-- ─── Body (Snippet Slot) ────────────────────────────────────────── -->
-			<div class="overflow-y-auto flex-1 pr-1.5 mt-4 custom-scrollbar">
+			<div class="{ overflowVisible ? 'overflow-visible' : 'overflow-y-auto custom-scrollbar' } flex-1 pr-1.5 mt-4">
 				{@render body()}
 			</div>
 		</div>
