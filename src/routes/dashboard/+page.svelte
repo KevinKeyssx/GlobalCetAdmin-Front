@@ -5,26 +5,20 @@
     import toast from 'svelte-french-toast';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
-	import type { GlobalSearchResponse }    from '$lib/types/search';
+	import type { GlobalSearchTotalsResponse } from '$lib/types/search';
 	import { globalLoadingStore }           from '$lib/state/loading';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 
 	// ─── Local State (Svelte 5 Runes) ─────────────────────────────────────────────
 	let activeSection = $state( 'productos' );
-	let stats         = $state( {
-		products   : 0,
-		kits       : 0,
-		labs       : 0,
-		categories : 0,
-		materials  : 0,
-	});
+	let stats         = $state< GlobalSearchTotalsResponse | null >( null );
 
 	// ─── Fetch live metrics from global-search ────────────────────────────────────
 	async function loadStats( ) : Promise<void> {
 		$globalLoadingStore = true;
 		try {
-			// Fetch all items from search endpoint to get precise totals
-			const response = await connectRequest< GlobalSearchResponse >( {
-				endpoint   : 'global-search?limitPerEntity=50',
+			const response = await connectRequest< GlobalSearchTotalsResponse >( {
+				endpoint   : INTERNAL_ENDPOINTS.GLOBAL_SEARCH.TOTALS,
 				isInternal : true,
 			} );
 
@@ -35,24 +29,7 @@
 				return;
 			}
 
-			// Also fetch categories and materials to populate counts
-			const catResponse = await connectRequest< any >( {
-				endpoint   : 'products/categories/get-all',
-				isInternal : true,
-			} );
-
-			const matResponse = await connectRequest< any >( {
-				endpoint   : 'products/materials/get-all',
-				isInternal : true,
-			} );
-
-			stats = {
-				products   : response.products?.length || 0,
-				kits       : response.kits?.length || 0,
-				labs       : response.mobileLabs?.length || 0,
-				categories : isApiError( catResponse ) ? 0 : catResponse.length || 0,
-				materials  : isApiError( matResponse ) ? 0 : matResponse.length || 0,
-			};
+			stats = response;
 
 			toast.success( 'Conexión con el servidor establecida. Datos actualizados.', {
 				duration : 3000,
@@ -113,52 +90,99 @@
 		</div>
 
 		<!-- ─── Global Live Metrics Cards ────────────────────────────────────────── -->
-		<section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-			<!-- Products metric -->
-			<div class="rounded-2xl border border-brand/10 bg-card p-5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25">
-				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Productos</p>
-				<div class="flex items-baseline gap-2 mt-1">
-					<span class="font-display text-3xl font-extrabold text-brand">{ stats.products }</span>
-					<span class="text-text-muted">reg.</span>
+		{#if stats }
+			<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				<!-- Products Card -->
+				<div class="rounded-2xl border border-brand/10 bg-card/60 backdrop-blur-md p-6 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25 space-y-4">
+					<div class="flex items-center gap-3 border-b border-brand/10 pb-3">
+						<div class="text-xl">📦</div>
+						<h3 class="font-display font-black text-text uppercase tracking-wider text-xs">División de Productos</h3>
+					</div>
+					<ul class="space-y-3.5 text-xs font-semibold">
+						<li class="flex items-center justify-between">
+							<span class="text-text-muted">Productos</span>
+							<div class="flex items-center gap-2">
+								<span class="text-emerald-500 font-bold">{ stats.products.catalog.active } act.</span>
+								<span class="text-red-500 font-bold">{ stats.products.catalog.inactive } inact.</span>
+							</div>
+						</li>
+						<li class="flex items-center justify-between">
+							<span class="text-text-muted">Materiales</span>
+							<div class="flex items-center gap-2">
+								<span class="text-emerald-500 font-bold">{ stats.products.materials.active } act.</span>
+								<span class="text-red-500 font-bold">{ stats.products.materials.inactive } inact.</span>
+							</div>
+						</li>
+						<li class="flex items-center justify-between">
+							<span class="text-text-muted">Categorías</span>
+							<div class="flex items-center gap-2">
+								<span class="text-emerald-500 font-bold">{ stats.products.categories.active } act.</span>
+								<span class="text-red-500 font-bold">{ stats.products.categories.inactive } inact.</span>
+							</div>
+						</li>
+						<li class="flex items-center justify-between">
+							<span class="text-text-muted">Subcategorías</span>
+							<div class="flex items-center gap-2">
+								<span class="text-emerald-500 font-bold">{ stats.products.subCategories.active } act.</span>
+								<span class="text-red-500 font-bold">{ stats.products.subCategories.inactive } inact.</span>
+							</div>
+						</li>
+					</ul>
 				</div>
-			</div>
 
-			<!-- Kits metric -->
-			<div class="rounded-2xl border border-brand/10 bg-card p-5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25">
-				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Kits Diagnóstico</p>
-				<div class="flex items-baseline gap-2 mt-1">
-					<span class="font-display text-3xl font-extrabold text-brand">{ stats.kits }</span>
-					<span class="text-text-muted">reg.</span>
+				<!-- Kits Card -->
+				<div class="rounded-2xl border border-brand/10 bg-card/60 backdrop-blur-md p-6 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25 space-y-4">
+					<div class="flex items-center gap-3 border-b border-brand/10 pb-3">
+						<div class="text-xl">🧬</div>
+						<h3 class="font-display font-black text-text uppercase tracking-wider text-xs">División de Kits</h3>
+					</div>
+					<ul class="space-y-3.5 text-xs font-semibold">
+						<li class="flex items-center justify-between">
+							<span class="text-text-muted">Kits Diagnóstico</span>
+							<div class="flex items-center gap-2">
+								<span class="text-emerald-500 font-bold">{ stats.kits.catalog.active } act.</span>
+								<span class="text-red-500 font-bold">{ stats.kits.catalog.inactive } inact.</span>
+							</div>
+						</li>
+						<li class="flex items-center justify-between">
+							<span class="text-text-muted">Categorías</span>
+							<div class="flex items-center gap-2">
+								<span class="text-emerald-500 font-bold">{ stats.kits.categories.active } act.</span>
+								<span class="text-red-500 font-bold">{ stats.kits.categories.inactive } inact.</span>
+							</div>
+						</li>
+					</ul>
 				</div>
-			</div>
 
-			<!-- Mobile Labs metric -->
-			<div class="rounded-2xl border border-brand/10 bg-card p-5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25">
-				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Laboratorios</p>
-				<div class="flex items-baseline gap-2 mt-1">
-					<span class="font-display text-3xl font-extrabold text-brand">{ stats.labs }</span>
-					<span class="text-text-muted">reg.</span>
+				<!-- Mobile Labs Card -->
+				<div class="rounded-2xl border border-brand/10 bg-card/60 backdrop-blur-md p-6 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25 space-y-4">
+					<div class="flex items-center gap-3 border-b border-brand/10 pb-3">
+						<div class="text-xl">🚛</div>
+						<h3 class="font-display font-black text-text uppercase tracking-wider text-xs">Laboratorios Móviles</h3>
+					</div>
+					<ul class="space-y-3.5 text-xs font-semibold">
+						<li class="flex items-center justify-between">
+							<span class="text-text-muted">Laboratorios</span>
+							<div class="flex items-center gap-2">
+								<span class="text-emerald-500 font-bold">{ stats.mobileLabs.catalog.active } act.</span>
+								<span class="text-red-500 font-bold">{ stats.mobileLabs.catalog.inactive } inact.</span>
+							</div>
+						</li>
+						<li class="flex items-center justify-between">
+							<span class="text-text-muted">Categorías</span>
+							<div class="flex items-center gap-2">
+								<span class="text-emerald-500 font-bold">{ stats.mobileLabs.categories.active } act.</span>
+								<span class="text-red-500 font-bold">{ stats.mobileLabs.categories.inactive } inact.</span>
+							</div>
+						</li>
+					</ul>
 				</div>
+			</section>
+		{:else}
+			<div class="flex justify-center py-8">
+				<div class="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent"></div>
 			</div>
-
-			<!-- Materials metric -->
-			<div class="rounded-2xl border border-brand/10 bg-card p-5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25">
-				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Materiales</p>
-				<div class="flex items-baseline gap-2 mt-1">
-					<span class="font-display text-3xl font-extrabold text-brand-bright">{ stats.materials }</span>
-					<span class="text-text-muted">reg.</span>
-				</div>
-			</div>
-
-			<!-- Categories metric -->
-			<div class="rounded-2xl border border-brand/10 bg-card p-5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25">
-				<p class="text-[10px] font-black uppercase tracking-widest text-text-muted">Categorías Prod.</p>
-				<div class="flex items-baseline gap-2 mt-1">
-					<span class="font-display text-3xl font-extrabold text-brand-bright">{ stats.categories }</span>
-					<span class="text-text-muted">reg.</span>
-				</div>
-			</div>
-		</section>
+		{/if}
 
 		<!-- ─── Interactive Accordion Navigation Hub ────────────────────────────── -->
 		<section class="space-y-4">
@@ -378,7 +402,7 @@
 								División de Laboratorios Móviles
 							</h3>
 							<p class="text-text-muted">
-								Administre las estaciones científicas autónomas móviles, carros tecnológicos e infraestructura integradora.
+								Administre los laboratorios móbiles , tecnológicos e infraestructura integradora.
 							</p>
 						</div>
 					</div>
@@ -406,7 +430,7 @@
 										Administrar Laboratorios
 									</h4>
 									<p class="text-text-muted leading-relaxed">
-										Registre estaciones y carros científicos móviles, configurando dimensiones, kits y productos individuales integrados de fábrica.
+										Registre laboratorios móviles, configurando dimensiones, kits y productos individuales integrados de fábrica.
 									</p>
 								</div>
 								<div class="mt-4 flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-brand">
@@ -430,7 +454,7 @@
 										Categorías de Laboratorios
 									</h4>
 									<p class="text-text-muted leading-relaxed">
-										Configure las divisiones estructurales y de campo (ej. Estaciones de Prototipado, Carros Tecnológicos de Recinto).
+										Configure las categorias de los laboratorios móbiles.
 									</p>
 								</div>
 								<div class="mt-4 flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-brand">
