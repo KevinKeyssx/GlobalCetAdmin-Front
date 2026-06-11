@@ -1,6 +1,9 @@
 <script lang="ts">
-	import toast                            from 'svelte-french-toast';
-	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import {
+        createMutation,
+        useQueryClient
+    }               from '@tanstack/svelte-query';
+	import toast    from 'svelte-french-toast';
 
 	import FileUploader, {
 		type UploadedFileItem
@@ -8,13 +11,14 @@
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
-	import DashboardModal                   from '../../components/DashboardModal.svelte';
-	import ConfirmationModal                from '../../../../lib/components/shared/ConfirmationModal.svelte';
 	import RelationManager                  from '$lib/components/shared/RelationManager.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
-
+	import InputText                        from '$lib/components/shared/InputText.svelte';
 	import type { KitInitial, KitProduct }  from '$lib/types/kit';
-	import RichTextEditor from '$lib/components/editor/RichTextEditor.svelte';
+	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
+	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
+	import DashboardModal                   from '../../components/DashboardModal.svelte';
+	import ConfirmationModal                from '../../../../lib/components/shared/ConfirmationModal.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface KitCategory {
@@ -57,6 +61,11 @@
 	let formCategoryId  = $state( '' );
 	let formActive      = $state( true );
 
+	// Error states
+	let nameError       = $state( '' );
+	let skuError        = $state( '' );
+	let categoryError   = $state( '' );
+
 	// Relations list state (Selected products in this kit)
 	let formProducts    = $state< KitProduct[] >( [] );
 
@@ -64,13 +73,16 @@
 	let uploaderFiles     = $state< UploadedFileItem[] >( [] );
 	let uploaderFilesInfo = $state( '' );
 
+	// Modales de creación rápida
+	let showCategoryModal = $state( false );
+
 	// ─── Sync data on open ────────────────────────────────────────────────────────
 	$effect( () => {
 		if ( show && initialData ) {
 			formName          = initialData.name;
 			formSku           = initialData.sku;
 			formDescription   = initialData.description;
-			formCategoryId    = initialData.categoryId || ( categories[ 0 ]?.id || '' );
+			formCategoryId    = initialData.categoryId || '';
 			formActive        = initialData.active;
 			formProducts      = initialData.products || [];
 			if ( isEditing && initialData.files ) {
@@ -85,6 +97,9 @@
 				uploaderFiles = [];
 			}
 			uploaderFilesInfo = '';
+			nameError         = '';
+			skuError          = '';
+			categoryError     = '';
 		} else if ( show && !initialData ) {
 			formName          = '';
 			formSku           = '';
@@ -94,6 +109,9 @@
 			formProducts      = [];
 			uploaderFiles     = [];
 			uploaderFilesInfo = '';
+			nameError         = '';
+			skuError          = '';
+			categoryError     = '';
 		}
 	} );
 
@@ -189,8 +207,27 @@
 	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
-		if ( !formName.trim() || !formSku.trim() ) {
-			toast.error( 'Nombre y SKU son obligatorios.' );
+		nameError     = '';
+		skuError      = '';
+		categoryError = '';
+		let hasError  = false;
+
+		if ( !formName.trim() ) {
+			nameError = 'El nombre es obligatorio.';
+			hasError  = true;
+		}
+
+		if ( !formSku.trim() ) {
+			skuError = 'El SKU es obligatorio.';
+			hasError = true;
+		}
+
+		if ( !formCategoryId ) {
+			categoryError = 'La categoría es obligatoria.';
+			hasError      = true;
+		}
+
+		if ( hasError ) {
 			return;
 		}
 
@@ -203,8 +240,8 @@
 
 		// Format products relation info
 		const mappedRelations = formProducts.map( ( p ) => ( {
-			productId : p.productId,
-			quantity  : Number( p.quantity ) || 1,
+			productId	: p.productId,
+			quantity	: Number( p.quantity ) || 1,
 		} ) );
 		formData.append( 'products', JSON.stringify( mappedRelations ) );
 
@@ -222,9 +259,10 @@
 
 <DashboardModal
 	{ show }
-	title    = { isEditing ? 'Modificar Kit' : 'Crear Nuevo Kit' }
-	onClose  = { onCancel }
-	maxWidth = "max-w-6xl"
+	title            = { isEditing ? 'Modificar Kit' : 'Crear Nuevo Kit' }
+	onClose          = { onCancel }
+	maxWidth         = "max-w-6xl"
+	overflowVisible  = { true }
 >
 	{#snippet body()}
 		<form
@@ -253,12 +291,12 @@
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="kit-name">
 									Nombre del Kit
 								</label>
-								<input
+								<InputText
 									id="kit-name"
-									type="text"
 									bind:value={ formName }
+									error={ nameError }
 									placeholder="Ej: Kit de Bioquímica Básica"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none focus:ring-2 focus:ring-brand/15"
 								/>
 							</div>
 
@@ -267,12 +305,12 @@
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="kit-sku">
 									SKU Identificador
 								</label>
-								<input
+								<InputText
 									id="kit-sku"
-									type="text"
 									bind:value={ formSku }
+									error={ skuError }
 									placeholder="Ej: CKIT-001"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none transition-all placeholder:text-text-muted/50 focus:border-brand focus:bg-card focus:ring-2 focus:ring-brand/15"
+									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none focus:ring-2 focus:ring-brand/15"
 								/>
 							</div>
 						</div>
@@ -303,15 +341,28 @@
 							Clasificación
 						</legend>
 						<div class="flex flex-col gap-1">
-							<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="kit-category">
-								Categoría Científica
-							</label>
+							<div class="flex items-center justify-between">
+								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="kit-category">
+									Categoría Científica
+								</label>
+								<button
+									type="button"
+									onclick={ ( ) => { showCategoryModal = true; } }
+									class="cursor-pointer text-brand hover:text-brand-bright transition-colors text-[0.65rem] font-black uppercase tracking-wider"
+								>
+									+ Crear Categoría
+								</button>
+							</div>
 							<Select
 								options     = { categories }
 								bind:value  = { formCategoryId }
 								multiple    = { false }
 								placeholder = "Seleccionar categoría..."
+								hasError    = { !!categoryError }
 							/>
+							{#if ( categoryError )}
+								<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ categoryError }</p>
+							{/if}
 						</div>
 					</fieldset>
 
@@ -404,6 +455,23 @@
 		</form>
 	{/snippet}
 </DashboardModal>
+
+{#if ( showCategoryModal )}
+	<CategoryFormModal
+		show={ showCategoryModal }
+		isEditing={ false }
+		editingId=""
+		context="kits"
+		initialData={ null }
+		onSave={ ( ) => {
+			showCategoryModal = false;
+			queryClient.invalidateQueries( { queryKey : [ 'kit-categories' ] } );
+		} }
+		onCancel={ ( ) => {
+			showCategoryModal = false;
+		} }
+	/>
+{/if}
 
 <ConfirmationModal
 	show        = { productToDelete !== null }
