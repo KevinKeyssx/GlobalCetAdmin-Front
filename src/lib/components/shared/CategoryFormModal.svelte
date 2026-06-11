@@ -5,8 +5,10 @@
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import DashboardModal                   from '../../../routes/dashboard/components/DashboardModal.svelte';
 	import Select                           from './Select.svelte';
+	import InputText                        from './InputText.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ParentCategory {
@@ -17,6 +19,7 @@
 	interface CategoryInitial {
 		name         : string;
 		parentCatId? : string;
+		active?      : boolean;
 	}
 
 	interface CategoryFormProps {
@@ -46,15 +49,26 @@
 	// ─── Form Fields ──────────────────────────────────────────────────────────────
 	let formName    = $state( '' );
 	let parentCatId = $state( '' );
+	let formActive  = $state( true );
+
+	// Error states
+	let nameError   = $state( '' );
+	let parentError = $state( '' );
 
 	// ─── Sync data on open ────────────────────────────────────────────────────────
 	$effect( () => {
 		if ( show && initialData ) {
 			formName    = initialData.name;
 			parentCatId = initialData.parentCatId || ( categories[ 0 ]?.id || '' );
+			formActive  = initialData.active !== undefined ? initialData.active : true;
+			nameError   = '';
+			parentError = '';
 		} else if ( show && !initialData ) {
 			formName    = '';
 			parentCatId = categories[ 0 ]?.id || '';
+			formActive  = true;
+			nameError   = '';
+			parentError = '';
 		}
 	} );
 
@@ -98,6 +112,7 @@
 			activeTab,
 			formName,
 			parentCatId,
+			formActive,
 		} : {
 			isEditing   : boolean;
 			editingId   : string;
@@ -105,26 +120,29 @@
 			activeTab?  : string;
 			formName    : string;
 			parentCatId : string;
+			formActive  : boolean;
 		} ) : Promise< any > => {
 			let endpoint   = '';
 			let body : any = {
-				name : formName,
+				name   : formName,
+				active : formActive,
 			};
 
 			if ( context === 'products' ) {
 				const isSub    = activeTab === 'subcategories';
-				const path     = isSub ? 'products/categories?type=subcategory' : 'products/categories';
+				const path     = isSub ? `${ INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.BASE }?type=subcategory` : INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.BASE;
 				endpoint       = isEditing ? `${ path }${ isSub ? '&' : '?' }id=${ editingId }` : path;
 				if ( isSub ) {
 					body = {
 						name       : formName,
 						categoryId : parentCatId,
+						active     : formActive,
 					};
 				}
 			} else if ( context === 'kits' ) {
-				endpoint = isEditing ? `kits/categories?id=${ editingId }` : 'kits/categories';
+				endpoint = isEditing ? `${ INTERNAL_ENDPOINTS.KITS.CATEGORIES.BASE }?id=${ editingId }` : INTERNAL_ENDPOINTS.KITS.CATEGORIES.BASE;
 			} else if ( context === 'labs' ) {
-				endpoint = isEditing ? `labs/categories?id=${ editingId }` : 'labs/categories';
+				endpoint = isEditing ? `${ INTERNAL_ENDPOINTS.LABS.CATEGORIES.BASE }?id=${ editingId }` : INTERNAL_ENDPOINTS.LABS.CATEGORIES.BASE;
 			}
 
 			// We call our internal SvelteKit endpoint using PUT (which SvelteKit PUT handler will forward as PATCH to the backend)
@@ -150,6 +168,7 @@
 			// Invalidate appropriate queries
 			if ( context === 'products' ) {
 				queryClient.invalidateQueries( { queryKey : [ 'categories' ] } );
+				queryClient.invalidateQueries( { queryKey : [ 'subcategories' ] } );
 			} else if ( context === 'kits' ) {
 				queryClient.invalidateQueries( { queryKey : [ 'kit-categories' ] } );
 			} else if ( context === 'labs' ) {
@@ -174,8 +193,21 @@
 	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
+		nameError   = '';
+		parentError = '';
+		let hasError = false;
+
 		if ( !formName.trim() ) {
-			toast.error( 'El nombre es obligatorio.' );
+			nameError = 'El nombre es obligatorio.';
+			hasError  = true;
+		}
+
+		if ( isSub && !parentCatId ) {
+			parentError = 'La categoría padre es obligatoria.';
+			hasError    = true;
+		}
+
+		if ( hasError ) {
 			return;
 		}
 
@@ -186,6 +218,7 @@
 			activeTab,
 			formName,
 			parentCatId,
+			formActive,
 		} );
 	}
 </script>
@@ -195,6 +228,7 @@
 	{ title }
 	onClose={ onCancel }
 	maxWidth="max-w-md"
+	overflowVisible={ true }
 >
 	{#snippet body()}
 		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
@@ -207,7 +241,11 @@
 						bind:value={ parentCatId }
 						multiple={ false }
 						placeholder="Seleccionar categoría..."
+						hasError={ !!parentError }
 					/>
+					{#if ( parentError )}
+						<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ parentError }</p>
+					{/if}
 				</div>
 			{/if}
 
@@ -216,13 +254,24 @@
 				<label for="item-name">
 					{ nameLabel }
 				</label>
-				<input
+				<InputText
 					id="item-name"
-					type="text"
 					bind:value={ formName }
+					error={ nameError }
 					placeholder={ namePlaceholder }
 					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
 				/>
+			</div>
+
+			<!-- Estado Activo -->
+			<div class="flex items-center gap-3 pt-2">
+				<input
+					id="item-active"
+					type="checkbox"
+					bind:checked={ formActive }
+					class="accent-brand h-4 w-4 cursor-pointer"
+				/>
+				<label for="item-active" class="cursor-pointer select-none">Estado Activo</label>
 			</div>
 
 			<!-- Actions -->
