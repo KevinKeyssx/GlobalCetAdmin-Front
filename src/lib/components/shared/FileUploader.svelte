@@ -6,13 +6,16 @@
         X,
         CloudUpload,
         FileText
-    }               from '@lucide/svelte';
-    import toast    from 'svelte-french-toast';
-	import JSZip    from 'jszip';
+    }                                   from '@lucide/svelte';
+    import toast                        from 'svelte-french-toast';
+	import JSZip                        from 'jszip';
+	import { PUBLIC_MAX_FILES_UPLOAD }  from '$env/static/public';
 
     import ConfirmationModal    from './ConfirmationModal.svelte';
 	import InputNumber          from '$lib/components/shared/InputNumber.svelte';
 	import ImagePreview         from '$lib/components/shared/ImagePreview.svelte';
+
+	const maxFilesUpload : number = Number( PUBLIC_MAX_FILES_UPLOAD ) || 7;
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	export interface UploadedFileItem {
@@ -65,38 +68,64 @@
 		} );
 	} );
 
+	$effect( () => {
+		const nonDocs = files.filter( ( f ) => !isDocument( f ) );
+		const hasInvalidOrder = nonDocs.some( ( f, i ) => f.order !== i );
+
+		if ( hasInvalidOrder ) {
+			untrack( () => {
+				const sortedNonDocs = [ ...nonDocs ].sort( ( a, b ) => a.order - b.order );
+				files = files.map( ( f ) => {
+					if ( isDocument( f ) ) return f;
+					const newIndex = sortedNonDocs.findIndex( ( sd ) => sd.id === f.id );
+					return {
+						...f,
+						order : newIndex !== -1 ? newIndex : f.order,
+					};
+				} );
+			} );
+		}
+	} );
+
 	let isDragging     = $state( false );
 	let isDraggingDocx = $state( false );
 
-	const imageCount = $derived( files.filter( ( f ) => !isDocument( f ) ).length );
 
-	let previewState = $state( {
+    const imageCount = $derived( files.filter( ( f ) => !isDocument( f ) ).length );
+
+
+    let previewState = $state( {
 		show    : false,
 		src     : '',
 		alt     : '',
 		name    : '',
 		order   : 0,
 		isVideo : false,
-	} );
+	});
 
-	function isVideo( item : UploadedFileItem ) : boolean {
+
+    function isVideo( item : UploadedFileItem ) : boolean {
 		const file = item.file;
-		if ( file ) {
+
+        if ( file ) {
 			return file.type.startsWith( 'video/' );
 		}
-		const preview = item.preview.toLowerCase();
-		const alt = item.alt.toLowerCase();
-		return preview.endsWith( '.mp4' ) ||
-			preview.endsWith( '.webm' ) ||
-			preview.endsWith( '.ogg' ) ||
-			preview.endsWith( '.mov' ) ||
-			alt.endsWith( '.mp4' ) ||
-			alt.endsWith( '.webm' ) ||
-			alt.endsWith( '.ogg' ) ||
-			alt.endsWith( '.mov' );
+
+        const preview   = item.preview.toLowerCase();
+		const alt       = item.alt.toLowerCase();
+
+        return preview.endsWith( '.mp4' )
+            || preview.endsWith( '.webm' )
+            || preview.endsWith( '.ogg' )
+            || preview.endsWith( '.mov' )
+            || alt.endsWith( '.mp4' )
+            || alt.endsWith( '.webm' )
+            || alt.endsWith( '.ogg' )
+            || alt.endsWith( '.mov' );
 	}
 
-	function openPreview( item : UploadedFileItem ) : void {
+
+    function openPreview( item : UploadedFileItem ) : void {
 		previewState = {
 			show    : true,
 			src     : item.preview,
@@ -146,6 +175,7 @@
 
 	function addFiles( newFiles : FileList ) : void {
 		const updated = [ ...files ];
+		let limitExceeded = false;
 
 		for ( let i = 0; i < newFiles.length; i++ ) {
 			const file = newFiles[ i ];
@@ -158,6 +188,11 @@
 
 			if ( !isImage && !isVideo && !isDocx && !isPdf ) continue;
 
+			if ( updated.length >= maxFilesUpload ) {
+				limitExceeded = true;
+				break;
+			}
+
 			const preview = URL.createObjectURL( file );
 			const id      = Math.random().toString( 36 ).substring( 2, 9 );
 
@@ -165,16 +200,20 @@
 			const isMain = isImage && !updated.some( ( f ) => f.isMain );
 
 			updated.push( {
-				file	: file,
-				id		: id,
-				preview	: preview,
-				alt		: file.name.split( '.' )[ 0 ] || 'Archivo adjunto',
-				isMain	: isMain,
-				order	: updated.length,
+				file    : file,
+				id      : id,
+				preview : preview,
+				alt     : file.name.split( '.' )[ 0 ] || 'Archivo adjunto',
+				isMain  : isMain,
+				order   : updated.length,
 			} );
 		}
 
 		files = updated;
+
+		if ( limitExceeded ) {
+			toast.error( `Solo se permite un máximo de ${ maxFilesUpload } archivos.` );
+		}
 	}
 
 	// ─── Word Document (.docx) Extraction Lógica ──────────────────────────────────
@@ -232,8 +271,14 @@
 
 			const updated = [ ...files ];
 			let addedCount = 0;
+			let limitExceeded = false;
 
 			for ( const path of mediaFiles ) {
+				if ( updated.length >= maxFilesUpload ) {
+					limitExceeded = true;
+					break;
+				}
+
 				const zipFile = zip.file( path );
 				if ( !zipFile ) continue;
 
@@ -260,18 +305,25 @@
 				const isMain = !updated.some( ( f ) => f.isMain );
 
 				updated.push( {
-					file	: extractedFile,
-					id		: id,
-					preview	: preview,
-					alt		: filename.split( '.' )[ 0 ] || 'Imagen extraída',
-					isMain	: isMain,
-					order	: updated.length,
+					file    : extractedFile,
+					id      : id,
+					preview : preview,
+					alt     : filename.split( '.' )[ 0 ] || 'Imagen extraída',
+					isMain  : isMain,
+					order   : updated.length,
 				} );
 				addedCount++;
 			}
 
 			files = updated;
-			toast.success( `Se extrajeron ${ addedCount } imágenes del documento` );
+
+			if ( addedCount > 0 ) {
+				toast.success( `Se extrajeron ${ addedCount } imágenes del documento` );
+			}
+
+			if ( limitExceeded ) {
+				toast.error( `Solo se permite un máximo de ${ maxFilesUpload } archivos. Algunas imágenes no fueron extraídas.` );
+			}
 		} catch ( err ) {
 			toast.error( 'Error al procesar el archivo Word' );
 		}
@@ -530,7 +582,6 @@
 												class   = "h-full w-full cursor-pointer overflow-hidden outline-hidden focus-visible:ring-2 focus-visible:ring-brand/30"
 												title   = "Vista previa de video"
 											>
-												<!-- svelte-ignore a11y_media_has_caption -->
 												<video
 													src   = { item.preview }
 													class = "h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -573,12 +624,14 @@
 												onchange    = { () => setMainImage( item.id ) }
 												class       = "sr-only"
 											/>
-											<div class="h-2 w-2 rounded-full border border-current flex items-center justify-center">
+
+                                            <div class="h-2 w-2 rounded-full border border-current flex items-center justify-center">
 												{#if item.isMain }
 													<div class="h-1 w-1 rounded-full bg-current"></div>
 												{/if}
 											</div>
-											<span>Principal</span>
+
+                                            <span>Principal</span>
 										</label>
 									</div>
 								{/if}
@@ -619,7 +672,8 @@
 							<div class="flex items-center gap-2 border-t border-brand/5 pt-2.5">
 								<div class="flex-1 min-w-0" title="Texto alternativo">
 									<label for="alt-{ item.id }" class="sr-only">Texto alternativo</label>
-									<input
+
+                                    <input
 										id="alt-{ item.id }"
 										type="text"
 										placeholder="Texto Alt (SEO)"
@@ -630,7 +684,8 @@
 
 								<div class="shrink-0" title="Orden de aparición">
 									<label for="order-{ item.id }" class="sr-only">Orden</label>
-									<InputNumber
+
+                                    <InputNumber
 										bind:value = { item.order }
 										min        = { 0 }
 										max        = { imageCount - 1 }
