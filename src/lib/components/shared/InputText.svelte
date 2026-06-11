@@ -1,0 +1,60 @@
+<script lang="ts">
+	interface InputTextProps {
+		value        : string;
+		error?       : string;
+		placeholder? : string;
+		id?          : string;
+		type?        : string;
+		class?       : string;
+		disabled?    : boolean;
+	}
+
+	let {
+		value       = $bindable( '' ),
+		error       = '',
+		placeholder = '',
+		id          = '',
+		type        = 'text',
+		class : customClass = 'w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card',
+		disabled    = false,
+	} : InputTextProps = $props();
+
+	// Dynamically replace brand/normal classes with red classes when there is an error
+	const finalClass = $derived.by( ( ) => {
+		let base = customClass;
+		if ( error ) {
+			// Replace standard Tailwind classes with error classes
+			base = base
+				.replace( /border-brand\/\d+/g, 'border-red-500' )
+				.replace( /bg-input/g, 'bg-red-500/5' )
+				.replace( /focus:border-brand/g, 'focus:border-red-500' )
+				.replace( /focus:bg-card/g, '' )
+				.replace( /focus:ring-brand\/\d+/g, 'focus:ring-red-500/15' );
+
+			if ( !base.includes( 'border-red-500' ) ) {
+				base += ' border-red-500';
+			}
+			if ( !base.includes( 'bg-red-500/5' ) ) {
+				base += ' bg-red-500/5';
+			}
+			if ( !base.includes( 'focus:border-red-500' ) ) {
+				base += ' focus:border-red-500';
+			}
+		}
+		return base;
+	} );
+</script>
+
+<div class="flex flex-col gap-1 w-full">
+	<input
+		{ id }
+		{ type }
+		bind:value={ value }
+		{ placeholder }
+		{ disabled }
+		class="transition-all placeholder:text-text-muted/50 { finalClass }"
+	/>
+	{#if ( error )}
+		<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ error }</p>
+	{/if}
+</div>
