@@ -3,24 +3,27 @@
 	import toast           from 'svelte-french-toast';
 
 	interface InputNumberProps {
-		value	: number;
+		value	: number | string | null;
 		min?	: number;
 		max?	: number;
 		step?	: number;
-        width? : string;
+		width?	: string;
+		class?	: string;
 	}
 
 	let {
 		value = $bindable( 1 ),
-		min   = 1,
+		min,
 		max,
 		step  = 1,
-        width = 'w-7'
+		width = 'w-7',
+		class : containerClass = ''
 	} : InputNumberProps = $props();
 
 	function decrease() : void {
-		const next = ( Number( value ) || min ) - step;
-		if ( next >= min ) {
+		const current = value === '' || value === null ? 0 : Number( value );
+		const next    = current - step;
+		if ( min === undefined || next >= min ) {
 			value = next;
 		} else {
 			toast.error( `El valor mínimo permitido es ${ min }.` );
@@ -29,7 +32,8 @@
 	}
 
 	function increase() : void {
-		const next = ( Number( value ) || min ) + step;
+		const current = value === '' || value === null ? 0 : Number( value );
+		const next    = current + step;
 		if ( max === undefined || next <= max ) {
 			value = next;
 		} else {
@@ -41,13 +45,18 @@
 	function handleChange( event : Event ) : void {
 		const input = event.target as HTMLInputElement;
 
-        let numVal = Number( input.value );
-
-		if ( isNaN( numVal )) {
-			numVal = min;
+		if ( input.value === '' ) {
+			value = '';
+			return;
 		}
 
-		if ( numVal < min ) {
+		let numVal = Number( input.value );
+
+		if ( isNaN( numVal ) ) {
+			numVal = min !== undefined ? min : 0;
+		}
+
+		if ( min !== undefined && numVal < min ) {
 			toast.error( `El valor mínimo permitido es ${ min }.` );
 			value = min;
 			input.value = String( min );
@@ -61,11 +70,11 @@
 	}
 </script>
 
-<div class="flex items-stretch rounded-md border border-brand/15 bg-card overflow-hidden">
+<div class="flex items-stretch rounded-md border border-brand/15 bg-card overflow-hidden { containerClass }">
 	<button
 		type       = "button"
 		onclick    = { decrease }
-		disabled   = { value <= min }
+		disabled   = { value !== '' && value !== null && min !== undefined && Number( value ) <= min }
 		aria-label = "Disminuir cantidad"
 		class      = "flex items-center justify-center px-2 text-text-muted transition-colors hover:bg-brand/10 hover:text-brand cursor-pointer select-none disabled:opacity-30 disabled:pointer-events-none"
 	>
@@ -73,16 +82,16 @@
 	</button>
 	<input
 		type     = "number"
-		{ min }
-		{ max }
+		min      = { min }
+		max      = { max }
 		value    = { value }
 		onchange = { handleChange }
-		class    = "{width} border-x border-brand/10 bg-transparent py-1.5 text-center text-[11px] font-bold text-text focus:outline-none"
+		class    = "{ width } border-x border-brand/10 bg-transparent py-1.5 text-center text-[11px] font-bold text-text focus:outline-none"
 	/>
 	<button
 		type       = "button"
 		onclick    = { increase }
-		disabled   = { max !== undefined && value >= max }
+		disabled   = { value !== '' && value !== null && max !== undefined && Number( value ) >= max }
 		aria-label = "Aumentar cantidad"
 		class      = "flex items-center justify-center px-2 text-text-muted transition-colors hover:bg-brand/10 hover:text-brand cursor-pointer select-none disabled:opacity-30 disabled:pointer-events-none"
 	>
