@@ -382,7 +382,7 @@
 					slug               : editingMaterial.slug,
 					description        : editingMaterial.description || '',
 					autoclavable       : editingMaterial.autoclavable || false,
-					maxTemperature     : editingMaterial.maxTemperature || 120,
+					maxTemperature     : editingMaterial.maxTemperature || null,
 					acidResistance     : editingMaterial.chemicalResistance?.acid || 'excellent',
 					alkalineResistance : editingMaterial.chemicalResistance?.alkaline || 'good',
 					active             : editingMaterial.active,
