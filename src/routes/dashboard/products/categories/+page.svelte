@@ -3,11 +3,12 @@
         createQuery,
         createMutation,
         useQueryClient
-    }               from '@tanstack/svelte-query';
-	import toast                            from 'svelte-french-toast';
-	import { BrushCleaning }                from '@lucide/svelte';
+    }                           from '@tanstack/svelte-query';
+	import toast                from 'svelte-french-toast';
+	import { BrushCleaning }    from '@lucide/svelte';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
@@ -43,7 +44,7 @@
 	let showModal         = $state( false );
 	let isEditing         = $state( false );
 	let editingId         = $state( '' );
-	let editingCategory   = $state<{ name : string; parentCatId? : string; } | null>( null );
+	let editingCategory   = $state<{ name : string; parentCatId? : string; active? : boolean; } | null>( null );
 	let deletingId        = $state( '' );
 	let selectedCategories = $state( new Set< string >() );
 
@@ -93,9 +94,9 @@
 			}
 
 			const response = await connectRequest< PaginatedResponse< Category > >( {
-				endpoint   : `products/categories?${ params.toString() }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.BASE }?${ params.toString() }`,
 				isInternal : true,
-			});
+			} );
 
 			if ( isApiError( response )) {
 				throw new Error( 'No se pudieron cargar las categorías.' );
@@ -104,14 +105,14 @@
 			return response;
 		},
 		enabled  : activeTab === 'categories',
-	} ) );
+	}));
 
 
 	const allCategoriesQuery = createQuery( ( ) => ( {
 		queryKey : [ 'categories', 'all' ],
 		queryFn  : async ( ) : Promise< Category[] > => {
 			const response = await connectRequest< Category[] >( {
-				endpoint   : 'products/categories/get-all',
+				endpoint   : INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.GET_ALL,
 				isInternal : true,
 			} );
 
@@ -123,9 +124,11 @@
 		},
 	}));
 
-	const allCategories = $derived( allCategoriesQuery.data || [] );
 
-	const subcategoriesQuery = createQuery( ( ) => ( {
+    const allCategories = $derived( allCategoriesQuery.data || [] );
+
+
+    const subcategoriesQuery = createQuery( ( ) => ( {
 		queryKey : [ 'subcategories', subcategoriesPage, debouncedSearch, activeStatus, Array.from( selectedCategories ), order, typeOrder ],
 		queryFn  : async ( ) : Promise< PaginatedResponse< SubCategory > > => {
 			const params = new URLSearchParams( {
@@ -150,7 +153,7 @@
 			} );
 
 			const response = await connectRequest< PaginatedResponse< SubCategory > >( {
-				endpoint   : `products/categories?${ params.toString() }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.BASE }?${ params.toString() }`,
 				isInternal : true,
 			} );
 
@@ -161,13 +164,13 @@
 			return response;
 		},
 		enabled  : activeTab === 'subcategories',
-	} ) );
+	}));
 
 
     const deleteMutation = createMutation( ( ) => ( {
 		mutationFn : async ( id : string ) : Promise< any > => {
 			const isSub    = activeTab === 'subcategories';
-			const path     = isSub ? 'products/categories?type=subcategory' : 'products/categories';
+			const path     = isSub ? `${ INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.BASE }?type=subcategory` : INTERNAL_ENDPOINTS.PRODUCTS.CATEGORIES.BASE;
 			const response = await connectRequest< any >( {
 				endpoint   : `${ path }${ isSub ? '&' : '?' }id=${ id }`,
 				method     : METHOD.DELETE,
@@ -219,6 +222,7 @@
 		editingCategory = {
 			name        : item.name,
 			parentCatId : activeTab === 'subcategories' ? ( item.categoryId || '' ) : '',
+			active      : item.active,
 		};
 		showModal       = true;
 	}
