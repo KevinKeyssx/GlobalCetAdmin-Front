@@ -143,7 +143,7 @@
 			materialId     : item.material?.id || '',
 			subcategoryId  : item.subcategory?.id || '',
 			active         : item.active,
-			technicalSpecs : '{"color":"verde"}',
+			technicalSpecs : item.technical_specs ? ( typeof item.technical_specs === 'object' ? JSON.stringify( item.technical_specs ) : item.technical_specs ) : '{}',
 			files          : ( item.files || [] )
 				.filter( ( f ) => f.id !== 'placeholder' )
 				.map( ( f, index ) => ( {
