@@ -7,6 +7,7 @@
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import DashboardModal                   from '../../../components/DashboardModal.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
+	import InputNumber                      from '$lib/components/shared/InputNumber.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface MaterialFormProps {
@@ -23,7 +24,7 @@
 		slug               : string;
 		description        : string;
 		autoclavable       : boolean;
-		maxTemperature     : number;
+		maxTemperature     : number | null;
 		acidResistance     : string;
 		alkalineResistance : string;
 		active             : boolean;
@@ -40,13 +41,15 @@
 
 	// ─── Form Fields ──────────────────────────────────────────────────────────────
 	let formName               = $state( '' );
-	let formSlug               = $state( '' );
 	let formDescription        = $state( '' );
 	let formAutoclavable       = $state( false );
-	let formMaxTemp            = $state( 120 );
+	let formMaxTemp            = $state<number | string>( '' );
 	let formAcidResistance     = $state( 'excellent' );
 	let formAlkalineResistance = $state( 'good' );
 	let formActive             = $state( true );
+
+	// Error states
+	let nameError              = $state( '' );
 
 	const resistanceOptions = [
 		{ id : 'excellent', name : 'Excelente' },
@@ -59,22 +62,22 @@
 	$effect( ( ) => {
 		if ( show && initialData ) {
 			formName               = initialData.name;
-			formSlug               = initialData.slug;
 			formDescription        = initialData.description;
 			formAutoclavable       = initialData.autoclavable;
-			formMaxTemp            = initialData.maxTemperature;
+			formMaxTemp            = initialData.maxTemperature ? initialData.maxTemperature : '';
 			formAcidResistance     = initialData.acidResistance;
 			formAlkalineResistance = initialData.alkalineResistance;
 			formActive             = initialData.active;
+			nameError              = '';
 		} else if ( show && !initialData ) {
 			formName               = '';
-			formSlug               = '';
 			formDescription        = '';
 			formAutoclavable       = false;
-			formMaxTemp            = 120;
+			formMaxTemp            = '';
 			formAcidResistance     = 'excellent';
 			formAlkalineResistance = 'good';
 			formActive             = true;
+			nameError              = '';
 		}
 	} );
 
@@ -120,17 +123,23 @@
 	function handleSubmit( e : Event ) : void {
 		e.preventDefault();
 
+		nameError = '';
+		let hasError = false;
+
 		if ( !formName.trim() ) {
-			toast.error( 'El nombre del material es requerido.' );
+			nameError = 'El nombre es obligatorio.';
+			hasError  = true;
+		}
+
+		if ( hasError ) {
 			return;
 		}
 
 		const payload = {
 			name               : formName,
-			slug               : formSlug || formName.toLowerCase().replace( /[^a-z0-9]+/g, '-' ).replace( /(^-|-$)/g, '' ),
 			description        : formDescription,
 			autoclavable       : formAutoclavable,
-			maxTemperature     : Number( formMaxTemp ) || 100,
+			maxTemperature     : formMaxTemp !== '' ? Number( formMaxTemp ) : null,
 			chemicalResistance : {
 				acid     : formAcidResistance,
 				alkaline : formAlkalineResistance,
@@ -146,6 +155,7 @@
 	{ show }
 	title={ isEditing ? 'Modificar Material' : 'Agregar Nuevo Material' }
 	onClose={ onCancel }
+	overflowVisible={ true }
 >
 	{#snippet body()}
 		<form onsubmit={ handleSubmit } class="space-y-4 font-bold text-text-muted">
@@ -157,20 +167,11 @@
 					type="text"
 					bind:value={ formName }
 					placeholder="Ej: Vidrio de Borosilicato 3.3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
+					class="w-full rounded-xl border { nameError ? 'border-red-500 bg-red-500/5 focus:border-red-500' : 'border-brand/15 bg-input focus:border-brand focus:bg-card' } px-4 py-2.5 text-text outline-none"
 				/>
-			</div>
-
-			<!-- Slug -->
-			<div class="space-y-1.5">
-				<label for="material-slug">Slug (URL identificador)</label>
-				<input
-					id="material-slug"
-					type="text"
-					bind:value={ formSlug }
-					placeholder="Ej: borosilicato-3-3"
-					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
-				/>
+				{#if ( nameError )}
+					<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ nameError }</p>
+				{/if}
 			</div>
 
 			<!-- Description -->
@@ -185,7 +186,7 @@
 				></textarea>
 			</div>
 
-			<div class="grid grid-cols-2 gap-4">
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<!-- Autoclavable -->
 				<div class="flex items-center gap-3 rounded-xl border border-brand/10 bg-input p-3">
 					<input
@@ -200,40 +201,38 @@
 				<!-- Max Temp -->
 				<div class="space-y-1.5">
 					<label for="material-temp">Temperatura Máxima (°C)</label>
-					<input
-						id="material-temp"
-						type="number"
+					<InputNumber
 						bind:value={ formMaxTemp }
-						class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card"
+						class="w-full h-9 rounded-xl"
+						width="w-full flex-1 text-[14px] font-mono"
 					/>
 				</div>
 			</div>
 
 			<!-- Chemical Resistance -->
-			<div class="space-y-2 border-t border-brand/5 pt-3">
-				<span class="text-[10px] uppercase font-black tracking-wider text-brand">Resistencia Química</span>
-				<div class="grid grid-cols-2 gap-4">
-					<div class="space-y-1.5">
-						<label for="acid-res">Frente a Ácidos</label>
-						<Select
-							options={ resistanceOptions }
-							bind:value={ formAcidResistance }
-							multiple={ false }
-							placeholder="Seleccionar resistencia..."
-						/>
-					</div>
+			<span class="text-[10px] uppercase font-black tracking-wider text-brand">Resistencia Química</span>
 
-					<div class="space-y-1.5">
-						<label for="alkaline-res">Frente a Alcalinos</label>
-						<Select
-							options={ resistanceOptions }
-							bind:value={ formAlkalineResistance }
-							multiple={ false }
-							placeholder="Seleccionar resistencia..."
-						/>
-					</div>
-				</div>
-			</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+                <div class="space-y-1.5">
+                    <label for="acid-res">Frente a Ácidos</label>
+                    <Select
+                        options={ resistanceOptions }
+                        bind:value={ formAcidResistance }
+                        multiple={ false }
+                        placeholder="Seleccionar resistencia..."
+                    />
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="alkaline-res">Frente a Alcalinos</label>
+                    <Select
+                        options={ resistanceOptions }
+                        bind:value={ formAlkalineResistance }
+                        multiple={ false }
+                        placeholder="Seleccionar resistencia..."
+                    />
+                </div>
+            </div>
 
 			<!-- Active checkbox -->
 			<div class="flex items-center gap-3 pt-2">
