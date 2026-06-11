@@ -7,6 +7,7 @@ export const INTERNAL_ENDPOINTS = {
 			GET_ALL : 'products/materials/get-all',
 		},
 		CATEGORIES     : {
+			BASE    : 'products/categories',
 			GET_ALL : 'products/categories/get-all',
 		},
 		SUBCATEGORIES  : {
@@ -17,6 +18,7 @@ export const INTERNAL_ENDPOINTS = {
 		FILTERS    : 'kits/filters',
 		GET_ONE    : 'kits/get-one',
 		CATEGORIES : {
+			BASE    : 'kits/categories',
 			GET_ALL : 'kits/categories/get-all',
 		},
 	},
@@ -24,11 +26,13 @@ export const INTERNAL_ENDPOINTS = {
 		FILTERS    : 'labs/filters',
 		GET_ONE    : 'labs/get-one',
 		CATEGORIES : {
+			BASE    : 'labs/categories',
 			GET_ALL : 'labs/categories/get-all',
 		},
 	},
 	GLOBAL_SEARCH  : {
-		BASE : 'global-search',
+		BASE   : 'global-search',
+		TOTALS : 'global-search/totals',
 	},
 };
 
@@ -47,7 +51,8 @@ export const EXTERNAL_ENDPOINTS = {
 		},
 	},
 	GLOBAL_SEARCH : {
-		BASE : '/global-searches',
+		BASE   : '/global-searches',
+		TOTALS : '/global-searches/totals',
 	},
 	KITS          : {
 		BASE       : '/kits',
