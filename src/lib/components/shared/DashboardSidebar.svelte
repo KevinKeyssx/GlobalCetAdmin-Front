@@ -4,7 +4,7 @@
 	import { cubicOut }         from 'svelte/easing';
 
     import { LayoutDashboard, Menu, X } from '@lucide/svelte';
-
+	import { resolve }                  from '$app/paths';
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface NavChild {
 		label : string;
@@ -26,9 +26,9 @@
 			label    : 'Productos',
 			icon     : '📦',
 			children : [
-				{ label : 'Catálogo',     href : '/dashboard/products',              icon : '🔬' },
-				{ label : 'Materiales',   href : '/dashboard/products/materials',    icon : '⚗️' },
-				{ label : 'Categorías',   href : '/dashboard/products/categories',   icon : '🏷️' },
+				{ label : 'Catálogo',   href : resolve( '/dashboard/products' ),               icon : '🔬' },
+				{ label : 'Materiales', href : resolve( '/dashboard/products/materials' ),     icon : '⚗️' },
+				{ label : 'Categorías', href : resolve( '/dashboard/products/categories' ),    icon : '🏷️' },
 			],
 		},
 		{
@@ -36,8 +36,8 @@
 			label    : 'Kits',
 			icon     : '🧬',
 			children : [
-				{ label : 'Catálogo', href : '/dashboard/kits',              icon : '🧪' },
-				{ label : 'Categorías',      href : '/dashboard/kits/categories',   icon : '📂' },
+				{ label : 'Catálogo',   href : resolve( '/dashboard/kits' ),               icon : '🧪' },
+				{ label : 'Categorías', href : resolve( '/dashboard/kits/categories' ),    icon : '📂' },
 			],
 		},
 		{
@@ -45,8 +45,8 @@
 			label    : 'Laboratorios',
 			icon     : '🚛',
 			children : [
-				{ label : 'Catálogo', href : '/dashboard/mobile-labs',              icon : '🏢' },
-				{ label : 'Categorías',           href : '/dashboard/mobile-labs/categories',   icon : '📁' },
+				{ label : 'Catálogo',   href : resolve( '/dashboard/mobile-labs' ),            icon : '🏢' },
+				{ label : 'Categorías', href : resolve( '/dashboard/mobile-labs/categories' ), icon : '📁' },
 			],
 		},
 	];
@@ -145,7 +145,7 @@
 
 	<!-- ─── Header ──────────────────────────────────────────────────────────── -->
 	<div class="px-5 pb-3">
-		<a href="/dashboard" class="group flex items-center gap-3 no-underline px-2.5 py-2 rounded-xl transition-all duration-300 hover:bg-brand/8">
+		<a href={ resolve( '/dashboard' ) } class="group flex items-center gap-3 no-underline px-2.5 py-2 rounded-xl transition-all duration-300 hover:bg-brand/8">
 			<div class="flex items-center justify-center w-9 h-9 rounded-xl bg-brand/12 text-brand transition-all duration-300 group-hover:scale-105 group-hover:bg-brand/20">
 				<LayoutDashboard class="size-5" />
 			</div>
