@@ -15,6 +15,7 @@
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.1",
+		"@sveltejs/adapter-node": "^5.5.4",
 		"@sveltejs/kit": "^2.57.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@tailwindcss/vite": "^4.2.2",
@@ -48,5 +49,10 @@
 		"pdfjs-dist": "4.10.38",
 		"svelte-french-toast": "^1.2.0",
 		"zod": "^4.4.3"
+	},
+    "overrides": {
+		"svelte-french-toast": {
+			"svelte": "$svelte"
+		}
 	}
 }
