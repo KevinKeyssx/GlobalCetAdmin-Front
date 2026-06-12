@@ -25,3 +25,5 @@ vite.config.ts.timestamp-*
 .agents
 .claude
 .svelte-kit
+
+*.zip
