@@ -1,6 +1,5 @@
 <script lang="ts">
-	// ─── GlobalCET Home Page ──────────────────────────────────────────────────────
-	// An elegant, minimalist landing page with strong biochemistry aesthetics.
+	import { resolve } from '$app/paths';
 </script>
 
 <svelte:head>
@@ -45,7 +44,7 @@
 				<div class="flex flex-wrap items-center gap-4">
 					<a
 						id="hero-cta-dashboard"
-						href="/dashboard"
+						href={ resolve( '/dashboard' ) }
 						class="rounded-xl bg-brand px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright hover:shadow-lg"
 					>
 						Panel de Control
@@ -55,7 +54,7 @@
 						href="#features"
 						class="rounded-xl border border-brand/20 bg-surface/30 px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-brand backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand/10 hover:border-brand/45"
 					>
-						Nuestra Propuesta
+						Módulos de Gestión
 					</a>
 				</div>
 
@@ -63,23 +62,18 @@
 				<div class="pt-6 border-t border-brand/10">
 					<div class="grid grid-cols-3 gap-6">
 						<div>
-							<p class="text-xl font-bold text-text font-display">100%</p>
-							<p class="font-semibold text-text-muted uppercase tracking-wider">Pureza Certificada</p>
+							<p class="text-xl font-bold text-text font-display">API 2.0</p>
+							<p class="font-semibold text-text-muted uppercase tracking-wider text-[10px]">Sincronización API</p>
 						</div>
 
-                        <div>
-							<p class="text-xl font-bold text-text font-display">ISO 9001</p>
-							<p class="font-semibold text-text-muted uppercase tracking-wider">Estándar Global</p>
+						<div>
+							<p class="text-xl font-bold text-text font-display">360°</p>
+							<p class="font-semibold text-text-muted uppercase tracking-wider text-[10px]">Control de Catálogo</p>
 						</div>
 
-                        <div>
-							<p class="text-xl font-bold text-text font-display">(OA)</p>
-							<p class="font-semibold text-text-muted uppercase tracking-wider">Objetivos de apredizaje</p>
-						</div>
-
-                        <div>
-							<p class="text-xl font-bold text-text font-display">(PME)</p>
-							<p class="font-semibold text-text-muted uppercase tracking-wider">Procesos de mejora continúa, fortalecimiento de aprendizaje de los estudiante</p>
+						<div>
+							<p class="text-xl font-bold text-text font-display">ADMIN</p>
+							<p class="font-semibold text-text-muted uppercase tracking-wider text-[10px]">Portal Restringido</p>
 						</div>
 					</div>
 				</div>
@@ -96,11 +90,11 @@
 
 					<!-- floating badges -->
 					<div class="absolute -top-6 -right-2 bg-card border border-brand/20 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-wider text-brand shadow-card backdrop-blur-sm animate-bounce duration-4000">
-						H2O + Reactivos
+						Admin Activo
 					</div>
 
                     <div class="absolute -bottom-4 -left-6 bg-card border border-brand/20 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-wider text-brand-bright shadow-card backdrop-blur-sm animate-bounce duration-3000" style="animation-delay: 1.5s;">
-						Purity level &gt; 99.9%
+						Catálogo Sincronizado
 					</div>
 				</div>
 			</div>
@@ -112,18 +106,18 @@
 		<div class="mx-auto max-w-7xl">
 			<!-- Section Header -->
 			<div class="mx-auto max-w-3xl text-center space-y-4 mb-16">
-				<h2 class="font-black uppercase tracking-[0.25em] text-brand">Nuestras Divisiones</h2>
+				<h2 class="font-black uppercase tracking-[0.25em] text-brand">Módulos de Gestión</h2>
 				<p class="font-display text-3xl font-extrabold tracking-tight text-text sm:text-4xl">
-					Sistemas Integrados para el Progreso Científico
+					Herramientas Administrativas de GlobalCET
 				</p>
 				<p class="text-base text-text-muted max-w-xl mx-auto">
-					Desarrollamos, distribuimos insumos bajo los controles de calidad más rigurosos del sector del área de la ciencia.
+					Administre de manera centralizada el catálogo completo, las fichas técnicas, las imágenes en la nube y las relaciones estructurales.
 				</p>
 			</div>
 
 			<!-- Features Cards Grid -->
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-				<!-- Pillar 1: Equipos & Reactivos -->
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+				<!-- Pillar 1: Catálogo de Productos -->
 				<article class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-brand/10 bg-card p-8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover">
 					<div class="space-y-6">
 						<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10 text-brand transition-all duration-300 group-hover:bg-brand group-hover:text-surface-dark">
@@ -134,15 +128,15 @@
 							</svg>
 						</div>
 						<div class="space-y-2">
-							<h3 class="font-display text-xl font-bold text-text transition-colors duration-200 group-hover:text-brand">Equipos & Reactivos</h3>
+							<h3 class="font-display text-xl font-bold text-text transition-colors duration-200 group-hover:text-brand">Catálogo & Reactivos</h3>
 							<p class="text-sm leading-relaxed text-text-muted">
-								Reactivos técnicos, PA, material de vidrio (Borosilicato 3.3). Instrumentos de medición y análisis, para sus laboratorios.
+								Administre los reactivos químicos, materiales de vidrio de borosilicato, especificaciones técnicas de precisión y visibilidad de catálogo.
 							</p>
 						</div>
 					</div>
 					<div class="mt-8 border-t border-brand/5 pt-4">
-						<a href="/filters" class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand group-hover:underline">
-							Ver Equipos
+						<a href={ resolve( '/dashboard/products' ) } class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand group-hover:underline">
+							Gestionar Productos
 							<svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 								<polyline points="9 18 15 12 9 6"></polyline>
 							</svg>
@@ -150,7 +144,7 @@
 					</div>
 				</article>
 
-				<!-- Pillar 2: Kits Moleculares -->
+				<!-- Pillar 2: Kits de Laboratorio -->
 				<article class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-brand/10 bg-card p-8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover">
 					<div class="space-y-6">
 						<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-bright/10 text-brand-bright transition-all duration-300 group-hover:bg-brand-bright group-hover:text-surface-dark">
@@ -162,18 +156,17 @@
 							</svg>
 						</div>
 
-                        <div class="space-y-2">
-							<h3 class="font-display text-xl font-bold text-text transition-colors duration-200 group-hover:text-brand">Kits de laboratorios</h3>
-
-                            <p class="text-sm leading-relaxed text-text-muted">
-                                Herramientas pedagógicas, ideales para el aula, diseñadas para transformar la teoría en experimentos prácticos mediente la metodología (ciencia y tecnología).
+						<div class="space-y-2">
+							<h3 class="font-display text-xl font-bold text-text transition-colors duration-200 group-hover:text-brand">Kits de Laboratorio</h3>
+							<p class="text-sm leading-relaxed text-text-muted">
+								Defina la composición de kits didácticos, asocie reactivos específicos e insumos científicos para guías pedagógicas del aula.
 							</p>
 						</div>
 					</div>
 
-                    <div class="mt-8 border-t border-brand/5 pt-4">
-						<a href="/filters" class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand-bright group-hover:underline">
-							Ver Kits
+					<div class="mt-8 border-t border-brand/5 pt-4">
+						<a href={ resolve( '/dashboard/kits' ) } class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand-bright group-hover:underline">
+							Gestionar Kits
 							<svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 								<polyline points="9 18 15 12 9 6"></polyline>
 							</svg>
@@ -192,50 +185,46 @@
 							</svg>
 						</div>
 
-                        <div class="space-y-2">
+						<div class="space-y-2">
 							<h3 class="font-display text-xl font-bold text-text transition-colors duration-200 group-hover:text-brand">Laboratorios Móviles</h3>
-
-                            <p class="text-sm leading-relaxed text-text-muted">
-                                Instalación completamente equipada, la cual se desplaza hacia diferentes puntos, para realizar análisis, ensayos o actividades educativas. Consiste en un carro tecnológico diseñado para moverse dentro del recinto. Cualquier lugar se convierte en ciencia.
+							<p class="text-sm leading-relaxed text-text-muted">
+								Establezca dimensiones y asocie tanto insumos individuales como kits temáticos completos a cada estación científica móvil.
 							</p>
 						</div>
 					</div>
 
-                    <div class="mt-8 border-t border-brand/5 pt-4">
-						<a href="/filters" class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand group-hover:underline">
-							Ver Laboratorios
-
-                            <svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<div class="mt-8 border-t border-brand/5 pt-4">
+						<a href={ resolve( '/dashboard/mobile-labs' ) } class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand group-hover:underline">
+							Gestionar Labs
+							<svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 								<polyline points="9 18 15 12 9 6"></polyline>
 							</svg>
 						</a>
 					</div>
 				</article>
 
-                <article class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-brand/10 bg-card p-8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover">
+                <!-- Pillar 4: Clasificaciones -->
+				<article class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-brand/10 bg-card p-8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-card-hover">
 					<div class="space-y-6">
 						<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10 text-brand transition-all duration-300 group-hover:bg-brand group-hover:text-surface-dark">
 							<svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<rect x="2" y="3" width="20" height="14" rx="2" />
-								<line x1="8" y1="21" x2="16" y2="21" />
-								<line x1="12" y1="17" x2="12" y2="21" />
+								<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+								<line x1="7" y1="7" x2="7.01" y2="7" stroke-width="3" stroke-linecap="round" />
 							</svg>
 						</div>
 
-                        <div class="space-y-2">
-							<h3 class="font-display text-xl font-bold text-text transition-colors duration-200 group-hover:text-brand">Nodo Labs</h3>
-
-                            <p class="text-sm leading-relaxed text-text-muted">
-                                Son iniciativas cientificas, educativas. Laboratorios de educación digital y prototipado rápido hacia la educación para potenciar la innovación y la formatión técnico prefesional. Posee equipamiento de punta, con enfoque pedagógico para problemas reales en su entorno mediante la tecnología.
-                            </p>
+						<div class="space-y-2">
+							<h3 class="font-display text-xl font-bold text-text transition-colors duration-200 group-hover:text-brand">Estructura & Categorías</h3>
+							<p class="text-sm leading-relaxed text-text-muted">
+								Defina la jerarquía de categorías y subcategorías que organiza el catálogo público de productos, kits y laboratorios.
+							</p>
 						</div>
 					</div>
 
-                    <div class="mt-8 border-t border-brand/5 pt-4">
-						<a href="/filters" class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand group-hover:underline">
-							Ver NodoLabs
-
-                            <svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<div class="mt-8 border-t border-brand/5 pt-4">
+						<a href={ resolve( '/dashboard/products/categories' ) } class="inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-brand group-hover:underline">
+							Gestionar Categorías
+							<svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 								<polyline points="9 18 15 12 9 6"></polyline>
 							</svg>
 						</a>
@@ -254,26 +243,27 @@
 			<div class="relative grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 lg:items-center">
 				<div class="lg:col-span-7 space-y-4">
 					<h3 class="font-display text-2xl font-extrabold tracking-tight text-text sm:text-3xl">
-						¿Buscas un reactivo, insumo o equipo específico?
+						Acceso Rápido al Panel de Gestión General
 					</h3>
 					<p class="text-sm leading-relaxed text-text-muted">
-						Accede a nuestro buscador avanzado con filtros integrados y cotizador automatizado. Encuentra especificaciones químicas de precisión, dimensiones de laboratorios y componentes de kits al instante.
+						Desde aquí puede auditar de manera integral las relaciones de inventario, crear categorías taxonómicas, subir recursos visuales y validar la integridad de las fichas técnicas en segundos.
 					</p>
 				</div>
 				<div class="flex flex-col sm:flex-row gap-4 lg:col-span-5 lg:justify-end">
 					<a
 						id="cta-search-explore"
-						href="/filters"
+						href={ resolve( '/dashboard' ) }
 						class="inline-flex items-center justify-center rounded-xl bg-brand px-6 py-4 font-black uppercase tracking-wider text-surface-dark shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-bright"
 					>
-						Abrir Buscador Inteligente
+						Ir al Panel de Control
 					</a>
 					<a
 						id="cta-search-contact"
-						href="/contacto"
+						href="https://github.com/KevinKeyssx/GlobalCet-Back"
+						target="_blank"
 						class="inline-flex items-center justify-center rounded-xl border border-brand/20 bg-surface/30 px-6 py-4 font-black uppercase tracking-wider text-brand backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand/10"
 					>
-						Contactar Soporte Técnico
+						Documentación API
 					</a>
 				</div>
 			</div>
@@ -287,12 +277,12 @@
 				<!-- Column text -->
 				<div class="space-y-8">
 					<div class="space-y-4">
-						<span class="font-black uppercase tracking-[0.25em] text-brand-bright">Calidad Sin Concesiones</span>
+						<span class="font-black uppercase tracking-[0.25em] text-brand-bright">Integridad Administrativa</span>
 						<h2 class="font-display text-3xl font-extrabold tracking-tight text-text sm:text-4xl">
-							El Estándar Científico de GlobalCET
+							Flujo de Control de Inventario
 						</h2>
 						<p class="text-base leading-relaxed text-text-muted">
-							En el mundo de la bioquímica, la precisión no es opcional. Un mínimo error de pureza en un reactivo o una desviación térmica en un contenedor puede alterar meses de investigación. En GlobalCET, mitigamos el riesgo científico.
+							Administre el catálogo con absoluta consistencia. Cualquier modificación realizada en este portal repercute de manera directa y segura en el escaparate público de GlobalCET, asegurando la entrega inmediata de información técnica a los usuarios.
 						</p>
 					</div>
 
@@ -305,8 +295,8 @@
 								</svg>
 							</div>
 							<div class="space-y-1">
-								<h4 class="font-bold text-text text-sm">Control de Pureza Analítica</h4>
-								<p class="text-text-muted leading-relaxed">Cada lote de reactivos cuenta con certificación cromatográfica de espectrometría garantizada.</p>
+								<h4 class="font-bold text-text text-sm">Sincronización Bidireccional</h4>
+								<p class="text-text-muted leading-relaxed">Las operaciones se sincronizan en tiempo real mediante la capa de servicios REST utilizando consultas altamente optimizadas.</p>
 							</div>
 						</div>
 
@@ -318,8 +308,8 @@
 								</svg>
 							</div>
 							<div class="space-y-1">
-								<h4 class="font-bold text-text text-sm">Borosilicato 3.3 de Precisión</h4>
-								<p class="text-text-muted leading-relaxed">Materiales de vidrio diseñados para resistir shocks térmicos elevados y resistir la corrosión ácida.</p>
+								<h4 class="font-bold text-text text-sm">Validación de Datos en Frontend</h4>
+								<p class="text-text-muted leading-relaxed">El portal valida rigurosamente los campos antes de enviarlos, garantizando esquemas correctos para los productos.</p>
 							</div>
 						</div>
 
@@ -331,8 +321,8 @@
 								</svg>
 							</div>
 							<div class="space-y-1">
-								<h4 class="font-bold text-text text-sm">Diseño de Ingeniería de Campo</h4>
-								<p class="text-text-muted leading-relaxed">Laboratorios y kits validados por biólogos y químicos expertos para asegurar su usabilidad.</p>
+								<h4 class="font-bold text-text text-sm">Carga Multimedia Integrada</h4>
+								<p class="text-text-muted leading-relaxed">Gestione y organice de manera eficiente los recursos visuales del catálogo con almacenamiento multimedia optimizado.</p>
 							</div>
 						</div>
 					</div>
