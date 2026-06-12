@@ -1,6 +1,12 @@
+import { browser }          from '$app/environment';
+import type { LayoutLoad }  from './$types';
+
 import { QueryClient } from '@tanstack/svelte-query';
-import { browser } from '$app/environment';
-import type { LayoutLoad } from './$types';
+
+
+export const prerender  = false;
+export const ssr        = false;
+
 
 export const load: LayoutLoad = async () => {
 	const queryClient = new QueryClient( {
