@@ -10,6 +10,7 @@
 	}                                       from '$lib/components/shared/FileUploader.svelte';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import KeyValueEditor                   from '$lib/components/shared/KeyValueEditor.svelte';
@@ -122,7 +123,7 @@
 
 	const productMutation = createMutation( () => ( {
 		mutationFn : async ( { isEditing, editingId, formData } : { isEditing : boolean; editingId : string; formData : FormData } ) : Promise< any > => {
-			const endpoint = isEditing ? `products?id=${ editingId }` : 'products';
+			const endpoint = isEditing ? `${ INTERNAL_ENDPOINTS.PRODUCTS.BASE }?id=${ editingId }` : INTERNAL_ENDPOINTS.PRODUCTS.BASE;
 			const method   = isEditing ? METHOD.PUT : METHOD.POST;
 
 			const response = await connectRequest< any >( {
@@ -162,7 +163,7 @@
 			$globalLoadingStore = true;
 
 			const response = await connectRequest< any >( {
-				endpoint	: `products/files?id=${ editingId }&fileId=${ fileId }`,
+				endpoint	: `${ INTERNAL_ENDPOINTS.PRODUCTS.FILES }?id=${ editingId }&fileId=${ fileId }`,
 				method		: METHOD.DELETE,
 				isInternal	: true,
 			} );
@@ -187,7 +188,7 @@
 			$globalLoadingStore = true;
 
 			const response = await connectRequest< any >( {
-				endpoint	: `products/files?id=${ editingId }`,
+				endpoint	: `${ INTERNAL_ENDPOINTS.PRODUCTS.FILES }?id=${ editingId }`,
 				method		: METHOD.DELETE,
 				body		: { fileIds },
 				isInternal	: true,

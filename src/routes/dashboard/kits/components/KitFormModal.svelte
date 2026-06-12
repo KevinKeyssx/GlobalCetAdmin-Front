@@ -10,6 +10,7 @@
 	}                                       from '$lib/components/shared/FileUploader.svelte';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import RelationManager                  from '$lib/components/shared/RelationManager.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
@@ -146,7 +147,7 @@
 
 	const kitMutation = createMutation( ( ) => ( {
 		mutationFn : async ( { isEditing, editingId, formData } : { isEditing : boolean; editingId : string; formData : FormData } ) : Promise< any > => {
-			const endpoint = isEditing ? `kits?id=${ editingId }` : 'kits';
+			const endpoint = isEditing ? `${ INTERNAL_ENDPOINTS.KITS.BASE }?id=${ editingId }` : INTERNAL_ENDPOINTS.KITS.BASE;
 			const method   = isEditing ? METHOD.PUT : METHOD.POST;
 
 			const response = await connectRequest< any >( {
@@ -175,7 +176,7 @@
 	const deleteProductMutation = createMutation( ( ) => ( {
 		mutationFn : async ( { kitId, productId } : { kitId : string; productId : string } ) : Promise< any > => {
 			const response = await connectRequest< any >( {
-				endpoint   : `kits?id=${ kitId }&productId=${ productId }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.KITS.BASE }?id=${ kitId }&productId=${ productId }`,
 				method     : METHOD.DELETE,
 				isInternal : true,
 			} );

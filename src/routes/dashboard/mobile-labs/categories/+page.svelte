@@ -1,17 +1,21 @@
 <script lang="ts">
-	import toast                                            from 'svelte-french-toast';
-	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import {
+        createQuery,
+        createMutation,
+        useQueryClient
+    }               from '@tanstack/svelte-query';
+	import toast    from 'svelte-french-toast';
 
-	import connectRequest, { isApiError }                   from '$lib/services/fetch.service';
-	import { METHOD }                                       from '$lib/services/http-codes';
-	import { globalLoadingStore }                           from '$lib/state/loading';
-	import CategoryFormModal                                from '$lib/components/shared/CategoryFormModal.svelte';
-	import TableActions                                     from '$lib/components/shared/TableActions.svelte';
-	import Pagination                                       from '$lib/components/shared/Pagination.svelte';
-	import HeaderPage                                       from '$lib/components/shared/HeaderPage.svelte';
-	import CategoryFilters                                  from '$lib/components/shared/CategoryFilters.svelte';
-	import CategoryCard                                     from '$lib/components/shared/itemCard/CategoryCard.svelte';
-
+	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
+	import { METHOD }                       from '$lib/services/http-codes';
+	import { globalLoadingStore }           from '$lib/state/loading';
+	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
+	import TableActions                     from '$lib/components/shared/TableActions.svelte';
+	import Pagination                       from '$lib/components/shared/Pagination.svelte';
+	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import CategoryFilters                  from '$lib/components/shared/CategoryFilters.svelte';
+	import CategoryCard                     from '$lib/components/shared/itemCard/CategoryCard.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface LabCategory {
@@ -73,7 +77,7 @@
 			}
 
 			const response = await connectRequest< PaginatedResponse< LabCategory > >( {
-				endpoint   : `labs/categories?${ params.toString() }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.LABS.CATEGORIES.BASE }?${ params.toString() }`,
 				isInternal : true,
 			} );
 
@@ -88,7 +92,7 @@
 	const deleteMutation = createMutation( ( ) => ( {
 		mutationFn : async ( id : string ) : Promise< any > => {
 			const response = await connectRequest< any >( {
-				endpoint   : `labs/categories?id=${ id }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.LABS.CATEGORIES.BASE }?id=${ id }`,
 				method     : METHOD.DELETE,
 				isInternal : true,
 			} );

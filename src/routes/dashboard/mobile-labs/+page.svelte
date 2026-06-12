@@ -169,7 +169,7 @@
 		queryKey : [ 'lab-categories' ],
 		queryFn  : async ( ) : Promise< LabCategory[] > => {
 			const response = await connectRequest< LabCategory[] >( {
-				endpoint   : 'labs/categories/get-all',
+				endpoint   : INTERNAL_ENDPOINTS.LABS.CATEGORIES.GET_ALL,
 				isInternal : true,
 			} );
 
@@ -260,7 +260,7 @@
 
 		try {
 			const response = await connectRequest< any >( {
-				endpoint	: `labs?id=${ id }`,
+				endpoint	: `${ INTERNAL_ENDPOINTS.LABS.BASE }?id=${ id }`,
 				method		: METHOD.DELETE,
 				isInternal	: true,
 			} );

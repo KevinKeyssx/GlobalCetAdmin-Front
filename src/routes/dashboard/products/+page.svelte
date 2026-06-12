@@ -201,7 +201,7 @@
 
 		try {
 			const response = await connectRequest< any >( {
-				endpoint   : `products?id=${ id }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.BASE }?id=${ id }`,
 				method     : METHOD.DELETE,
 				isInternal : true,
 			} );

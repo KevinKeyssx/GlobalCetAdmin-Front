@@ -15,6 +15,7 @@
     }                                       from '$lib/types/lab';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import DashboardModal                   from '../../components/DashboardModal.svelte';
 	import ConfirmationModal                from '$lib/components/shared/ConfirmationModal.svelte';
@@ -201,7 +202,7 @@
 
 	const labMutation = createMutation( () => ( {
 		mutationFn : async ( { isEditing, editingId, formData } : { isEditing : boolean; editingId : string; formData : FormData } ) : Promise< any > => {
-			const endpoint = isEditing ? `labs?id=${ editingId }` : 'labs';
+			const endpoint = isEditing ? `${ INTERNAL_ENDPOINTS.LABS.BASE }?id=${ editingId }` : INTERNAL_ENDPOINTS.LABS.BASE;
 			const method   = isEditing ? METHOD.PUT : METHOD.POST;
 
 			const response = await connectRequest< any >( {
@@ -230,7 +231,7 @@
 	const deleteProductMutation = createMutation( () => ( {
 		mutationFn : async ( { labId, productId } : { labId : string; productId : string } ) : Promise< any > => {
 			const response = await connectRequest< any >( {
-				endpoint	: `labs?id=${ labId }&productId=${ productId }`,
+				endpoint	: `${ INTERNAL_ENDPOINTS.LABS.BASE }?id=${ labId }&productId=${ productId }`,
 				method		: METHOD.DELETE,
 				isInternal	: true,
 			} );
@@ -254,7 +255,7 @@
 	const deleteKitMutation = createMutation( () => ( {
 		mutationFn : async ( { labId, kitId } : { labId : string; kitId : string } ) : Promise< any > => {
 			const response = await connectRequest< any >( {
-				endpoint	: `labs?id=${ labId }&kitId=${ kitId }`,
+				endpoint	: `${ INTERNAL_ENDPOINTS.LABS.BASE }?id=${ labId }&kitId=${ kitId }`,
 				method		: METHOD.DELETE,
 				isInternal	: true,
 			} );

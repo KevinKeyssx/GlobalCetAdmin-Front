@@ -3,6 +3,7 @@
 	import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import DashboardModal                   from '../../../components/DashboardModal.svelte';
@@ -86,7 +87,7 @@
 
 	const materialMutation = createMutation( ( ) => ( {
 		mutationFn : async ( payload : any ) : Promise< any > => {
-			const endpoint = isEditing ? `products/materials?id=${ editingId }` : 'products/materials';
+			const endpoint = isEditing ? `${ INTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.BASE }?id=${ editingId }` : INTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.BASE;
 			const method   = isEditing ? METHOD.PUT : METHOD.POST;
 
 			const response = await connectRequest< any >( {

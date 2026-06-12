@@ -134,7 +134,7 @@
 		queryKey : [ 'kit-categories' ],
 		queryFn  : async ( ) : Promise< KitCategory[] > => {
 			const response = await connectRequest< KitCategory[] >( {
-				endpoint   : 'kits/categories/get-all',
+				endpoint   : INTERNAL_ENDPOINTS.KITS.CATEGORIES.GET_ALL,
 				isInternal : true,
 			} );
 
@@ -199,7 +199,7 @@
 
 		try {
 			const response = await connectRequest< any >( {
-				endpoint	: `kits?id=${ id }`,
+				endpoint	: `${ INTERNAL_ENDPOINTS.KITS.BASE }?id=${ id }`,
 				method		: METHOD.DELETE,
 				isInternal	: true,
 			} );

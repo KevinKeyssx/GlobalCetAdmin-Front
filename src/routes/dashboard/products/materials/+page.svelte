@@ -8,6 +8,7 @@
 	import { BrushCleaning }                from '@lucide/svelte';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
@@ -112,7 +113,7 @@
 			}
 
 			const response = await connectRequest< PaginatedResponse< Material > >( {
-				endpoint   : `products/materials?${ params.toString() }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.BASE }?${ params.toString() }`,
 				isInternal : true,
 			} );
 
@@ -127,7 +128,7 @@
 	const deleteMutation = createMutation( ( ) => ( {
 		mutationFn : async ( id : string ) : Promise< any > => {
 			const response = await connectRequest< any >( {
-				endpoint   : `products/materials?id=${ id }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.MATERIALS.BASE }?id=${ id }`,
 				method     : METHOD.DELETE,
 				isInternal : true,
 			} );

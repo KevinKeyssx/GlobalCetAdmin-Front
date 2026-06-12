@@ -3,6 +3,7 @@
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 
 	import connectRequest, { isApiError }                   from '$lib/services/fetch.service';
+	import { INTERNAL_ENDPOINTS }                           from '$lib/utils/endpoints';
 	import { METHOD }                                       from '$lib/services/http-codes';
 	import { globalLoadingStore }                           from '$lib/state/loading';
 	import CategoryFormModal                                from '$lib/components/shared/CategoryFormModal.svelte';
@@ -71,7 +72,7 @@
 			}
 
 			const response = await connectRequest< PaginatedResponse< KitCategory > >( {
-				endpoint   : `kits/categories?${ params.toString() }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.KITS.CATEGORIES.BASE }?${ params.toString() }`,
 				isInternal : true,
 			} );
 
@@ -86,7 +87,7 @@
 	const deleteMutation = createMutation( ( ) => ( {
 		mutationFn : async ( id : string ) : Promise< any > => {
 			const response = await connectRequest< any >( {
-				endpoint   : `kits/categories?id=${ id }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.KITS.CATEGORIES.BASE }?id=${ id }`,
 				method     : METHOD.DELETE,
 				isInternal : true,
 			} );
