@@ -1,4 +1,5 @@
-import { METHOD } from './http-codes';
+import { METHOD }  from './http-codes';
+import { resolve } from '$app/paths';
 
 import { PUBLIC_BACKEND_URL } from '$env/static/public';
 
@@ -33,11 +34,9 @@ export default async function connectRequest<T>( {
 	isInternal = true,
 	fetch: customFetch = fetch,
 }: Connect ): Promise<T | ApiError> {
-	const baseUrl       = isInternal ? '/' : PUBLIC_BACKEND_URL;
-	const path          = isInternal ? `api/${endpoint}` : endpoint;
-	const cleanBase     = baseUrl.replace( /\/+$/, '' );
-	const cleanPath     = path.replace( /^\/+/, '' );
-	const finalURL      = isInternal ? `/${cleanPath}` : `${cleanBase}/${cleanPath}`;
+	const finalURL = isInternal
+		? resolve( `/api/${ endpoint.replace( /^\/+/, '' ) }` as any )
+		: `${ PUBLIC_BACKEND_URL.replace( /\/+$/, '' ) }/${ endpoint.replace( /^\/+/, '' ) }`;
 	const isFormData    = body instanceof FormData;
 
 	const response = await customFetch( finalURL, {
@@ -52,10 +51,10 @@ export default async function connectRequest<T>( {
 	});
 
 	if ( !response.ok ) {
-		const errorData = await response.json().catch( () => ({}) );
+		const errorData = await response.json().catch( ( ) => ( {} ) );
 		throw {
 			message : errorData.message || 'Request failed',
-			code    : `HTTP_${response.status}`,
+			code    : `HTTP_${ response.status }`,
 			status  : response.status,
 			data    : errorData,
 		} as ApiError;
