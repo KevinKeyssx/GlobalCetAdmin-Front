@@ -35,6 +35,9 @@ export const INTERNAL_ENDPOINTS = {
 			GET_ALL : 'labs/categories/get-all',
 		},
 	},
+	DUPLICATE     : {
+		BASE : 'duplicate',
+	},
 	GLOBAL_SEARCH : {
 		BASE   : 'global-search',
 		TOTALS : 'global-search/totals',
@@ -72,6 +75,11 @@ export const EXTERNAL_ENDPOINTS = {
 			GET_ALL : '/lab-categories/paginated',
 			BASE    : '/lab-categories',
 		},
+	},
+	DUPLICATES    : {
+		PRODUCT		: '/duplicates/product',
+		KIT			: '/duplicates/kit',
+		MOBILE_LAB	: '/duplicates/mobile-lab',
 	}
 };
 
