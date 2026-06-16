@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PasteButton from './PasteButton.svelte';
+
 	interface InputTextProps {
 		value        : string;
 		error?       : string;
@@ -19,10 +21,12 @@
 		disabled    = false,
 	} : InputTextProps = $props();
 
+	const hasError = $derived( !!error && !value.trim() );
+
 	// Dynamically replace brand/normal classes with red classes when there is an error
-	const finalClass = $derived.by( ( ) => {
+	const finalClass = $derived.by( () => {
 		let base = customClass;
-		if ( error ) {
+		if ( hasError ) {
 			// Replace standard Tailwind classes with error classes
 			base = base
 				.replace( /border-brand\/\d+/g, 'border-red-500' )
@@ -46,15 +50,20 @@
 </script>
 
 <div class="flex flex-col gap-1 w-full">
-	<input
-		{ id }
-		{ type }
-		bind:value={ value }
-		{ placeholder }
-		{ disabled }
-		class="transition-all placeholder:text-text-muted/50 { finalClass }"
-	/>
-	{#if ( error )}
+	<div class="relative w-full flex items-center">
+		<input
+			{ id }
+			{ type }
+			bind:value={ value }
+			{ placeholder }
+			{ disabled }
+			class="transition-all placeholder:text-text-muted/50 pr-10 { finalClass }"
+		/>
+		<div class="absolute right-3">
+			<PasteButton bind:value={ value } { disabled } />
+		</div>
+	</div>
+	{#if ( hasError )}
 		<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ error }</p>
 	{/if}
 </div>
