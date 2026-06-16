@@ -7,6 +7,7 @@
 	import type { Product, AdminProduct } from '$lib/types/product';
 	import { getItemImages }             from '$lib/utils/image';
 	import { stripHtml }                 from '$lib/utils/string';
+	import { Copy }                      from '@lucide/svelte';
 	import TableActions                  from '../TableActions.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -58,23 +59,27 @@
 	}
 
 	interface Props {
-		itemType        : 'product' | 'kit' | 'lab';
-		item            : GlobalSearchProduct | Product | AdminProduct | GlobalSearchKit | DashboardKit | GlobalSearchMobileLab | DashboardMobileLab;
-		openEditModal   : ( item : any ) => void;
-		deleteItem      : ( item : any ) => void;
-		isDeleteLoading : boolean;
-		confirmTitle?   : string;
-		confirmMessage? : string;
+		itemType            : 'product' | 'kit' | 'lab';
+		item                : GlobalSearchProduct | Product | AdminProduct | GlobalSearchKit | DashboardKit | GlobalSearchMobileLab | DashboardMobileLab;
+		openEditModal       : ( item : any ) => void;
+		deleteItem          : ( item : any ) => void;
+		isDeleteLoading     : boolean;
+		duplicateItem?      : ( item : any ) => void | Promise< void >;
+		isDuplicateLoading? : boolean;
+		confirmTitle?       : string;
+		confirmMessage?     : string;
 	}
 
-	const {
+	let {
 		itemType,
 		item,
 		openEditModal,
 		deleteItem,
 		isDeleteLoading,
-		confirmTitle   = '¿Eliminar elemento?',
-		confirmMessage = '¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.'
+		duplicateItem,
+		isDuplicateLoading = false,
+		confirmTitle       = '¿Eliminar elemento?',
+		confirmMessage     = '¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.'
 	} : Props = $props();
 
 	// ─── Reactivity: Carousel State ───────────────────────────────────────────────
@@ -281,18 +286,33 @@
 				{/each}
 			</div>
 		{/if}
+
+		{#if ( duplicateItem )}
+			<button
+				onclick  = { ( e ) => { e.preventDefault(); e.stopPropagation(); duplicateItem( item ); } }
+				disabled = { isDuplicateLoading }
+				class    = "absolute right-3 bottom-3 z-30 flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-brand/80 text-white transition-all duration-300 hover:bg-brand hover:text-surface-dark hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer shadow-md"
+				title    = "Duplicar"
+			>
+				{#if ( isDuplicateLoading )}
+					<div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+				{:else}
+					<Copy size={ 14 } />
+				{/if}
+			</button>
+		{/if}
 	</div>
 
 	<!-- Card Body Container -->
 	<div class="flex flex-1 flex-col gap-2 p-4">
 
 		<!-- Category and SKU Header -->
-		<div class="flex flex-col">
+		<div class="grid">
 			<span class="text-[10px] font-black uppercase tracking-widest text-brand/70 truncate">
 				{ categoryName }
 			</span>
 
-            <span class="text-[9px] font-mono text-text-muted mt-0.5">
+            <span class="text-[11px] font-mono text-text-muted">
 				SKU: { sku }
 			</span>
 		</div>
