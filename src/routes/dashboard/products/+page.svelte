@@ -34,6 +34,7 @@
 	let isEditing             = $state( false );
 	let editingId             = $state( '' );
 	let deletingId            = $state( '' );
+	let duplicatingId         = $state( '' );
 
 	// ─── TanStack Query client & queries ──────────────────────────────────────────
 	const queryClient = useQueryClient();
@@ -163,15 +164,6 @@
 		{ id : 'false', name : 'Inactivos' },
 	];
 
-	// ─── Filtered View (client side search) ──────────────────────────────────────────
-	const filteredProducts = $derived(
-		products.filter( ( p ) =>
-			p.name.toLowerCase().includes( search.toLowerCase() ) ||
-			p.sku.toLowerCase().includes( search.toLowerCase() ) ||
-			( p.description || '' ).toLowerCase().includes( search.toLowerCase() )
-		)
-	);
-
 	// Sincronizar cargando global con queries
 	$effect( ( ) => {
 		$globalLoadingStore = productsQuery.isFetching || materialsQuery.isFetching || categoriesQuery.isFetching || subcategoriesQuery.isFetching;
@@ -217,6 +209,30 @@
 			toast.error( 'Error de red al intentar eliminar.' );
 		} finally {
 			deletingId = '';
+		}
+	}
+
+	async function duplicateProduct( prod : AdminProduct ) : Promise< void > {
+		duplicatingId = prod.id;
+
+		try {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ INTERNAL_ENDPOINTS.DUPLICATE.BASE }?type=product&id=${ prod.id }`,
+				method		: METHOD.POST,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				toast.error( `Error al duplicar: ${ response.message }` );
+				return;
+			}
+
+			toast.success( 'Producto duplicado con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-products' ] } );
+		} catch ( err ) {
+			toast.error( 'Error de red al intentar duplicar.' );
+		} finally {
+			duplicatingId = '';
 		}
 	}
 
@@ -331,17 +347,19 @@
 
 		<!-- ─── Table/Grid Content ────────────────────────────────────────────────── -->
 		{#if ( view === 'cards' )}
-			{#if ( filteredProducts.length > 0 )}
+			{#if ( products.length > 0 )}
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-					{#each filteredProducts as item ( item.id )}
+					{#each products as item ( item.id )}
 						<ItemCard
-							itemType        = "product"
+							itemType           = "product"
 							{ item }
-							openEditModal   = { openEditModal }
-							deleteItem      = { ( p ) => deleteProduct( p.id ) }
-							isDeleteLoading = { deletingId === item.id }
-							confirmTitle    = "¿Eliminar producto?"
-							confirmMessage  = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
+							openEditModal      = { openEditModal }
+							deleteItem         = { ( p ) => deleteProduct( p.id ) }
+							isDeleteLoading    = { deletingId === item.id }
+							duplicateItem      = { duplicateProduct }
+							isDuplicateLoading = { duplicatingId === item.id }
+							confirmTitle       = "¿Eliminar producto?"
+							confirmMessage     = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
 						/>
 					{/each}
 				</div>
@@ -367,7 +385,7 @@
 						</thead>
 
 						<tbody class="divide-y divide-brand/10 font-semibold text-sm">
-							{#each filteredProducts as prod ( prod.id ) }
+							{#each products as prod ( prod.id ) }
 								<tr class="hover:bg-brand/5 transition-colors duration-150">
 									<td class="px-6 py-3">
 										<div class="h-10 w-10 overflow-hidden rounded-lg border border-brand/10 bg-input">
