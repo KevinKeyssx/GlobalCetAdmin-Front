@@ -43,11 +43,12 @@ export interface FilterState {
 // ─── Initial Form Interfaces ───────────────────────────────────────────────────
 
 export interface InitialFile {
-	id     : string;
-	url    : string;
-	alt    : string;
-	isMain : boolean;
-	order  : number;
+	id				: string;
+	url				: string;
+	alt				: string;
+	isMain			: boolean;
+	order			: number;
+	attachmentType?	: string;
 }
 
 export interface ProductInitial {
