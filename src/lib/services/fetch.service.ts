@@ -53,12 +53,57 @@ export default async function connectRequest<T>( {
 	if ( !response.ok ) {
 		const errorData = await response.json().catch( ( ) => ( {} ) );
 		throw {
-			message : errorData.message || 'Request failed',
-			code    : `HTTP_${ response.status }`,
-			status  : response.status,
-			data    : errorData,
+			message	: errorData.message || errorData.error || 'Request failed',
+			code	: `HTTP_${ response.status }`,
+			status	: response.status,
+			data	: errorData,
 		} as ApiError;
 	}
 
 	return response.status === 204 ? ( true as T ) : ( await response.json() as T );
+}
+
+export function formatServerError( e : any, service? : 'Producto' | 'Mobile Lab' | 'Kits' | 'Categoría' | 'Subcategoría' | 'Material' ) : { status : number; error : string } {
+	let message = e.message || 'Internal Server Error';
+
+	if ( ( message === 'Request failed' || message === 'Unknown error' ) && e.data ) {
+		message = e.data.message || e.data.error || message;
+	}
+
+	if ( typeof message === 'string' && message.toLowerCase().includes( 'already exists' ) ) {
+		const msgLower = message.toLowerCase();
+
+		if ( msgLower.includes( 'subcategory' ) || msgLower.includes( 'sub_category' ) ) {
+			message = 'El nombre de la subcategoría ya existe.';
+		} else if ( msgLower.includes( 'category' ) ) {
+			message = 'El nombre de la categoría ya existe.';
+		} else if ( msgLower.includes( 'product' ) ) {
+			message = 'El nombre del producto ya existe.';
+		} else if ( msgLower.includes( 'mobile' ) || msgLower.includes( 'lab' ) ) {
+			message = 'El nombre del laboratorio móvil ya existe.';
+		} else if ( msgLower.includes( 'kit' ) ) {
+			message = 'El nombre del kit ya existe.';
+		} else if ( msgLower.includes( 'material' ) ) {
+			message = 'El nombre del material ya existe.';
+		} else if ( service ) {
+			if ( service === 'Producto' ) {
+				message = 'El nombre del producto ya existe.';
+			} else if ( service === 'Mobile Lab' ) {
+				message = 'El nombre del laboratorio móvil ya existe.';
+			} else if ( service === 'Kits' ) {
+				message = 'El nombre del kit ya existe.';
+			} else if ( service === 'Categoría' ) {
+				message = 'El nombre de la categoría ya existe.';
+			} else if ( service === 'Subcategoría' ) {
+				message = 'El nombre de la subcategoría ya existe.';
+			} else if ( service === 'Material' ) {
+				message = 'El nombre del material ya existe.';
+			}
+		}
+	}
+
+	return {
+		status	: e.status || 500,
+		error	: message,
+	};
 }
