@@ -9,20 +9,34 @@
 	}
 
 	interface Props {
-		value : string; // Bindable JSON string
-        id? : string;
+		value  : string; // Bindable JSON string
+		id?    : string;
+		error? : string;
 	}
 
 	let {
 		value = $bindable( '{}' ),
-        id = "",
-	}: Props = $props();
+		id    = '',
+		error = '',
+	} : Props = $props();
 
 	// ─── Local State ──────────────────────────────────────────────────────────────
 	let entries    = $state< Entry[] >( [] );
 	let newKey     = $state( '' );
 	let newValue   = $state( '' );
 	let isInternal = false; // Flag to prevent infinite sync loops
+
+	const hasError = $derived( !!error && entries.length === 0 );
+
+	const inputClass = $derived.by( () => {
+		let base = 'rounded-xl border bg-input px-3 py-2 text-text outline-none focus:bg-card transition-all placeholder:text-text-muted/50';
+		if ( hasError ) {
+			base += ' border-red-500 bg-red-500/5 focus:border-red-500';
+		} else {
+			base += ' border-brand/15 focus:border-brand';
+		}
+		return base;
+	} );
 
 	// ─── Parse JSON string on load/external change ────────────────────────────────
 	$effect( () => {
@@ -110,19 +124,19 @@
 	<!-- Add New Entry Form Row -->
 	<div class="grid sm:flex items-center gap-2">
 		<input
-            id={id}
+			id={ id }
 			type="text"
 			bind:value={ newKey }
 			placeholder="Clave (ej: Color)"
-			class="w-full sm:w-1/3 rounded-xl border border-brand/15 bg-input px-3 py-2 text-text outline-none focus:border-brand focus:bg-card"
+			class="w-full sm:w-1/3 { inputClass }"
 			onkeydown={ ( e ) => { if ( e.key === 'Enter' ) { e.preventDefault(); addEntry(); } } }
 		/>
 
-        <input
+		<input
 			type="text"
 			bind:value={ newValue }
 			placeholder="Valor (ej: Verde)"
-			class="flex-1 rounded-xl border border-brand/15 bg-input px-3 py-2 text-text outline-none focus:border-brand focus:bg-card"
+			class="flex-1 { inputClass }"
 			onkeydown={ ( e ) => { if ( e.key === 'Enter' ) { e.preventDefault(); addEntry(); } } }
 		/>
 
@@ -164,5 +178,8 @@
 				</div>
 			{/each}
 		</div>
+	{/if}
+	{#if ( hasError )}
+		<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ error }</p>
 	{/if}
 </div>
