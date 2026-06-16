@@ -54,10 +54,26 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		const productsStr   = clientData.get( 'products' ) as string || '[]';
 		const clientProducts = JSON.parse( productsStr );
 
-		// 1. Fetch existing kit with files to compare
+		// 1. Update basic kit data (PATCH) to get existing/latest data
+		const basicData : any = {};
+		const fieldsToSync    = [ 'name', 'sku', 'description', 'categoryId', 'active' ];
+
+		for ( const key of fieldsToSync ) {
+			if ( clientData.has( key ) ) {
+				const val = clientData.get( key );
+				if ( key === 'active' ) {
+					basicData[ key ] = val === 'true';
+				} else {
+					basicData[ key ] = val;
+				}
+			}
+		}
+
 		const existingKit = await connectRequest< GlobalSearchKit >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }?includeFiles=true&includeProducts=true`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }`,
+			method     : METHOD.PATCH,
 			isInternal : false,
+			body       : basicData,
 			headers    : {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
@@ -67,6 +83,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		if ( isApiError( existingKit ) ) {
 			return json( { error : existingKit.message }, { status : existingKit.status || 500 } );
 		}
+
+		let latestKit : GlobalSearchKit = existingKit;
 
 		const existingFiles    = existingKit.files || [];
 		const existingFileIds  = new Set( existingFiles.map( ( f : any ) => f.id ) );
@@ -128,6 +146,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 				return json( { error : uploadRes.message }, { status : uploadRes.status || 500 } );
 			}
 
+			latestKit = uploadRes;
+
 			const updatedFiles         = uploadRes.files || [];
 			const newFilesFromResponse = updatedFiles.filter( ( f : any ) => !existingFileIds.has( f.id ) );
 
@@ -170,6 +190,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			if ( isApiError( updateInfoRes ) ) {
 				return json( { error : updateInfoRes.message }, { status : updateInfoRes.status || 500 } );
 			}
+
+			latestKit = updateInfoRes;
 		}
 
 		// 5. Update products relations
@@ -188,39 +210,11 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			if ( isApiError( updateProductsRes ) ) {
 				return json( { error : updateProductsRes.message }, { status : updateProductsRes.status || 500 } );
 			}
+
+			latestKit = updateProductsRes;
 		}
 
-		// 6. Update basic kit data
-		const basicData : any = {};
-		const fieldsToSync    = [ 'name', 'sku', 'description', 'categoryId', 'active' ];
-
-		for ( const key of fieldsToSync ) {
-			if ( clientData.has( key ) ) {
-				const val = clientData.get( key );
-				if ( key === 'active' ) {
-					basicData[ key ] = val === 'true';
-				} else {
-					basicData[ key ] = val;
-				}
-			}
-		}
-
-		const updateKitRes = await connectRequest< GlobalSearchKit >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }`,
-			method     : METHOD.PATCH,
-			isInternal : false,
-			body       : basicData,
-			headers    : {
-				'x-secret' : ENV.INTERNAL_SECRET_KEY,
-			},
-			fetch      : fetch,
-		} );
-
-		if ( isApiError( updateKitRes ) ) {
-			return json( { error : updateKitRes.message }, { status : updateKitRes.status || 500 } );
-		}
-
-		return json( updateKitRes );
+		return json( latestKit );
 	} catch ( e : any ) {
 		const { status, error } = formatServerError( e, 'Kits' );
 		return json( { error }, { status } );

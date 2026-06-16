@@ -56,10 +56,26 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		const kitsStr           = clientData.get( 'kits' ) as string || '[]';
 		const clientKits        = JSON.parse( kitsStr );
 
-		// 1. Fetch existing lab with files to compare
+		// 1. Update basic lab data (PATCH) to get existing/latest data
+		const basicData : any = {};
+		const fieldsToSync    = [ 'name', 'sku', 'description', 'dimensions', 'categoryId', 'active' ];
+
+		for ( const key of fieldsToSync ) {
+			if ( clientData.has( key ) ) {
+				const val = clientData.get( key );
+				if ( key === 'active' ) {
+					basicData[ key ] = val === 'true';
+				} else {
+					basicData[ key ] = val;
+				}
+			}
+		}
+
 		const existingLab = await connectRequest< GlobalSearchMobileLab >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }?includeFiles=true&includeProducts=true&includeKits=true`,
+			endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }`,
+			method     : METHOD.PATCH,
 			isInternal : false,
+			body       : basicData,
 			headers    : {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
@@ -69,6 +85,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 		if ( isApiError( existingLab ) ) {
 			return json( { error : existingLab.message }, { status : existingLab.status || 500 } );
 		}
+
+		let latestLab : GlobalSearchMobileLab = existingLab;
 
 		const existingFiles    = existingLab.files || [];
 		const existingFileIds  = new Set( existingFiles.map( ( f : any ) => f.id ) );
@@ -130,6 +148,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 				return json( { error : uploadRes.message }, { status : uploadRes.status || 500 } );
 			}
 
+			latestLab = uploadRes;
+
 			const updatedFiles         = uploadRes.files || [];
 			const newFilesFromResponse = updatedFiles.filter( ( f : any ) => !existingFileIds.has( f.id ) );
 
@@ -172,6 +192,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			if ( isApiError( updateInfoRes ) ) {
 				return json( { error : updateInfoRes.message }, { status : updateInfoRes.status || 500 } );
 			}
+
+			latestLab = updateInfoRes;
 		}
 
 		// 5. Update products relations
@@ -190,6 +212,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			if ( isApiError( updateProductsRes ) ) {
 				return json( { error : updateProductsRes.message }, { status : updateProductsRes.status || 500 } );
 			}
+
+			latestLab = updateProductsRes;
 		}
 
 		// 6. Update kits relations
@@ -208,39 +232,11 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			if ( isApiError( updateKitsRes ) ) {
 				return json( { error : updateKitsRes.message }, { status : updateKitsRes.status || 500 } );
 			}
+
+			latestLab = updateKitsRes;
 		}
 
-		// 7. Update basic lab data
-		const basicData : any = {};
-		const fieldsToSync    = [ 'name', 'sku', 'description', 'dimensions', 'categoryId', 'active' ];
-
-		for ( const key of fieldsToSync ) {
-			if ( clientData.has( key ) ) {
-				const val = clientData.get( key );
-				if ( key === 'active' ) {
-					basicData[ key ] = val === 'true';
-				} else {
-					basicData[ key ] = val;
-				}
-			}
-		}
-
-		const updateLabRes = await connectRequest< GlobalSearchMobileLab >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }`,
-			method     : METHOD.PATCH,
-			isInternal : false,
-			body       : basicData,
-			headers    : {
-				'x-secret' : ENV.INTERNAL_SECRET_KEY,
-			},
-			fetch      : fetch,
-		} );
-
-		if ( isApiError( updateLabRes ) ) {
-			return json( { error : updateLabRes.message }, { status : updateLabRes.status || 500 } );
-		}
-
-		return json( updateLabRes );
+		return json( latestLab );
 	} catch ( e : any ) {
 		const { status, error } = formatServerError( e, 'Mobile Lab' );
 		return json( { error }, { status } );
