@@ -15,6 +15,7 @@
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import KeyValueEditor                   from '$lib/components/shared/KeyValueEditor.svelte';
 	import InputText                        from '$lib/components/shared/InputText.svelte';
+	import TextArea                         from '$lib/components/shared/TextArea.svelte';
 	import type { ProductInitial }          from '$lib/types/product';
 	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
 	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
@@ -69,11 +70,19 @@
 	let skuError          = $state( '' );
 	let materialError     = $state( '' );
 	let subcategoryError  = $state( '' );
+	let specsError        = $state( '' );
 
 	// File Uploader state
 	let uploaderFiles     = $state< UploadedFileItem[] >( [] );
 	let uploaderFilesInfo = $state( '' );
 	let deletingFileId    = $state< string | null >( null );
+	let filesError        = $state( '' );
+
+	$effect( () => {
+		if ( uploaderFiles.length > 0 ) {
+			filesError = '';
+		}
+	} );
 
 	// Modales de creación rápida
 	let showMaterialModal    = $state( false );
@@ -97,15 +106,16 @@
 			formDescription   = initialData?.description    || '';
 			formMaterialId    = initialData?.materialId     || '';
 			formSubcategoryId = initialData?.subcategoryId  || '';
-			formActive        = initialData?.active         || true;
+			formActive        = initialData?.active         ?? true;
 			formSpecs         = initialData?.technicalSpecs || '{}';
 			if ( isEditing && initialData?.files ) {
 				uploaderFiles = initialData.files.map( ( f ) => ( {
-					id		: f.id,
-					preview	: f.url,
-					alt		: f.alt || '',
-					isMain	: f.isMain,
-					order	: f.order,
+					id             : f.id,
+					preview        : f.url,
+					alt            : f.alt || '',
+					isMain         : f.isMain,
+					order          : f.order,
+					attachmentType : f.attachmentType,
 				} ) );
 			} else {
 				uploaderFiles = [];
@@ -115,6 +125,24 @@
 			skuError          = '';
 			materialError     = '';
 			subcategoryError  = '';
+			specsError        = '';
+			filesError        = '';
+		} else if ( show && !initialData ) {
+			formName          = '';
+			formSku           = '';
+			formDescription   = '';
+			formMaterialId    = '';
+			formSubcategoryId = '';
+			formActive        = true;
+			formSpecs         = '{}';
+			uploaderFiles     = [];
+			uploaderFilesInfo = '';
+			nameError         = '';
+			skuError          = '';
+			materialError     = '';
+			subcategoryError  = '';
+			specsError        = '';
+			filesError        = '';
 		}
 	} );
 
@@ -216,6 +244,7 @@
 		skuError         = '';
 		materialError    = '';
 		subcategoryError = '';
+		specsError       = '';
 		let hasError     = false;
 
 		if ( !formName.trim() ) {
@@ -238,6 +267,24 @@
 			hasError         = true;
 		}
 
+		let specsCount = 0;
+		try {
+			const parsed = JSON.parse( formSpecs || '{}' );
+			specsCount = Object.keys( parsed ).length;
+		} catch ( _ ) {
+			specsCount = 0;
+		}
+
+		if ( specsCount === 0 ) {
+			specsError = 'Al menos una especificación es requerida.';
+			hasError   = true;
+		}
+
+		if ( uploaderFiles.length === 0 ) {
+			filesError = 'Debe subir al menos un archivo.';
+			hasError   = true;
+		}
+
 		if ( hasError ) {
 			return;
 		}
@@ -255,10 +302,12 @@
 		formData.append( 'technical_specs', formSpecs );
 
 		const clientImages = uploaderFiles.map( ( uf ) => ( {
-			id		: uf.file ? undefined : uf.id,
-			alt		: uf.alt,
-			isMain	: uf.isMain,
-			order	: uf.order,
+			id             : uf.file ? undefined : uf.id,
+			name           : uf.file ? uf.file.name : ( uf.preview.split( '/' ).pop() || '' ),
+			alt            : uf.alt,
+			isMain         : uf.isMain,
+			order          : uf.order,
+			attachmentType : uf.attachmentType,
 		} ) );
 		formData.append( 'imagesInfo', JSON.stringify( clientImages ) );
 
@@ -299,14 +348,15 @@
 						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
 							Identificación
 						</legend>
-						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
+                        <div class="grid grid-cols-1 gap-3">
 							<!-- Name -->
 							<div class="flex flex-col gap-1">
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-name">
 									Nombre del Producto
 								</label>
-								<InputText
+
+                                <TextArea
 									id="prod-name"
 									bind:value={ formName }
 									error={ nameError }
@@ -320,7 +370,8 @@
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-sku">
 									SKU Identificador
 								</label>
-								<InputText
+
+                                <InputText
 									id="prod-sku"
 									bind:value={ formSku }
 									error={ skuError }
@@ -433,7 +484,7 @@
 						</legend>
 						<div class="flex flex-col gap-1">
 							<label class="sr-only" for="prod-specs">Clave : Valor</label>
-							<KeyValueEditor id="prod-specs" bind:value={ formSpecs } />
+							<KeyValueEditor id="prod-specs" bind:value={ formSpecs } error={ specsError } />
 						</div>
 					</fieldset>
 				</div>
@@ -450,6 +501,7 @@
 						deletingFileId={ deletingFileId }
 						onDeleteSingle={ handleDeleteSingleFile }
 						onDeleteMultiple={ handleDeleteMultipleFiles }
+						error={ filesError }
 					/>
 				</div>
 			</div>

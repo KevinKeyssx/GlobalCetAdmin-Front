@@ -24,6 +24,7 @@
 	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
 	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
 	import InputText                        from '$lib/components/shared/InputText.svelte';
+	import TextArea                         from '$lib/components/shared/TextArea.svelte';
 	import InputNumber                      from '$lib/components/shared/InputNumber.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -111,6 +112,13 @@
 	let formKits          = $state< LabKit[] >( [] );
 	let uploaderFiles     = $state< UploadedFileItem[] >( [] );// File Uploader state
 	let uploaderFilesInfo = $state( '' );
+	let filesError        = $state( '' );
+
+	$effect( () => {
+		if ( uploaderFiles.length > 0 ) {
+			filesError = '';
+		}
+	} );
 
 	// Modales de creación rápida
 	let showCategoryModal = $state( false );
@@ -131,11 +139,12 @@
 			formKits          = initialData.kits || [];
 			if ( isEditing && initialData.files ) {
 				uploaderFiles = initialData.files.map( ( f ) => ( {
-					id		: f.id,
-					preview	: f.url,
-					alt		: f.alt || '',
-					isMain	: f.isMain,
-					order	: f.order,
+					id             : f.id,
+					preview        : f.url,
+					alt            : f.alt || '',
+					isMain         : f.isMain,
+					order          : f.order,
+					attachmentType : f.attachmentType,
 				} ) );
 			} else {
 				uploaderFiles = [];
@@ -144,6 +153,7 @@
 			nameError         = '';
 			skuError          = '';
 			categoryError     = '';
+			filesError        = '';
 		} else if ( show && !initialData ) {
 			formName          = '';
 			formSku           = '';
@@ -161,6 +171,7 @@
 			nameError         = '';
 			skuError          = '';
 			categoryError     = '';
+			filesError        = '';
 		}
 	} );
 
@@ -319,6 +330,11 @@
 			hasError      = true;
 		}
 
+		if ( uploaderFiles.length === 0 ) {
+			filesError = 'Debe subir al menos un archivo.';
+			hasError   = true;
+		}
+
 		if ( hasError ) {
 			return;
 		}
@@ -384,14 +400,15 @@
 						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
 							Identificación
 						</legend>
-						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
+                        <div class="grid grid-cols-1 gap-3">
 							<!-- Name -->
 							<div class="flex flex-col gap-1">
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-name">
 									Nombre del Laboratorio
 								</label>
-								<InputText
+
+                                <TextArea
 									id="lab-name"
 									bind:value={ formName }
 									error={ nameError }
@@ -405,7 +422,8 @@
 								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-sku">
 									SKU Identificador
 								</label>
-								<InputText
+
+                                <InputText
 									id="lab-sku"
 									bind:value={ formSku }
 									error={ skuError }
@@ -552,6 +570,7 @@
 						bind:files     = { uploaderFiles }
 						bind:filesInfo = { uploaderFilesInfo }
 						isEditing      = { isEditing }
+						error          = { filesError }
 					/>
 				</div>
 			</div>
