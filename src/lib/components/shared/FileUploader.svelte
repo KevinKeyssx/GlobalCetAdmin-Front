@@ -19,12 +19,13 @@
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	export interface UploadedFileItem {
-		file?   : File;
-		id      : string;
-		preview : string;
-		alt     : string;
-		isMain  : boolean;
-		order   : number;
+		file?          : File;
+		id             : string;
+		preview        : string;
+		alt            : string;
+		isMain         : boolean;
+		order          : number;
+		attachmentType?: string;
 	}
 
 	interface Props {
@@ -34,6 +35,7 @@
 		deletingFileId?		: string | null;
 		onDeleteSingle?		: ( fileId : string ) => Promise< void > | void;
 		onDeleteMultiple?	: ( fileIds : string[] ) => Promise< void > | void;
+		error?				: string;
 	}
 
 	// ─── Props & Bindings (Svelte 5 Runes) ────────────────────────────────────────
@@ -44,9 +46,12 @@
 		deletingFileId   = null,
 		onDeleteSingle,
 		onDeleteMultiple,
+		error            = '',
 	} : Props = $props();
 
 	let selectedFileIds = $state< string[] >( [] );
+
+	const hasError = $derived( !!error && files.length === 0 );
 
 	interface DeleteConfirmState {
 		show		: boolean;
@@ -75,13 +80,21 @@
 		if ( hasInvalidOrder ) {
 			untrack( () => {
 				const sortedNonDocs = [ ...nonDocs ].sort( ( a, b ) => a.order - b.order );
-				files = files.map( ( f ) => {
-					if ( isDocument( f ) ) return f;
-					const newIndex = sortedNonDocs.findIndex( ( sd ) => sd.id === f.id );
+				const updatedNonDocs = sortedNonDocs.map( ( f, idx ) : UploadedFileItem => {
 					return {
 						...f,
-						order : newIndex !== -1 ? newIndex : f.order,
+						order : idx,
 					};
+				} );
+
+				let nonDocIdx = 0;
+				files = files.map( ( f ) => {
+					if ( isDocument( f ) ) {
+						return f;
+					}
+					const updated = updatedNonDocs[ nonDocIdx ];
+					nonDocIdx++;
+					return updated;
 				} );
 			} );
 		}
@@ -139,10 +152,12 @@
 	// ─── Svelte 5 Rune Effect: Automatically Sync filesInfo ───────────────────────
 	$effect( () => {
 		const info = files.map( ( f ) => ( {
-			id     : f.id,
-			alt    : f.alt || 'Imagen',
-			isMain : f.isMain,
-			order  : Number( f.order ) || 0,
+			id             : f.id,
+			name           : f.file ? f.file.name : ( f.preview.split( '/' ).pop() || '' ),
+			alt            : f.alt || 'Imagen',
+			isMain         : f.isMain,
+			order          : Number( f.order ) || 0,
+			attachmentType : f.attachmentType,
 		} ) );
 		filesInfo = JSON.stringify( info );
 	} );
@@ -198,14 +213,16 @@
 
 			// Determine if this is the first main image (only images can be main)
 			const isMain = isImage && !updated.some( ( f ) => f.isMain );
+			const attachmentType = isImage ? 'IMAGE' : ( isVideo ? 'VIDEOS' : ( ( isDocx || isPdf ) ? 'DOCUMENTS' : 'OTHERS' ) );
 
 			updated.push( {
-				file    : file,
-				id      : id,
-				preview : preview,
-				alt     : file.name.split( '.' )[ 0 ] || 'Archivo adjunto',
-				isMain  : isMain,
-				order   : updated.length,
+				file           : file,
+				id             : id,
+				preview        : preview,
+				alt            : file.name.split( '.' )[ 0 ] || 'Archivo adjunto',
+				isMain         : isMain,
+				order          : updated.length,
+				attachmentType : attachmentType,
 			} );
 		}
 
@@ -305,12 +322,13 @@
 				const isMain = !updated.some( ( f ) => f.isMain );
 
 				updated.push( {
-					file    : extractedFile,
-					id      : id,
-					preview : preview,
-					alt     : filename.split( '.' )[ 0 ] || 'Imagen extraída',
-					isMain  : isMain,
-					order   : updated.length,
+					file           : extractedFile,
+					id             : id,
+					preview        : preview,
+					alt            : filename.split( '.' )[ 0 ] || 'Imagen extraída',
+					isMain         : isMain,
+					order          : updated.length,
+					attachmentType : 'IMAGE',
 				} );
 				addedCount++;
 			}
@@ -330,29 +348,28 @@
 	}
 
 	// ─── Helpers ──────────────────────────────────────────────────────────────────
-	function isDocument( item : UploadedFileItem ) : boolean {
+	function isPdf( item : UploadedFileItem ) : boolean {
 		const file = item.file;
-		const preview = item.preview.toLowerCase();
-		const alt = item.alt.toLowerCase();
-
 		if ( file ) {
-			const type = file.type;
-			const name = file.name.toLowerCase();
-			if ( type === 'application/pdf' || name.endsWith( '.pdf' ) ) {
-				return true;
-			}
-
-			if ( type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || name.endsWith( '.docx' ) ) {
-				return true;
-			}
-
-			return false;
+			return file.type === 'application/pdf' || file.name.toLowerCase().endsWith( '.pdf' );
 		}
+		const urlPath = item.preview.split( '?' )[ 0 ].toLowerCase();
+		const alt = item.alt.toLowerCase();
+		return urlPath.endsWith( '.pdf' ) || alt.endsWith( '.pdf' );
+	}
 
-		return preview.endsWith( '.pdf' ) ||
-			alt.endsWith( '.pdf' ) ||
-			preview.endsWith( '.docx' ) ||
-			alt.endsWith( '.docx' );
+	function isWord( item : UploadedFileItem ) : boolean {
+		const file = item.file;
+		if ( file ) {
+			return file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith( '.docx' );
+		}
+		const urlPath = item.preview.split( '?' )[ 0 ].toLowerCase();
+		const alt = item.alt.toLowerCase();
+		return urlPath.endsWith( '.docx' ) || alt.endsWith( '.docx' );
+	}
+
+	function isDocument( item : UploadedFileItem ) : boolean {
+		return isPdf( item ) || isWord( item );
 	}
 
 	function removeFile( id : string ) : void {
@@ -452,7 +469,7 @@
 			ondragover  = { handleDragOver }
 			ondragleave = { handleDragLeave }
 			ondrop      = { handleDrop }
-			class       = "relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-8 text-center transition-all duration-300 { isDragging ? 'border-brand bg-brand/8 scale-[1.005] shadow-[0_0_25px_color-mix(in_srgb,var(--color-brand)_15%,transparent)]' : 'border-brand/15 bg-card/60 hover:border-brand/30 hover:bg-brand/5 hover:scale-[1.002] hover:shadow-[0_4px_20px_color-mix(in_srgb,var(--color-brand)_4%,transparent)]' }"
+			class       = "relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-8 text-center transition-all duration-300 { isDragging ? 'border-brand bg-brand/8 scale-[1.005] shadow-[0_0_25px_color-mix(in_srgb,var(--color-brand)_15%,transparent)]' : ( hasError ? 'border-red-500 bg-red-500/5' : 'border-brand/15 bg-card/60 hover:border-brand/30 hover:bg-brand/5 hover:scale-[1.002] hover:shadow-[0_4px_20px_color-mix(in_srgb,var(--color-brand)_4%,transparent)]' ) }"
 		>
 			<!-- Hidden Native Input -->
 			<input
@@ -511,6 +528,10 @@
 		</div>
 	</div>
 
+	{#if ( hasError )}
+		<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ error }</p>
+	{/if}
+
 	<!-- ─── Uploaded Files Metadata List ─────────────────────────────────────── -->
 	{#if files.length > 0 }
 		<div class="space-y-2.5">
@@ -537,7 +558,7 @@
 				{/if}
 			</div>
 
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-3">
 				{#each files as item ( item.id ) }
 					<div class="group relative flex flex-col gap-3 rounded-xl border border-brand/10 bg-card/40 backdrop-blur-xs p-3 transition-all duration-300 hover:border-brand/20 hover:bg-card/70 hover:shadow-[0_8px_20px_color-mix(in_srgb,var(--color-brand)_5%,transparent)]">
 						<div class="flex gap-3">
@@ -563,13 +584,13 @@
 
 							<!-- Thumbnail Preview -->
 							<div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-brand/15 bg-input flex items-center justify-center text-xl font-bold select-none shadow-sm">
-								{#if ( item.file && item.file.type === 'application/pdf' ) || item.preview.toLowerCase().endsWith( '.pdf' ) || item.alt.toLowerCase().endsWith( '.pdf' ) }
+								{#if isPdf( item ) }
 									<div class="flex flex-col items-center justify-center bg-red-500/10 text-red-400 h-full w-full gap-1">
 										<FileText class="h-5 w-5 text-red-400/80" />
 										<span class="text-[9px] font-black uppercase tracking-wider">PDF</span>
 									</div>
 								{:else}
-									{#if ( item.file && item.file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ) || item.preview.toLowerCase().endsWith( '.docx' ) || item.alt.toLowerCase().endsWith( '.docx' ) }
+									{#if isWord( item ) }
 										<div class="flex flex-col items-center justify-center bg-blue-500/10 text-blue-400 h-full w-full gap-1">
 											<FileText class="h-5 w-5 text-blue-400/80" />
 											<span class="text-[9px] font-black uppercase tracking-wider">DOCX</span>
@@ -610,29 +631,25 @@
 							<!-- Controls & Info -->
 							<div class="flex-1 min-w-0 space-y-1.5 flex flex-col justify-center">
 								<p class="text-xs text-text font-semibold truncate leading-tight" title={ item.file ? item.file.name : item.alt }>
-									{ item.file ? `${ item.file.name } ( ${ ( item.file.size / 1024 / 1024 ).toFixed( 2 ) } MB )` : ( ( item.preview.toLowerCase().endsWith( '.pdf' ) || item.preview.toLowerCase().endsWith( '.docx' ) ) ? 'Archivo existente' : 'Imagen existente' ) }
+									{ item.file ? `${ item.file.name } ( ${ ( item.file.size / 1024 / 1024 ).toFixed( 2 ) } MB )` : ( isDocument( item ) ? 'Archivo existente' : 'Imagen existente' ) }
 								</p>
 
 								{#if !isDocument( item ) }
 									<div class="flex items-center gap-2">
 										<!-- Set Main Radio -->
-										<label class="inline-flex items-center gap-1.5 cursor-pointer select-none rounded-full px-2.5 py-0.5 border transition-all duration-200 { item.isMain ? 'border-brand/35 bg-brand/10 text-brand font-semibold' : 'border-brand/10 bg-transparent text-text-muted hover:border-brand/20 hover:text-text' } text-[10px]">
-											<input
-												type        = "radio"
-												name        = "main-image-radio"
-												checked     = { item.isMain }
-												onchange    = { () => setMainImage( item.id ) }
-												class       = "sr-only"
-											/>
-
-                                            <div class="h-2 w-2 rounded-full border border-current flex items-center justify-center">
+										<button
+											type     = "button"
+											onclick  = { () => setMainImage( item.id ) }
+											class    = "inline-flex items-center gap-1.5 cursor-pointer select-none rounded-full px-2.5 py-0.5 border transition-all duration-200 { item.isMain ? 'border-brand/35 bg-brand/10 text-brand font-semibold' : 'border-brand/10 bg-transparent text-text-muted hover:border-brand/20 hover:text-text' } text-[10px]"
+										>
+											<div class="h-2 w-2 rounded-full border border-current flex items-center justify-center">
 												{#if item.isMain }
 													<div class="h-1 w-1 rounded-full bg-current"></div>
 												{/if}
 											</div>
 
-                                            <span>Principal</span>
-										</label>
+											<span>Principal</span>
+										</button>
 									</div>
 								{/if}
 							</div>
