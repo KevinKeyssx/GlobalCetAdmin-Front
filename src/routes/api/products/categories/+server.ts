@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+import connectRequest, { isApiError, formatServerError }   from '$lib/services/fetch.service';
 import { ENV }                          from '$lib/utils/env.server';
 import type { Category, SubCategory }   from '$lib/types/category';
 import { METHOD }                       from '$lib/services/http-codes';
@@ -28,7 +28,8 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 
 		return json( response );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Categoría' );
+		return json( { error }, { status } );
 	}
 };
 
@@ -55,7 +56,8 @@ export const POST: RequestHandler = async ( { request, url, fetch } ) => {
 
 		return json( response, { status : 201 } );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Categoría' );
+		return json( { error }, { status } );
 	}
 };
 
@@ -91,7 +93,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		return json( response );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Categoría' );
+		return json( { error }, { status } );
 	}
 };
 
@@ -121,6 +124,7 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 
 		return json( { success : true } );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Categoría' );
+		return json( { error }, { status } );
 	}
 };
