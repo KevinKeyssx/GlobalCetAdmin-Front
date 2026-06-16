@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+import connectRequest, { isApiError, formatServerError } from '$lib/services/fetch.service';
 import { ENV }                          from '$lib/utils/env.server';
 import type { GlobalSearchProduct }     from '$lib/types/search';
 import { METHOD }                       from '$lib/services/http-codes';
@@ -33,7 +33,8 @@ export const POST: RequestHandler = async ( { request, fetch } ) => {
 
 		return json( response, { status : 201 } );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Producto' );
+		return json( { error }, { status } );
 	}
 };
 
@@ -67,6 +68,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			}
 		}
 
+		basicData[ 'includeFiles' ] = true;
+
 		const updateProductRes = await connectRequest< GlobalSearchProduct >( {
 			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }`,
 			method     : METHOD.PATCH,
@@ -82,6 +85,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			return json( { error : updateProductRes.message }, { status : updateProductRes.status || 500 } );
 		}
 
+		let latestProduct : GlobalSearchProduct = updateProductRes;
+
 		const existingImages   = updateProductRes.files || [];
 		const existingImageIds = new Set( existingImages.map( ( img : any ) => img.id ) );
 		const finalImagesInfo  = clientImages.filter( ( img : any ) => existingImageIds.has( img.id ) );
@@ -96,9 +101,11 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			} );
 
 			uploadFormData.append( 'imagesInfo', JSON.stringify( newImagesInfo.map( ( img : any ) => ( {
-				alt    : img.alt,
-				isMain : img.isMain,
-				order  : img.order,
+				name           : img.name,
+				alt            : img.alt,
+				isMain         : img.isMain,
+				order          : img.order,
+				attachmentType : img.attachmentType,
 			} ) ) ) );
 
 			const uploadRes = await connectRequest< any >( {
@@ -116,17 +123,28 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 				return json( { error : uploadRes.message }, { status : uploadRes.status || 500 } );
 			}
 
+			latestProduct = uploadRes;
+
 			const updatedFiles         = uploadRes.files || [];
 			const newFilesFromResponse = updatedFiles.filter( ( f : any ) => !existingImageIds.has( f.id ) );
 
 			newImagesInfo.forEach( ( img : any, index : number ) => {
-				const serverFile = newFilesFromResponse[ index ];
+				const serverFile = newFilesFromResponse.find( ( sf : any ) => {
+					if ( !img.name ) return false;
+					const decodedUrl = decodeURIComponent( sf.url.toLowerCase() );
+					const clientNameLower = img.name.toLowerCase();
+					const clientBase = clientNameLower.substring( 0, clientNameLower.lastIndexOf( '.' ) ) || clientNameLower;
+					const serverBase = decodedUrl.substring( 0, decodedUrl.lastIndexOf( '.' ) ) || decodedUrl;
+					return serverBase.includes( clientBase ) || clientBase.includes( serverBase );
+				} ) || newFilesFromResponse[ index ];
+
 				if ( serverFile ) {
 					finalImagesInfo.push( {
-						id     : serverFile.id,
-						alt    : img.alt,
-						isMain : img.isMain,
-						order  : img.order,
+						id             : serverFile.id,
+						alt            : img.alt,
+						isMain         : img.isMain,
+						order          : img.order,
+						attachmentType : img.attachmentType,
 					} );
 				}
 			} );
@@ -148,25 +166,14 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			if ( isApiError( updateInfoRes ) ) {
 				return json( { error : updateInfoRes.message }, { status : updateInfoRes.status || 500 } );
 			}
+
+			latestProduct = updateInfoRes;
 		}
 
-		// Re-fetch final product data to return complete updated state
-		const finalProduct = await connectRequest< GlobalSearchProduct >( {
-			endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }?includeImages=true`,
-			isInternal : false,
-			headers    : {
-				'x-secret' : ENV.INTERNAL_SECRET_KEY,
-			},
-			fetch      : fetch,
-		} );
-
-		if ( isApiError( finalProduct ) ) {
-			return json( { error : finalProduct.message }, { status : finalProduct.status || 500 } );
-		}
-
-		return json( finalProduct );
+		return json( latestProduct );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Producto' );
+		return json( { error }, { status } );
 	}
 };
 
@@ -195,6 +202,7 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 
 		return json( { success : true } );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Producto' );
+		return json( { error }, { status } );
 	}
 };

@@ -27,13 +27,15 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 			filesToUpload.forEach( ( file ) => {
 				uploadFormData.append( 'files', file );
-			});
+			} );
 
 			uploadFormData.append( 'imagesInfo', JSON.stringify( newImagesInfo.map( ( img : any ) => ( {
-				alt    : img.alt,
-				isMain : img.isMain,
-				order  : img.order,
-			}))));
+				name           : img.name,
+				alt            : img.alt,
+				isMain         : img.isMain,
+				order          : img.order,
+				attachmentType : img.attachmentType,
+			} ) ) ) );
 
 			const uploadRes = await connectRequest< any >( {
 				endpoint	: `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }/images`,
@@ -44,7 +46,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 					'x-secret' : ENV.INTERNAL_SECRET_KEY,
 				},
 				fetch		: fetch,
-			});
+			} );
 
 			if ( isApiError( uploadRes ) ) {
 				return json( { error : uploadRes.message }, { status : uploadRes.status || 500 } );
@@ -62,14 +64,22 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			const newFilesFromResponse = uploadedFilesResponse.filter( ( f : any ) => !existingImagesInfo.some( ( ext : any ) => ext.id === f.id ) );
 
 			newImagesInfo.forEach( ( img : any, index : number ) => {
-				const serverFile = newFilesFromResponse[ index ];
+				const serverFile = newFilesFromResponse.find( ( sf : any ) => {
+					if ( !img.name ) return false;
+					const decodedUrl = decodeURIComponent( sf.url.toLowerCase() );
+					const clientNameLower = img.name.toLowerCase();
+					const clientBase = clientNameLower.substring( 0, clientNameLower.lastIndexOf( '.' ) ) || clientNameLower;
+					const serverBase = decodedUrl.substring( 0, decodedUrl.lastIndexOf( '.' ) ) || decodedUrl;
+					return serverBase.includes( clientBase ) || clientBase.includes( serverBase );
+				} ) || newFilesFromResponse[ index ];
 
 				if ( serverFile ) {
 					finalImagesInfo.push( {
-						id     : serverFile.id,
-						alt    : img.alt,
-						isMain : img.isMain,
-						order  : img.order,
+						id             : serverFile.id,
+						alt            : img.alt,
+						isMain         : img.isMain,
+						order          : img.order,
+						attachmentType : img.attachmentType,
 					} );
 				}
 			} );
