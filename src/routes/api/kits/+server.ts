@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+import connectRequest, { isApiError, formatServerError }   from '$lib/services/fetch.service';
 import { ENV }                          from '$lib/utils/env.server';
 import type { GlobalSearchKit }         from '$lib/types/search';
 import { METHOD }                       from '$lib/services/http-codes';
@@ -33,7 +33,8 @@ export const POST: RequestHandler = async ( { request, fetch } ) => {
 
 		return json( response, { status : 201 } );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Kits' );
+		return json( { error }, { status } );
 	}
 };
 
@@ -105,9 +106,11 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			} );
 
 			uploadFormData.append( 'filesInfo', JSON.stringify( newFilesInfo.map( ( f : any ) => ( {
-				alt    : f.alt,
-				isMain : f.isMain,
-				order  : f.order,
+				name           : f.name,
+				alt            : f.alt,
+				isMain         : f.isMain,
+				order          : f.order,
+				attachmentType : f.attachmentType,
 			} ) ) ) );
 
 			const uploadRes = await connectRequest< any >( {
@@ -130,13 +133,22 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 			// Map client temp IDs to server IDs
 			newFilesInfo.forEach( ( f : any, index : number ) => {
-				const serverFile = newFilesFromResponse[ index ];
+				const serverFile = newFilesFromResponse.find( ( sf : any ) => {
+					if ( !f.name ) return false;
+					const decodedUrl = decodeURIComponent( sf.url.toLowerCase() );
+					const clientNameLower = f.name.toLowerCase();
+					const clientBase = clientNameLower.substring( 0, clientNameLower.lastIndexOf( '.' ) ) || clientNameLower;
+					const serverBase = decodedUrl.substring( 0, decodedUrl.lastIndexOf( '.' ) ) || decodedUrl;
+					return serverBase.includes( clientBase ) || clientBase.includes( serverBase );
+				} ) || newFilesFromResponse[ index ];
+
 				if ( serverFile ) {
 					finalFilesInfo.push( {
-						id     : serverFile.id,
-						alt    : f.alt,
-						isMain : f.isMain,
-						order  : f.order,
+						id             : serverFile.id,
+						alt            : f.alt,
+						isMain         : f.isMain,
+						order          : f.order,
+						attachmentType : f.attachmentType,
 					} );
 				}
 			} );
@@ -210,7 +222,8 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		return json( updateKitRes );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Kits' );
+		return json( { error }, { status } );
 	}
 };
 
@@ -259,7 +272,8 @@ export const DELETE: RequestHandler = async ( { url, fetch } ) => {
 
 		return json( { success : true } );
 	} catch ( e : any ) {
-		return json( { error : e.message || 'Internal Server Error' }, { status : 500 } );
+		const { status, error } = formatServerError( e, 'Kits' );
+		return json( { error }, { status } );
 	}
 };
 
