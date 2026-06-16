@@ -72,6 +72,7 @@
 	let editingId          = $state( '' );
 	let editingKit         = $state< any >( null );
 	let deletingId         = $state( '' );
+	let duplicatingId      = $state( '' );
 
 
 	// Reset to page 1 on filter changes
@@ -217,6 +218,30 @@
 			deletingId = '';
 		}
 	}
+
+	async function duplicateKit( kit : Kit ) : Promise< void > {
+		duplicatingId = kit.id;
+
+		try {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ INTERNAL_ENDPOINTS.DUPLICATE.BASE }?type=kit&id=${ kit.id }`,
+				method		: METHOD.POST,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				toast.error( `Error al duplicar: ${ response.message }` );
+				return;
+			}
+
+			toast.success( 'Kit duplicado con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-kits' ] } );
+		} catch ( err ) {
+			toast.error( 'Error de red al intentar duplicar.' );
+		} finally {
+			duplicatingId = '';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -261,13 +286,15 @@
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
 					{#each kits as item ( item.id )}
 						<ItemCard
-							itemType        = "kit"
+							itemType           = "kit"
 							{ item }
-							openEditModal   = { openEditModal }
-							deleteItem      = { ( k ) => deleteKit( k.id ) }
-							isDeleteLoading = { deletingId === item.id }
-							confirmTitle    = "¿Eliminar kit?"
-							confirmMessage  = "¿Está seguro de que desea eliminar este kit? Esta acción no se puede deshacer."
+							openEditModal      = { openEditModal }
+							deleteItem         = { ( k ) => deleteKit( k.id ) }
+							isDeleteLoading    = { deletingId === item.id }
+							duplicateItem      = { duplicateKit }
+							isDuplicateLoading = { duplicatingId === item.id }
+							confirmTitle       = "¿Eliminar kit?"
+							confirmMessage     = "¿Está seguro de que desea eliminar este kit? Esta acción no se puede deshacer."
 						/>
 					{/each}
 				</div>
