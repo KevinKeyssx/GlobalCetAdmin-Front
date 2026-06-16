@@ -92,6 +92,7 @@
 	let editingId          = $state( '' );
 	let editingLab         = $state< any >( null );
 	let deletingId         = $state( '' );
+	let duplicatingId      = $state( '' );
 
 
 	// Reset to page 1 on filter changes
@@ -278,6 +279,30 @@
 			deletingId = '';
 		}
 	}
+
+	async function duplicateLab( lab : MobileLab ) : Promise< void > {
+		duplicatingId = lab.id;
+
+		try {
+			const response = await connectRequest< any >( {
+				endpoint	: `${ INTERNAL_ENDPOINTS.DUPLICATE.BASE }?type=mobile-lab&id=${ lab.id }`,
+				method		: METHOD.POST,
+				isInternal	: true,
+			} );
+
+			if ( isApiError( response ) ) {
+				toast.error( `Error al duplicar: ${ response.message }` );
+				return;
+			}
+
+			toast.success( 'Laboratorio móvil duplicado con éxito.' );
+			queryClient.invalidateQueries( { queryKey : [ 'admin-labs' ] } );
+		} catch ( err ) {
+			toast.error( 'Error de red al intentar duplicar.' );
+		} finally {
+			duplicatingId = '';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -321,13 +346,15 @@
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
 					{#each labs as item ( item.id )}
 						<ItemCard
-							itemType        = "lab"
+							itemType           = "lab"
 							{ item }
-							openEditModal   = { openEditModal }
-							deleteItem      = { ( l ) => deleteLab( l.id ) }
-							isDeleteLoading = { deletingId === item.id }
-							confirmTitle    = "¿Eliminar laboratorio móvil?"
-							confirmMessage  = "¿Está seguro de que desea eliminar este laboratorio móvil? Esta acción no se puede deshacer."
+							openEditModal      = { openEditModal }
+							deleteItem         = { ( l ) => deleteLab( l.id ) }
+							isDeleteLoading    = { deletingId === item.id }
+							duplicateItem      = { duplicateLab }
+							isDuplicateLoading = { duplicatingId === item.id }
+							confirmTitle       = "¿Eliminar laboratorio móvil?"
+							confirmMessage     = "¿Está seguro de que desea eliminar este laboratorio móvil? Esta acción no se puede deshacer."
 						/>
 					{/each}
 				</div>
