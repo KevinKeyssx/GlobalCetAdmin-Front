@@ -1,14 +1,18 @@
 <script lang="ts">
-	import type {
+    import { Copy } from '@lucide/svelte';
+
+    import type {
         GlobalSearchProduct,
 		GlobalSearchKit,
 		GlobalSearchMobileLab,
-	}                       from '$lib/types/search';
-	import type { Product, AdminProduct } from '$lib/types/product';
-	import { getItemImages }             from '$lib/utils/image';
-	import { stripHtml }                 from '$lib/utils/string';
-	import { Copy }                      from '@lucide/svelte';
-	import TableActions                  from '../TableActions.svelte';
+	}                           from '$lib/types/search';
+	import type {
+        Product,
+        AdminProduct
+    }                           from '$lib/types/product';
+	import { getItemImages }    from '$lib/utils/image';
+	import { stripHtml }        from '$lib/utils/string';
+	import TableActions         from '../TableActions.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	export interface SubProduct {
