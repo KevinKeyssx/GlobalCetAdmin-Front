@@ -44,6 +44,7 @@
 	let order           = $state( 'name' );
 	let typeOrder       = $state( 'asc' );
 	let page            = $state( 1 );
+	let size            = $state( 12 );
 	let view            = $state< 'cards' | 'list' >( 'cards' );
 
 	let showModal       = $state( false );
@@ -54,7 +55,7 @@
 
 	// Reset to page 1 on filter changes
 	$effect( ( ) => {
-		const _ = [ debouncedSearch, activeStatus ];
+		const _ = [ debouncedSearch, activeStatus, size ];
 		page = 1;
 	} );
 
@@ -62,11 +63,11 @@
 	const queryClient = useQueryClient();
 
 	const categoriesQuery = createQuery( ( ) => ( {
-		queryKey : [ 'lab-categories', page, debouncedSearch, activeStatus, order, typeOrder ],
+		queryKey : [ 'lab-categories', page, size, debouncedSearch, activeStatus, order, typeOrder ],
 		queryFn  : async ( ) : Promise< PaginatedResponse< LabCategory > > => {
 			const params = new URLSearchParams( {
 				page    : page.toString(),
-				size    : '10',
+				size    : size.toString(),
 				orderBy : order,
 				order   : typeOrder,
 			} );
@@ -193,7 +194,7 @@
 		{#if ( view === 'cards' )}
 			{#if ( categoriesQuery.isPending )}
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-					{#each Array.from( { length : 8 } ) as _}
+					{#each Array.from( { length : size } ) as _}
 						<CardSkeleton type="category" />
 					{/each}
 				</div>
@@ -268,12 +269,12 @@
 			</section>
 		{/if}
 
-		{#if ( categoriesQuery.data?.meta && categoriesQuery.data.meta.totalPages > 1 )}
+		{#if ( categoriesQuery.data?.meta && categoriesQuery.data.meta.total > 0 )}
 			<div class="flex justify-center pt-2">
 				<Pagination
-					count={ categoriesQuery.data.meta.total }
-					perPage={ categoriesQuery.data.meta.size }
 					bind:page={ page }
+					count={ categoriesQuery.data.meta.total }
+					bind:perPage={ size }
 				/>
 			</div>
 		{/if}

@@ -43,6 +43,7 @@
 	let typeOrder         = $state( 'asc' );
 	let categoriesPage    = $state( 1 );
 	let subcategoriesPage = $state( 1 );
+	let size              = $state( 12 );
 	let view              = $state< 'cards' | 'list' >( 'cards' );
 	let showModal         = $state( false );
 	let isEditing         = $state( false );
@@ -68,7 +69,7 @@
 
 	// Reset to page 1 on filter changes
 	$effect( ( ) => {
-		const _ = [ debouncedSearch, activeStatus, Array.from( selectedCategories ) ];
+		const _ = [ debouncedSearch, activeStatus, Array.from( selectedCategories ), size ];
 		categoriesPage    = 1;
 		subcategoriesPage = 1;
 	});
@@ -77,12 +78,12 @@
 	const queryClient = useQueryClient();
 
 	const categoriesQuery = createQuery( ( ) => ( {
-		queryKey : [ 'categories', categoriesPage, debouncedSearch, activeStatus, order, typeOrder ],
+		queryKey : [ 'categories', categoriesPage, size, debouncedSearch, activeStatus, order, typeOrder ],
 		queryFn  : async ( ) : Promise< PaginatedResponse< Category > > => {
 			const params = new URLSearchParams( {
 				type                 : 'category',
 				page                 : categoriesPage.toString(),
-				size                 : '10',
+				size                 : size.toString(),
 				orderBy              : order,
 				order                : typeOrder,
 				includeSubcategories : 'true',
@@ -132,12 +133,12 @@
 
 
     const subcategoriesQuery = createQuery( ( ) => ( {
-		queryKey : [ 'subcategories', subcategoriesPage, debouncedSearch, activeStatus, Array.from( selectedCategories ), order, typeOrder ],
+		queryKey : [ 'subcategories', subcategoriesPage, size, debouncedSearch, activeStatus, Array.from( selectedCategories ), order, typeOrder ],
 		queryFn  : async ( ) : Promise< PaginatedResponse< SubCategory > > => {
 			const params = new URLSearchParams( {
 				type            : 'subcategory',
 				page            : subcategoriesPage.toString(),
-				size            : '10',
+				size            : size.toString(),
 				orderBy         : order,
 				order           : typeOrder,
 				includeCategory : 'true',
@@ -345,7 +346,7 @@
 			{#if ( view === 'cards' )}
 				{#if ( categoriesQuery.isPending )}
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-						{#each Array.from( { length : 8 } ) as _}
+						{#each Array.from( { length : size } ) as _}
 							<CardSkeleton type="category" />
 						{/each}
 					</div>
@@ -433,12 +434,12 @@
 				</section>
 			{/if}
 
-			{#if ( categoriesQuery.data?.meta && categoriesQuery.data.meta.totalPages > 1 )}
+			{#if ( categoriesQuery.data?.meta && categoriesQuery.data.meta.total > 0 )}
 				<div class="flex justify-center pt-4">
 					<Pagination
-						count={ categoriesQuery.data.meta.total }
-						perPage={ categoriesQuery.data.meta.size }
 						bind:page={ categoriesPage }
+						count={ categoriesQuery.data.meta.total }
+						bind:perPage={ size }
 					/>
 				</div>
 			{/if}
@@ -446,7 +447,7 @@
 			{#if ( view === 'cards' )}
 				{#if ( subcategoriesQuery.isPending )}
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-						{#each Array.from( { length : 8 } ) as _}
+						{#each Array.from( { length : size } ) as _}
 							<CardSkeleton type="category" />
 						{/each}
 					</div>
@@ -526,12 +527,12 @@
 				</section>
 			{/if}
 
-			{#if ( subcategoriesQuery.data?.meta && subcategoriesQuery.data.meta.totalPages > 1 )}
+			{#if ( subcategoriesQuery.data?.meta && subcategoriesQuery.data.meta.total > 0 )}
 				<div class="flex justify-center pt-4">
 					<Pagination
-						count={ subcategoriesQuery.data.meta.total }
-						perPage={ subcategoriesQuery.data.meta.size }
 						bind:page={ subcategoriesPage }
+						count={ subcategoriesQuery.data.meta.total }
+						bind:perPage={ size }
 					/>
 				</div>
 			{/if}
