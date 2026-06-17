@@ -1,9 +1,12 @@
-<script>
-	import PoweredButton    from "../buttons/PoweredButton.svelte";
-	import GitHubButton     from "../buttons/GitHubButton.svelte";
+<script lang="ts">
+	import { page }         from '$app/state';
+	import PoweredButton    from '../buttons/PoweredButton.svelte';
+	import GitHubButton     from '../buttons/GitHubButton.svelte';
+
+	const isDashboard = $derived( page.url.pathname.startsWith( '/dashboard' ) );
 </script>
 
-<footer class="relative overflow-hidden border-t border-brand/20 bg-card/60 px-6 py-8 text-text-muted sm:px-12 backdrop-blur-md">
+<footer class="relative z-40 overflow-hidden border-t border-brand/20 bg-card/60 px-6 py-8 text-text-muted sm:px-12 backdrop-blur-md { isDashboard ? 'md:pl-[260px]' : '' }">
 	<!-- Decorative grid background background -->
 	<div class="pointer-events-none absolute inset-0 opacity-[0.02] bg-[radial-gradient(var(--color-brand)_1px,transparent_1px)] bg-size-[16px_16px]"></div>
 	<div class="pointer-events-none absolute -bottom-48 left-1/3 h-[400px] w-[400px] rounded-full bg-brand/5 blur-[100px]"></div>
