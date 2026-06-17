@@ -1,17 +1,23 @@
 <script lang="ts">
-	import toast                                            from 'svelte-french-toast';
-	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import {
+        createQuery,
+        createMutation,
+        useQueryClient
+    }               from '@tanstack/svelte-query';
+	import toast    from 'svelte-french-toast';
 
-	import connectRequest, { isApiError }                   from '$lib/services/fetch.service';
-	import { INTERNAL_ENDPOINTS }                           from '$lib/utils/endpoints';
-	import { METHOD }                                       from '$lib/services/http-codes';
-	import { globalLoadingStore }                           from '$lib/state/loading';
-	import CategoryFormModal                                from '$lib/components/shared/CategoryFormModal.svelte';
-	import TableActions                                     from '$lib/components/shared/TableActions.svelte';
-	import Pagination                                       from '$lib/components/shared/Pagination.svelte';
-	import HeaderPage                                       from '$lib/components/shared/HeaderPage.svelte';
-	import CategoryFilters                                  from '$lib/components/shared/CategoryFilters.svelte';
-	import CategoryCard                                     from '$lib/components/shared/itemCard/CategoryCard.svelte';
+	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
+	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
+	import { METHOD }                       from '$lib/services/http-codes';
+	import { globalLoadingStore }           from '$lib/state/loading';
+	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
+	import TableActions                     from '$lib/components/shared/TableActions.svelte';
+	import Pagination                       from '$lib/components/shared/Pagination.svelte';
+	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import CategoryFilters                  from '$lib/components/shared/CategoryFilters.svelte';
+	import CategoryCard                     from '$lib/components/shared/itemCard/CategoryCard.svelte';
+	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';
+	import ListSkeleton                     from '$lib/components/shared/ListSkeleton.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface KitCategory {
@@ -184,7 +190,13 @@
 
 		<!-- ─── Content ────────────────────────────────────────────────────── -->
 		{#if ( view === 'cards' )}
-			{#if ( categoriesQuery.data?.data && categoriesQuery.data.data.length > 0 )}
+			{#if ( categoriesQuery.isPending )}
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+					{#each Array.from( { length : 8 } ) as _}
+						<CardSkeleton type="category" />
+					{/each}
+				</div>
+			{:else if ( categoriesQuery.data?.data && categoriesQuery.data.data.length > 0 )}
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
 					{#each ( categoriesQuery.data.data ) as item ( item.id )}
 						<CategoryCard
@@ -219,32 +231,36 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-brand/10 font-semibold">
-							{#each ( categoriesQuery.data?.data || [] ) as item ( item.id )}
-								<tr class="hover:bg-brand/5 transition-colors duration-150">
-									<td class="px-6 py-4 font-bold text-text">{ item.name }</td>
-									<td class="px-6 py-4">
-										<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { item.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
-											{ item.active ? 'Activo' : 'Inactivo' }
-										</span>
-									</td>
-									<td class="px-6 py-4 text-right">
-										<TableActions
-											{ item }
-											openEditModal   = { openEditModal }
-											deleteItem      = { ( c ) => deleteCategory( c.id ) }
-											isDeleteLoading = { deletingId === item.id }
-											confirmTitle    = "¿Eliminar categoría?"
-											confirmMessage  = "¿Está seguro de que desea eliminar esta categoría de kits? Los kits en esta categoría podrían quedar huérfanos. Esta acción no se puede deshacer."
-										/>
-									</td>
-								</tr>
+							{#if ( categoriesQuery.isPending )}
+								<ListSkeleton columns={ 3 } rows={ 5 } />
+							{:else if ( categoriesQuery.data?.data && categoriesQuery.data.data.length > 0 )}
+								{#each ( categoriesQuery.data.data ) as item ( item.id )}
+									<tr class="hover:bg-brand/5 transition-colors duration-150">
+										<td class="px-6 py-4 font-bold text-text">{ item.name }</td>
+										<td class="px-6 py-4">
+											<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { item.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
+												{ item.active ? 'Activo' : 'Inactivo' }
+											</span>
+										</td>
+										<td class="px-6 py-4 text-right">
+											<TableActions
+												{ item }
+												openEditModal   = { openEditModal }
+												deleteItem      = { ( c ) => deleteCategory( c.id ) }
+												isDeleteLoading = { deletingId === item.id }
+												confirmTitle    = "¿Eliminar categoría?"
+												confirmMessage  = "¿Está seguro de que desea eliminar esta categoría de kits? Los kits en esta categoría podrían quedar huérfanos. Esta acción no se puede deshacer."
+											/>
+										</td>
+									</tr>
+								{/each}
 							{:else}
 								<tr>
 									<td colspan="3" class="px-6 py-12 text-center text-text-muted leading-relaxed">
 										No se encontraron categorías de kits registradas.
 									</td>
 								</tr>
-							{/each}
+							{/if}
 						</tbody>
 					</table>
 				</div>

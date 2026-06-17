@@ -19,6 +19,9 @@
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
 	import MaterialCard                     from '$lib/components/shared/itemCard/MaterialCard.svelte';
+	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';
+	import ListSkeleton                     from '$lib/components/shared/ListSkeleton.svelte';
+
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Material {
@@ -269,7 +272,13 @@
 
 		<!-- ─── Content ────────────────────────────────────────────────────── -->
 		{#if ( view === 'cards' )}
-			{#if ( materialsQuery.data?.data && materialsQuery.data.data.length > 0 )}
+			{#if ( materialsQuery.isPending )}
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+					{#each Array.from( { length : 8 } ) as _}
+						<CardSkeleton type="material" />
+					{/each}
+				</div>
+			{:else if ( materialsQuery.data?.data && materialsQuery.data.data.length > 0 )}
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
 					{#each ( materialsQuery.data.data ) as item ( item.id )}
 						<MaterialCard
@@ -314,48 +323,52 @@
 						</thead>
 
 						<tbody class="divide-y divide-brand/10 font-semibold text-sm">
-							{#each ( materialsQuery.data?.data || [] ) as item ( item.id )}
-								<tr class="hover:bg-brand/5 transition-colors duration-150">
-									<td class="px-6 py-4 font-bold text-text">{ item.name }</td>
+							{#if ( materialsQuery.isPending )}
+								<ListSkeleton columns={ 7 } rows={ 5 } />
+							{:else if ( materialsQuery.data?.data && materialsQuery.data.data.length > 0 )}
+								{#each ( materialsQuery.data.data ) as item ( item.id )}
+									<tr class="hover:bg-brand/5 transition-colors duration-150">
+										<td class="px-6 py-4 font-bold text-text">{ item.name }</td>
 
-									<td class="px-6 py-4 font-mono text-text-muted">{ item.slug }</td>
+										<td class="px-6 py-4 font-mono text-text-muted">{ item.slug }</td>
 
-									<td class="px-6 py-4">
-										<Status
-											status      = { item.autoclavable || false }
-											textTrue    = "Si"
-											textFalse   = "No"
-										/>
-									</td>
+										<td class="px-6 py-4">
+											<Status
+												status      = { item.autoclavable || false }
+												textTrue    = "Si"
+												textFalse   = "No"
+											/>
+										</td>
 
-									<td class="px-6 py-4 font-mono">{ item.maxTemperature || 0 } °C</td>
+										<td class="px-6 py-4 font-mono">{ item.maxTemperature || 0 } °C</td>
 
-									<td class="px-6 py-4 uppercase font-bold text-[10px] text-brand">
-										{ item.chemicalResistance?.acid || 'N/A' } / { item.chemicalResistance?.alkaline || 'N/A' }
-									</td>
+										<td class="px-6 py-4 uppercase font-bold text-[10px] text-brand">
+											{ item.chemicalResistance?.acid || 'N/A' } / { item.chemicalResistance?.alkaline || 'N/A' }
+										</td>
 
-									<td class="px-6 py-4">
-										<Status status={ item.active } />
-									</td>
+										<td class="px-6 py-4">
+											<Status status={ item.active } />
+										</td>
 
-									<td class="px-6 py-4 text-right">
-										<TableActions
-											{ item }
-											openEditModal   = { openEditModal }
-											deleteItem      = { ( m ) => deleteMaterial( m.id ) }
-											isDeleteLoading = { deletingId === item.id }
-											confirmTitle    = "¿Eliminar material?"
-											confirmMessage  = "¿Está seguro de que desea eliminar este material? Esta acción no se puede deshacer."
-										/>
-									</td>
-								</tr>
+										<td class="px-6 py-4 text-right">
+											<TableActions
+												{ item }
+												openEditModal   = { openEditModal }
+												deleteItem      = { ( m ) => deleteMaterial( m.id ) }
+												isDeleteLoading = { deletingId === item.id }
+												confirmTitle    = "¿Eliminar material?"
+												confirmMessage  = "¿Está seguro de que desea eliminar este material? Esta acción no se puede deshacer."
+											/>
+										</td>
+									</tr>
+								{/each}
 							{:else}
 								<tr>
 									<td colspan="7" class="px-6 py-12 text-center text-text-muted leading-relaxed">
 										No se encontraron materiales registrados.
 									</td>
 								</tr>
-							{/each}
+							{/if}
 						</tbody>
 					</table>
 				</div>

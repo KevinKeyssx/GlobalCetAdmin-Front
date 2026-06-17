@@ -16,18 +16,34 @@
 	import Status                           from '$lib/components/shared/Status.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
+	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import type { MaterialInfo }            from '$lib/types/material';
 	import type { SubCategory }             from '$lib/types/category';
 	import ProductFormModal                 from './components/ProductFormModal.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
 	import { stripHtml }                    from '$lib/utils/string';
 	import ItemCard                         from '$lib/components/shared/itemCard/ItemCard.svelte';
+	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';
+	import ListSkeleton                     from '$lib/components/shared/ListSkeleton.svelte';
+
+	// ─── Interfaces ───────────────────────────────────────────────────────────────
+	interface PaginatedResponse< T > {
+		data : T[];
+		meta : {
+			total      : number;
+			page       : number;
+			size       : number;
+			totalPages : number;
+		};
+	}
 
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
 	let search                = $state( '' );
 	let debouncedSearch       = $state( '' );
 	let selectedMaterials     = $state( new Set< string >() );
 	let selectedSubcategories = $state( new Set< string >() );
+	let page                  = $state( 1 );
+	let size                  = $state( 12 );
 	let activeStatus          = $state( 'all' );
 	let view                  = $state< 'cards' | 'list' >( 'cards' );
 	let showModal             = $state( false );
@@ -36,14 +52,21 @@
 	let deletingId            = $state( '' );
 	let duplicatingId         = $state( '' );
 
+	// Reset to page 1 on filter changes
+	$effect( ( ) => {
+		const _ = [ debouncedSearch, activeStatus, Array.from( selectedMaterials ), Array.from( selectedSubcategories ), size ];
+		page = 1;
+	} );
+
 	// ─── TanStack Query client & queries ──────────────────────────────────────────
 	const queryClient = useQueryClient();
 
 	const productsQuery = createQuery( ( ) => ( {
-		queryKey : [ 'admin-products', Array.from( selectedMaterials ), Array.from( selectedSubcategories ), activeStatus, debouncedSearch ],
-		queryFn  : async ( ) : Promise< AdminProduct[] > => {
+		queryKey : [ 'admin-products', page, size, Array.from( selectedMaterials ), Array.from( selectedSubcategories ), activeStatus, debouncedSearch ],
+		queryFn  : async ( ) : Promise< PaginatedResponse< AdminProduct > > => {
 			const params = new URLSearchParams( {
-				size : '50',
+				page : page.toString(),
+				size : size.toString(),
 			} );
 
 			selectedMaterials.forEach( ( id ) => params.append( 'materials', id ) );
@@ -57,7 +80,7 @@
 				params.append( 'query', debouncedSearch );
 			}
 
-			const prodResponse = await connectRequest<any>( {
+			const prodResponse = await connectRequest< PaginatedResponse< AdminProduct > >( {
 				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?${ params.toString() }`,
 				isInternal : true,
 			} );
@@ -66,7 +89,7 @@
 				throw new Error( 'Error al cargar productos.' );
 			}
 
-			return prodResponse.data || [];
+			return prodResponse;
 		},
 	} ) );
 
@@ -121,7 +144,8 @@
 		},
 	}));
 
-	const products      = $derived( productsQuery.data || [] );
+	const productsResponse = $derived( productsQuery.data );
+	const products         = $derived( productsResponse?.data || [] );
 	const materials     = $derived( materialsQuery.data || [] );
 	const categories    = $derived( categoriesQuery.data || [] );
 	const subcategories = $derived( subcategoriesQuery.data || [] );
@@ -347,7 +371,13 @@
 
 		<!-- ─── Table/Grid Content ────────────────────────────────────────────────── -->
 		{#if ( view === 'cards' )}
-			{#if ( products.length > 0 )}
+			{#if ( productsQuery.isPending )}
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+					{#each Array.from( { length : size } ) as _}
+						<CardSkeleton type="item" />
+					{/each}
+				</div>
+			{:else if ( products.length > 0 )}
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
 					{#each products as item ( item.id )}
 						<ItemCard
@@ -385,62 +415,74 @@
 						</thead>
 
 						<tbody class="divide-y divide-brand/10 font-semibold text-sm">
-							{#each products as prod ( prod.id ) }
-								<tr class="hover:bg-brand/5 transition-colors duration-150">
-									<td class="px-6 py-3">
-										<div class="h-10 w-10 overflow-hidden rounded-lg border border-brand/10 bg-input">
-											{#if ( prod.files && prod.files[ 0 ] ) }
-												<img 
-													src     = { getProductImageUrl( prod.files ) } 
-													alt     = { prod.name } 
-													class   = "h-full w-full object-cover" 
-												/>
-											{:else}
-												<div class="flex h-full w-full items-center justify-center bg-brand/5 text-[10px] text-brand">🔬</div>
-											{/if}
-										</div>
-									</td>
+							{#if ( productsQuery.isPending )}
+								<ListSkeleton columns={ 7 } rows={ 5 } />
+							{:else if ( products.length > 0 )}
+								{#each products as prod ( prod.id ) }
+									<tr class="hover:bg-brand/5 transition-colors duration-150">
+										<td class="px-6 py-3">
+											<div class="h-10 w-10 overflow-hidden rounded-lg border border-brand/10 bg-input">
+												{#if ( prod.files && prod.files[ 0 ] ) }
+													<img 
+														src     = { getProductImageUrl( prod.files ) } 
+														alt     = { prod.name } 
+														class   = "h-full w-full object-cover" 
+													/>
+												{:else}
+													<div class="flex h-full w-full items-center justify-center bg-brand/5 text-[10px] text-brand">🔬</div>
+												{/if}
+											</div>
+										</td>
 
-									<td class="px-6 py-4 font-mono text-brand font-bold">{ prod.sku }</td>
+										<td class="px-6 py-4 font-mono text-brand font-bold">{ prod.sku }</td>
 
-									<td class="px-6 py-4">
-										<div class="font-bold text-text">{ prod.name }</div>
+										<td class="px-6 py-4">
+											<div class="font-bold text-text">{ prod.name }</div>
 
-										<div class="text-[11px] text-text-muted font-normal max-w-xs truncate">
-											{ stripHtml( prod.description ) || 'Sin descripción' }
-										</div>
-									</td>
+											<div class="text-[11px] text-text-muted font-normal max-w-xs truncate">
+												{ stripHtml( prod.description ) || 'Sin descripción' }
+											</div>
+										</td>
 
-									<td class="px-6 py-4 text-text-muted">{ prod.subcategory?.name || 'N/A' }</td>
+										<td class="px-6 py-4 text-text-muted">{ prod.subcategory?.name || 'N/A' }</td>
 
-									<td class="px-6 py-4 font-bold text-emerald-500">{ prod.material?.name || 'N/A' }</td>
+										<td class="px-6 py-4 font-bold text-emerald-500">{ prod.material?.name || 'N/A' }</td>
 
-									<td class="px-6 py-4">
-										<Status status={ prod.active } />
-									</td>
+										<td class="px-6 py-4">
+											<Status status={ prod.active } />
+										</td>
 
-									<td class="px-6 py-4 text-right">
-										<TableActions
-											item            = { prod }
-											openEditModal   = { openEditModal }
-											deleteItem      = { ( p ) => deleteProduct( p.id ) }
-											isDeleteLoading = { deletingId === prod.id }
-											confirmTitle    = "¿Eliminar producto?"
-											confirmMessage  = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
-										/>
-									</td>
-								</tr>
+										<td class="px-6 py-4 text-right">
+											<TableActions
+												item            = { prod }
+												openEditModal   = { openEditModal }
+												deleteItem      = { ( p ) => deleteProduct( p.id ) }
+												isDeleteLoading = { deletingId === prod.id }
+												confirmTitle    = "¿Eliminar producto?"
+												confirmMessage  = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
+											/>
+										</td>
+									</tr>
+								{/each}
 							{:else}
 								<tr>
 									<td colspan="7" class="px-6 py-12 text-center text-text-muted leading-relaxed">
 										No se encontraron productos en el catálogo de GlobalCET.
 									</td>
 								</tr>
-							{/each}
+							{/if}
 						</tbody>
 					</table>
 				</div>
 			</section>
+		{/if}
+
+		{#if ( productsResponse && productsResponse.meta && productsResponse.meta.total > 0 )}
+            <Pagination
+                bind:page = { page }
+                count     = { productsResponse.meta.total }
+                bind:perPage = { size }
+            />
 		{/if}
 
 		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->

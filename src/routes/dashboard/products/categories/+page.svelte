@@ -19,6 +19,9 @@
 	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
 	import type { Category, SubCategory }   from '$lib/types/category';
 	import CategoryCard                     from '$lib/components/shared/itemCard/CategoryCard.svelte';
+	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';
+	import ListSkeleton                     from '$lib/components/shared/ListSkeleton.svelte';
+
 
 	// ─── Paginated Response Interface ──────────────────────────────────────────────
 	interface PaginatedResponse< T > {
@@ -340,7 +343,13 @@
 		<!-- ─── Content Lists ──────────────────────────────────────────────────────── -->
 		{#if ( activeTab === 'categories' )}
 			{#if ( view === 'cards' )}
-				{#if ( categoriesQuery.data?.data && categoriesQuery.data.data.length > 0 )}
+				{#if ( categoriesQuery.isPending )}
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+						{#each Array.from( { length : 8 } ) as _}
+							<CardSkeleton type="category" />
+						{/each}
+					</div>
+				{:else if ( categoriesQuery.data?.data && categoriesQuery.data.data.length > 0 )}
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
 						{#each ( categoriesQuery.data.data ) as cat ( cat.id )}
 							<CategoryCard
@@ -377,43 +386,47 @@
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-brand/10 font-semibold">
-								{#each ( categoriesQuery.data?.data || [] ) as cat ( cat.id )}
-									<tr class="hover:bg-brand/5 transition-colors duration-150">
-										<td class="px-6 py-4 font-bold text-text">{ cat.name }</td>
-										<td class="px-6 py-4">
-											<div class="flex flex-wrap gap-1.5">
-												{#each ( cat.subCategories || [] ) as sub ( sub.id )}
-													<span class="rounded-full bg-brand/10 px-2.5 py-0.5 text-[10px] text-brand border border-brand/15">
-														{ sub.name }
-													</span>
-												{:else}
-													<span class="text-text-muted text-[10px]">Sin subcategorías</span>
-												{/each}
-											</div>
-										</td>
-										<td class="px-6 py-4">
-											<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { cat.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
-												{ cat.active ? 'Activo' : 'Inactivo' }
-											</span>
-										</td>
-										<td class="px-6 py-4 text-right">
-											<TableActions
-												item            = { cat }
-												openEditModal   = { openEditModal }
-												deleteItem      = { ( c ) => deleteItem( c.id ) }
-												isDeleteLoading = { deletingId === cat.id }
-												confirmTitle    = "¿Eliminar categoría?"
-												confirmMessage  = "¿Está seguro de que desea eliminar esta categoría y todas sus subcategorías? Esta acción no se puede deshacer."
-											/>
-										</td>
-									</tr>
+								{#if ( categoriesQuery.isPending )}
+									<ListSkeleton columns={ 4 } rows={ 5 } />
+								{:else if ( categoriesQuery.data?.data && categoriesQuery.data.data.length > 0 )}
+									{#each ( categoriesQuery.data.data ) as cat ( cat.id )}
+										<tr class="hover:bg-brand/5 transition-colors duration-150">
+											<td class="px-6 py-4 font-bold text-text">{ cat.name }</td>
+											<td class="px-6 py-4">
+												<div class="flex flex-wrap gap-1.5">
+													{#each ( cat.subCategories || [] ) as sub ( sub.id )}
+														<span class="rounded-full bg-brand/10 px-2.5 py-0.5 text-[10px] text-brand border border-brand/15">
+															{ sub.name }
+														</span>
+													{:else}
+														<span class="text-text-muted text-[10px]">Sin subcategorías</span>
+													{/each}
+												</div>
+											</td>
+											<td class="px-6 py-4">
+												<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { cat.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
+													{ cat.active ? 'Activo' : 'Inactivo' }
+												</span>
+											</td>
+											<td class="px-6 py-4 text-right">
+												<TableActions
+													item            = { cat }
+													openEditModal   = { openEditModal }
+													deleteItem      = { ( c ) => deleteItem( c.id ) }
+													isDeleteLoading = { deletingId === cat.id }
+													confirmTitle    = "¿Eliminar categoría?"
+													confirmMessage  = "¿Está seguro de que desea eliminar esta categoría y todas sus subcategorías? Esta acción no se puede deshacer."
+												/>
+											</td>
+										</tr>
+									{/each}
 								{:else}
 									<tr>
 										<td colspan="4" class="px-6 py-12 text-center text-text-muted leading-relaxed">
 											No hay categorías registradas.
 										</td>
 									</tr>
-								{/each}
+								{/if}
 							</tbody>
 						</table>
 					</div>
@@ -431,7 +444,13 @@
 			{/if}
 		{:else}
 			{#if ( view === 'cards' )}
-				{#if ( subcategoriesQuery.data?.data && subcategoriesQuery.data.data.length > 0 )}
+				{#if ( subcategoriesQuery.isPending )}
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+						{#each Array.from( { length : 8 } ) as _}
+							<CardSkeleton type="category" />
+						{/each}
+					</div>
+				{:else if ( subcategoriesQuery.data?.data && subcategoriesQuery.data.data.length > 0 )}
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
 						{#each ( subcategoriesQuery.data.data ) as sub ( sub.id )}
 							<CategoryCard
@@ -468,35 +487,39 @@
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-brand/10 font-semibold">
-								{#each ( subcategoriesQuery.data?.data || [] ) as sub ( sub.id )}
-									<tr class="hover:bg-brand/5 transition-colors duration-150">
-										<td class="px-6 py-4 font-bold text-text">{ sub.name }</td>
-										<td class="px-6 py-4 font-bold text-brand uppercase tracking-wider text-[10px]">
-											{ sub.category?.name || 'Sin Categoría' }
-										</td>
-										<td class="px-6 py-4">
-											<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { sub.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
-												{ sub.active ? 'Activo' : 'Inactivo' }
-											</span>
-										</td>
-										<td class="px-6 py-4 text-right">
-											<TableActions
-												item            = { sub }
-												openEditModal   = { openEditModal }
-												deleteItem      = { ( s ) => deleteItem( s.id ) }
-												isDeleteLoading = { deletingId === sub.id }
-												confirmTitle    = "¿Eliminar subcategoría?"
-												confirmMessage  = "¿Está seguro de que desea eliminar esta subcategoría? Esta acción no se puede deshacer."
-											/>
-										</td>
-									</tr>
+								{#if ( subcategoriesQuery.isPending )}
+									<ListSkeleton columns={ 4 } rows={ 5 } />
+								{:else if ( subcategoriesQuery.data?.data && subcategoriesQuery.data.data.length > 0 )}
+									{#each ( subcategoriesQuery.data.data ) as sub ( sub.id )}
+										<tr class="hover:bg-brand/5 transition-colors duration-150">
+											<td class="px-6 py-4 font-bold text-text">{ sub.name }</td>
+											<td class="px-6 py-4 font-bold text-brand uppercase tracking-wider text-[10px]">
+												{ sub.category?.name || 'Sin Categoría' }
+											</td>
+											<td class="px-6 py-4">
+												<span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold border { sub.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/15' : 'bg-rose-500/10 text-rose-500 border-rose-500/15' }">
+													{ sub.active ? 'Activo' : 'Inactivo' }
+												</span>
+											</td>
+											<td class="px-6 py-4 text-right">
+												<TableActions
+													item            = { sub }
+													openEditModal   = { openEditModal }
+													deleteItem      = { ( s ) => deleteItem( s.id ) }
+													isDeleteLoading = { deletingId === sub.id }
+													confirmTitle    = "¿Eliminar subcategoría?"
+													confirmMessage  = "¿Está seguro de que desea eliminar esta subcategoría? Esta acción no se puede deshacer."
+												/>
+											</td>
+										</tr>
+									{/each}
 								{:else}
 									<tr>
-										<td colspan="3" class="px-6 py-12 text-center text-text-muted leading-relaxed">
+										<td colspan="4" class="px-6 py-12 text-center text-text-muted leading-relaxed">
 											No hay subcategorías registradas. Cree una categoría padre primero.
 										</td>
 									</tr>
-								{/each}
+								{/if}
 							</tbody>
 						</table>
 					</div>
