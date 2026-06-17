@@ -57,7 +57,7 @@
 			bind:value={ value }
 			{ placeholder }
 			{ disabled }
-			class="transition-all placeholder:text-text-muted/50 pr-10 { finalClass }"
+			class="transition-all placeholder:text-text-muted/50 pr-10 { finalClass } min-h-12 max-h-28"
 		></textarea>
 		<div class="absolute right-3 top-3">
 			<PasteButton bind:value={ value } { disabled } />
