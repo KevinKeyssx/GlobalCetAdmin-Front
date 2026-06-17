@@ -26,7 +26,7 @@
 <svelte:window onscroll={ handleScroll } />
 
 <!-- ─── Dashboard Layout: Sidebar + Content Area ──────────────────────────────── -->
-<div class="dashboard-shell">
+<div class="relative flex min-h-[calc(100vh-80px)] w-full">
 	<!-- ─── Background Lights ────────────────────────────────────────────────── -->
     <div class="pointer-events-none absolute top-44 left-96 h-[400px] w-[400px] rounded-full bg-brand/10 blur-[100px] dark:bg-brand/15"></div>
 	<div class="pointer-events-none absolute bottom-10 right-10 h-[500px] w-[500px] rounded-full bg-brand-bright/5 blur-[120px] dark:bg-brand-bright/10"></div>
@@ -34,8 +34,8 @@
 	<DashboardSidebar />
 
 	<!-- Main Content Area (Child Pages) -->
-	<div class="dashboard-content">
-		{@render children()}
+	<div class="flex-1 min-w-0 relative md:ml-[260px]">
+		{@render children() }
 	</div>
 
 	{#if ( showScrollButton )}
@@ -50,20 +50,6 @@
 </div>
 
 <style>
-	.dashboard-shell {
-		position   : relative;
-		display    : flex;
-		min-height : calc( 100vh - 80px );
-		width      : 100%;
-		overflow-x : hidden;
-	}
-
-	.dashboard-content {
-		flex       : 1;
-		min-width  : 0;
-		overflow-x : hidden;
-	}
-
 	@keyframes fadeInScale {
 		from {
 			opacity   : 0;
