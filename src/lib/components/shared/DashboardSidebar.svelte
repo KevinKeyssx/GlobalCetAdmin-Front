@@ -90,7 +90,7 @@
 <!-- ─── Sidebar Navigation Panel ──────────────────────────────────────────────── -->
 <aside
 	id="dashboard-sidebar"
-	class="hidden md:flex sticky top-0 flex-col w-[260px] min-w-[260px] h-screen py-5 bg-sidebar border-r border-brand/12 shadow-sidebar overflow-y-auto animate-sidebar-slide-in"
+	class="hidden md:flex fixed top-[80px] left-0 z-30 flex-col w-[260px] min-w-[260px] h-[calc(100vh-80px)] py-5 bg-sidebar border-r border-brand/12 shadow-sidebar overflow-y-auto animate-sidebar-slide-in"
 >
 	{@render sidebarContent( false )}
 </aside>
