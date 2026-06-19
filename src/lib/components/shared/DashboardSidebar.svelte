@@ -85,30 +85,45 @@
 	function sectionIsActive( section : NavSection ) : boolean {
 		return section.children.some( ( child ) => currentPath === child.href );
 	}
+
+	function portal( node : HTMLElement ) : { destroy() : void } {
+		document.body.appendChild( node );
+		return {
+			destroy() {
+				if ( node.parentNode ) {
+					node.parentNode.removeChild( node );
+				}
+			}
+		};
+	}
 </script>
 
 <!-- ─── Sidebar Navigation Panel ──────────────────────────────────────────────── -->
 <aside
 	id="dashboard-sidebar"
-	class="hidden md:flex fixed top-[80px] left-0 z-30 flex-col w-[260px] min-w-[260px] h-[calc(100vh-80px)] py-5 bg-sidebar border-r border-brand/12 shadow-sidebar overflow-y-auto animate-sidebar-slide-in"
+	class="hidden md:flex md:sticky lg:fixed top-[80px] left-0 z-30 flex-col w-[260px] min-w-[260px] h-[calc(100vh-80px)] py-5 bg-sidebar border-r border-brand/12 shadow-sidebar overflow-y-auto animate-sidebar-slide-in"
 >
 	{@render sidebarContent( false )}
 </aside>
 
 <!-- Floating Menu Button (Mobile only) -->
-<button
-	type        = "button"
-	onclick     = { ( ) => { isDrawerOpen = true; } }
-	class       = "fixed top-[90%] left-3 sm:left-6 z-55 md:hidden flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar border border-brand/15 shadow-[0_4px_12px_color-mix(in_srgb,var(--color-brand)_10%,transparent)] text-brand hover:scale-105 active:scale-95 transition-all cursor-pointer animate-fade-in"
-	aria-label  = "Abrir menú"
->
-	<Menu class="h-4.5 w-4.5" />
-</button>
+{#if !isDrawerOpen }
+    <button
+        use:portal
+        type        = "button"
+        onclick     = { ( ) => { isDrawerOpen = true; } }
+        class       = "fixed top-[90%] left-3 sm:left-6 z-55 md:hidden flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar border border-brand/15 shadow-[0_4px_12px_color-mix(in_srgb,var(--color-brand)_10%,transparent)] text-brand hover:scale-105 active:scale-95 transition-all cursor-pointer animate-fade-in"
+        aria-label  = "Abrir menú"
+    >
+        <Menu class="h-4.5 w-4.5" />
+    </button>
+{/if}
 
 <!-- Mobile Drawer Portal / Overlays -->
 {#if isDrawerOpen }
 	<!-- Backdrop Overlay -->
 	<div
+		use:portal
 		role       = "button"
 		tabindex   = "0"
 		onclick    = { ( ) => { isDrawerOpen = false; } }
@@ -120,6 +135,7 @@
 
 	<!-- Drawer Sidebar Panel -->
 	<aside
+		use:portal
 		id="dashboard-sidebar-drawer"
 		class="fixed top-0 left-0 flex flex-col w-[260px] h-screen py-5 bg-sidebar border-r border-brand/12 shadow-sidebar z-50 overflow-y-auto md:hidden"
 		transition:fly={ { x : -260, duration : 300, easing : cubicOut } }
