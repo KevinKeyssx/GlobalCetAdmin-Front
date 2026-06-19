@@ -34,7 +34,7 @@
 	<DashboardSidebar />
 
 	<!-- Main Content Area (Child Pages) -->
-	<div class="flex-1 min-w-0 relative md:ml-[260px]">
+	<div class="flex-1 min-w-0 relative lg:ml-[260px]">
 		{@render children() }
 	</div>
 
