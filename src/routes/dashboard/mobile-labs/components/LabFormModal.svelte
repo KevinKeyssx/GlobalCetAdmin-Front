@@ -19,7 +19,8 @@
 	import { METHOD }                       from '$lib/services/http-codes';
 	import DashboardModal                   from '../../components/DashboardModal.svelte';
 	import ConfirmationModal                from '$lib/components/shared/ConfirmationModal.svelte';
-	import RelationManager                  from '$lib/components/shared/RelationManager.svelte';
+	import ProductSelectManager             from '$lib/components/shared/ProductSelectManager.svelte';
+	import KitSelectManager                 from '$lib/components/shared/KitSelectManager.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
 	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
@@ -27,34 +28,19 @@
 	import TextArea                         from '$lib/components/shared/TextArea.svelte';
 	import InputNumber                      from '$lib/components/shared/InputNumber.svelte';
 
-	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface LabCategory {
 		id   : string;
 		name : string;
 	}
 
-	interface CatalogProduct {
-		id   : string;
-		name : string;
-		sku  : string;
-	}
-
-	interface CatalogKit {
-		id   : string;
-		name : string;
-		sku  : string;
-	}
-
 	interface LabFormProps {
-		show            : boolean;
-		isEditing       : boolean;
-		editingId       : string;
-		initialData     : LabInitial | null;
-		categories      : LabCategory[];
-		catalogProducts : CatalogProduct[];
-		catalogKits     : CatalogKit[];
-		onSave          : () => void;
-		onCancel        : () => void;
+		show        : boolean;
+		isEditing   : boolean;
+		editingId   : string;
+		initialData : LabInitial | null;
+		categories  : LabCategory[];
+		onSave      : ( ) => void;
+		onCancel    : ( ) => void;
 	}
 
 	let {
@@ -63,8 +49,6 @@
 		editingId,
 		initialData,
 		categories,
-		catalogProducts,
-		catalogKits,
 		onSave,
 		onCancel,
 	} : LabFormProps = $props();
@@ -532,30 +516,18 @@
 					<!-- <div class="fade-in grid grid-cols-1 sm:grid-cols-2 gap-3" style="--delay: 240ms"> -->
 					<div class="fade-in gap-4 grid" style="--delay: 240ms">
 						<!-- PRODUCTS RELATION -->
-						<RelationManager
+						<ProductSelectManager
 							bind:items           = { formProducts }
-							catalogItems         = { catalogProducts }
-							title                = "Productos / Insumos Individuales"
-							placeholder          = "Seleccionar producto..."
-							idKey                = "productId"
-							metaKey              = "product"
 							isEditing            = { isEditing }
 							initialDataRelations = { initialData?.products }
-							duplicateMessage     = "Este producto ya está agregado al laboratorio."
 							onRemove             = { removeProductFromForm }
 						/>
 
 						<!-- KITS RELATION -->
-						<RelationManager
+						<KitSelectManager
 							bind:items           = { formKits }
-							catalogItems         = { catalogKits }
-							title                = "Kits Pedagógicos Integrados"
-							placeholder          = "Seleccionar kit..."
-							idKey                = "kitId"
-							metaKey              = "kit"
 							isEditing            = { isEditing }
 							initialDataRelations = { initialData?.kits }
-							duplicateMessage     = "Este kit ya está agregado al laboratorio."
 							onRemove             = { removeKitFromForm }
 						/>
 					</div>
