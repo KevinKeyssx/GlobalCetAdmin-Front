@@ -140,36 +140,6 @@
 		},
 	} ) );
 
-	const catalogProductsQuery = createQuery( ( ) => ( {
-		queryKey : [ 'catalog-products' ],
-		queryFn  : async ( ) : Promise< CatalogProduct[] > => {
-			const response = await connectRequest< any >( {
-				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=100`,
-				isInternal : true,
-			} );
-
-			if ( isApiError( response ) ) {
-				throw new Error( 'Error al cargar productos del catálogo.' );
-			}
-			return response.data || [];
-		},
-	} ) );
-
-	const catalogKitsQuery = createQuery( ( ) => ( {
-		queryKey : [ 'catalog-kits' ],
-		queryFn  : async ( ) : Promise< CatalogKit[] > => {
-			const response = await connectRequest< any >( {
-				endpoint   : `${ INTERNAL_ENDPOINTS.KITS.FILTERS }?size=100`,
-				isInternal : true,
-			} );
-
-			if ( isApiError( response ) ) {
-				throw new Error( 'Error al cargar kits del catálogo.' );
-			}
-			return response.data || [];
-		},
-	} ) );
-
 	const categoriesQuery = createQuery( ( ) => ( {
 		queryKey : [ 'lab-categories' ],
 		queryFn  : async ( ) : Promise< LabCategory[] > => {
@@ -186,11 +156,9 @@
 	} ) );
 
 	// ─── Reactive derived states ──────────────────────────────────────────────────
-	const labsResponse    = $derived( labsQuery.data );
-	const labs            = $derived( labsResponse?.data        || [] );
-	const catalogProducts = $derived( catalogProductsQuery.data || [] );
-	const catalogKits     = $derived( catalogKitsQuery.data     || [] );
-	const categories      = $derived( categoriesQuery.data      || [] );
+	const labsResponse = $derived( labsQuery.data );
+	const labs         = $derived( labsResponse?.data || [ ] );
+	const categories   = $derived( categoriesQuery.data || [ ] );
 
 	// Debounce Search
 	$effect( ( ) => {
@@ -205,7 +173,7 @@
 
 	// Sincronizar cargando global con queries
 	$effect( ( ) => {
-		$globalLoadingStore = labsQuery.isFetching || catalogProductsQuery.isFetching || catalogKitsQuery.isFetching || categoriesQuery.isFetching;
+		$globalLoadingStore = labsQuery.isFetching || categoriesQuery.isFetching;
 		return ( ) => {
 			$globalLoadingStore = false;
 		};
@@ -480,8 +448,6 @@
 				{ editingId }
 				initialData={ editingLab }
 				{ categories }
-				{ catalogProducts }
-				{ catalogKits }
 				onSave={ () => {
 					showModal = false;
 				} }
