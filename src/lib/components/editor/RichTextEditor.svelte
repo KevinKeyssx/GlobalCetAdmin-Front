@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { untrack }           from 'svelte';
-	import { fade, scale }        from 'svelte/transition';
-	import { cubicOut }           from 'svelte/easing';
+	import { untrack } from 'svelte';
 	import {
 		Bold,
 		Italic,
@@ -18,20 +16,21 @@
 		Quote,
 		Trash2,
 		FileUp
-	}                             from '@lucide/svelte';
-	import toast                from 'svelte-french-toast';
-	import { Editor, Extension }  from '@tiptap/core';
-	import StarterKit             from '@tiptap/starter-kit';
-	import { TextAlign }          from '@tiptap/extension-text-align';
-	import { Link }               from '@tiptap/extension-link';
-	import { Table }              from '@tiptap/extension-table';
-	import { TableRow }           from '@tiptap/extension-table-row';
-	import { TableHeader }        from '@tiptap/extension-table-header';
-	import { TableCell }          from '@tiptap/extension-table-cell';
-	import { TextStyle }          from '@tiptap/extension-text-style';
-	import SoftSelect             from '$lib/components/shared/SoftSelect.svelte';
-	import Popover                from '$lib/components/shared/Popover.svelte';
-	import pdfWorkerURL           from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+	}                               from '@lucide/svelte';
+	import toast                    from 'svelte-french-toast';
+	import { Editor, Extension }    from '@tiptap/core';
+	import StarterKit               from '@tiptap/starter-kit';
+	import { TextAlign }            from '@tiptap/extension-text-align';
+	import { Link }                 from '@tiptap/extension-link';
+	import { Table }                from '@tiptap/extension-table';
+	import { TableRow }             from '@tiptap/extension-table-row';
+	import { TableHeader }          from '@tiptap/extension-table-header';
+	import { TableCell }            from '@tiptap/extension-table-cell';
+	import { TextStyle }            from '@tiptap/extension-text-style';
+	import pdfWorkerURL             from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+	
+    import SoftSelect   from '$lib/components/shared/SoftSelect.svelte';
+	import Popover      from '$lib/components/shared/Popover.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface Props {
