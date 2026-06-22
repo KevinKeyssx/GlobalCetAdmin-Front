@@ -47,11 +47,7 @@
 		name : string;
 	}
 
-	interface CatalogProduct {
-		id   : string;
-		name : string;
-		sku  : string;
-	}
+
 
 	interface PaginatedResponse< T > {
 		data : T[];
@@ -120,20 +116,7 @@
 		},
 	} ) );
 
-	const catalogProductsQuery = createQuery( ( ) => ( {
-		queryKey : [ 'catalog-products' ],
-		queryFn  : async ( ) : Promise< CatalogProduct[] > => {
-			const response = await connectRequest< any >( {
-				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?size=100`,
-				isInternal : true,
-			} );
 
-			if ( isApiError( response ) ) {
-				throw new Error( 'Error al cargar productos del catálogo.' );
-			}
-			return response.data || [];
-		},
-	} ) );
 
 	const categoriesQuery = createQuery( ( ) => ( {
 		queryKey : [ 'kit-categories' ],
@@ -151,14 +134,13 @@
 	} ) );
 
 	// ─── Reactive derived states ──────────────────────────────────────────────────
-	const kitsResponse    = $derived( kitsQuery.data );
-	const kits            = $derived( kitsResponse?.data || [] );
-	const catalogProducts = $derived( catalogProductsQuery.data || [] );
-	const categories      = $derived( categoriesQuery.data      || [] );
+	const kitsResponse = $derived( kitsQuery.data );
+	const kits         = $derived( kitsResponse?.data || [ ] );
+	const categories   = $derived( categoriesQuery.data || [ ] );
 
 	// Sincronizar cargando global con queries
 	$effect( ( ) => {
-		$globalLoadingStore = kitsQuery.isFetching || catalogProductsQuery.isFetching || categoriesQuery.isFetching;
+		$globalLoadingStore = kitsQuery.isFetching || categoriesQuery.isFetching;
 		return ( ) => {
 			$globalLoadingStore = false;
 		};
@@ -412,7 +394,6 @@
 				{ editingId }
 				initialData={ editingKit }
 				{ categories }
-				{ catalogProducts }
 				onSave={ () => {
 					showModal = false;
 				} }
