@@ -49,6 +49,15 @@
 				{ label : 'Categorías', href : resolve( '/dashboard/mobile-labs/categories' ), icon : '📁' },
 			],
 		},
+
+        {
+			id       : 'quotes',
+			label    : 'Cotizaciones',
+			icon     : '📝',
+			children : [
+				{ label : 'General',   href : resolve( '/dashboard/quotes' ), icon : '📝' },
+			],
+		},
 	];
 
 	// ─── Expanded Sections (Svelte 5 Runes) ───────────────────────────────────────
