@@ -6,34 +6,42 @@
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface RelationManagerProps {
-		items					: any[];
-		catalogItems			: any[];
-		title					: string;
-		placeholder				: string;
-		idKey					: string;
-		metaKey					: string;
-		isEditing				: boolean;
-		initialDataRelations	: any[] | null | undefined;
-		duplicateMessage?		: string;
-		onRemove				: ( id : string, name : string ) => void;
+		items                : any[];
+		catalogItems         : any[];
+		title                : string;
+		placeholder          : string;
+		idKey                : string;
+		metaKey              : string;
+		isEditing            : boolean;
+		initialDataRelations : any[] | null | undefined;
+		duplicateMessage?    : string;
+		onRemove             : ( id : string, name : string ) => void;
+		onLoadMore?          : ( ) => void;
+		hasMore?             : boolean;
+		isLoading?           : boolean;
+		onSearchChange?      : ( query : string ) => void;
 	}
 
 	let {
-		items = $bindable( [] ),
+		items                = $bindable( [ ] ),
 		catalogItems,
 		title,
 		placeholder,
 		idKey,
 		metaKey,
 		isEditing,
-		initialDataRelations = [],
-		duplicateMessage = 'Este elemento ya está agregado.',
+		initialDataRelations = [ ],
+		duplicateMessage     = 'Este elemento ya está agregado.',
 		onRemove,
+		onLoadMore,
+		hasMore              = false,
+		isLoading            = false,
+		onSearchChange,
 	} : RelationManagerProps = $props();
 
 	let selectedId = $state( '' );
 
-	const mappedOptions = $derived.by( () => {
+	const mappedOptions = $derived.by( ( ) => {
 		return catalogItems.map( ( item ) => ( {
 			id   : item.id,
 			name : `[${ item.sku }] ${ item.name }`,
@@ -82,10 +90,14 @@
 	<div class="flex items-center gap-2">
 		<div class="flex-1 min-w-0">
 			<Select
-				options     = { mappedOptions }
-				bind:value  = { selectedId }
-				multiple    = { false }
-				placeholder = { placeholder }
+				options        = { mappedOptions }
+				bind:value     = { selectedId }
+				multiple       = { false }
+				placeholder    = { placeholder }
+				onLoadMore     = { onLoadMore }
+				hasMore        = { hasMore }
+				isLoading      = { isLoading }
+				onSearchChange = { onSearchChange }
 			/>
 		</div>
 
@@ -118,10 +130,10 @@
                     />
 
 					<!-- Delete / Remove button -->
-					{#if isSavedInDatabase( item[ idKey ] )}
+					{#if ( isSavedInDatabase( item[ idKey ] ) )}
 						<button
 							type    = "button"
-							onclick = { () => onRemove( item[ idKey ], item[ metaKey ]?.name || '' ) }
+							onclick = { ( ) => onRemove( item[ idKey ], item[ metaKey ]?.name || '' ) }
 							title   = "Eliminar del servidor"
 							class   = "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-500/20 bg-red-500/10 text-red-400 transition-all duration-200 hover:bg-red-500 hover:text-white cursor-pointer"
 						>
@@ -130,7 +142,7 @@
 					{:else}
 						<button
 							type    = "button"
-							onclick = { () => onRemove( item[ idKey ], item[ metaKey ]?.name || '' ) }
+							onclick = { ( ) => onRemove( item[ idKey ], item[ metaKey ]?.name || '' ) }
 							title   = "Quitar temporalmente"
 							class   = "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-brand/20 bg-brand/5 text-brand transition-all duration-200 hover:bg-brand hover:text-surface-dark cursor-pointer"
 						>
