@@ -42,6 +42,12 @@ export const INTERNAL_ENDPOINTS = {
 		BASE   : 'global-search',
 		TOTALS : 'global-search/totals',
 	},
+	QUOTES        : {
+		BASE    : 'quotes',
+		CREATE  : 'quotes/create',
+		GET_ALL : 'quotes/get-all',
+		UPDATE  : 'quotes/update',
+	},
 };
 
 export const EXTERNAL_ENDPOINTS = {
@@ -80,6 +86,9 @@ export const EXTERNAL_ENDPOINTS = {
 		PRODUCT		: '/duplicates/product',
 		KIT			: '/duplicates/kit',
 		MOBILE_LAB	: '/duplicates/mobile-lab',
-	}
+	},
+	QUOTES        : {
+		BASE : '/quotes',
+	},
 };
 
