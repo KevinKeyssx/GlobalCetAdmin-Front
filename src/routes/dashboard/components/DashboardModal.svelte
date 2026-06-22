@@ -51,7 +51,7 @@
 			</div>
 
 			<!-- ─── Body (Snippet Slot) ────────────────────────────────────────── -->
-			<div class="{ overflowVisible ? 'overflow-visible' : 'overflow-y-auto custom-scrollbar' } flex-1 pr-1.5 mt-4">
+			<div class="{ overflowVisible ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden custom-scrollbar' } flex-1 pr-1.5 mt-4">
 				{@render body()}
 			</div>
 		</div>
