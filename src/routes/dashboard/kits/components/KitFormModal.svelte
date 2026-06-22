@@ -12,7 +12,7 @@
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import { METHOD }                       from '$lib/services/http-codes';
-	import RelationManager                  from '$lib/components/shared/RelationManager.svelte';
+	import ProductSelectManager             from '$lib/components/shared/ProductSelectManager.svelte';
 	import Select                           from '$lib/components/shared/Select.svelte';
 	import InputText                        from '$lib/components/shared/InputText.svelte';
 	import TextArea                         from '$lib/components/shared/TextArea.svelte';
@@ -22,27 +22,19 @@
 	import DashboardModal                   from '../../components/DashboardModal.svelte';
 	import ConfirmationModal                from '../../../../lib/components/shared/ConfirmationModal.svelte';
 
-	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface KitCategory {
 		id   : string;
 		name : string;
 	}
 
-	interface CatalogProduct {
-		id   : string;
-		name : string;
-		sku  : string;
-	}
-
 	interface KitFormProps {
-		show            : boolean;
-		isEditing       : boolean;
-		editingId       : string;
-		initialData     : KitInitial | null;
-		categories      : KitCategory[];
-		catalogProducts : CatalogProduct[];
-		onSave          : () => void;
-		onCancel        : () => void;
+		show        : boolean;
+		isEditing   : boolean;
+		editingId   : string;
+		initialData : KitInitial | null;
+		categories  : KitCategory[];
+		onSave      : () => void;
+		onCancel    : () => void;
 	}
 
 	let {
@@ -51,7 +43,6 @@
 		editingId,
 		initialData,
 		categories,
-		catalogProducts,
 		onSave,
 		onCancel,
 	} : KitFormProps = $props();
@@ -386,16 +377,10 @@
 
 					<!-- Section: Productos Incluidos -->
 					<div class="fade-in" style="--delay: 180ms">
-						<RelationManager
+						<ProductSelectManager
 							bind:items           = { formProducts }
-							catalogItems         = { catalogProducts }
-							title                = "Productos Incluidos en este Kit"
-							placeholder          = "Seleccionar producto..."
-							idKey                = "productId"
-							metaKey              = "product"
 							isEditing            = { isEditing }
 							initialDataRelations = { initialData?.products }
-							duplicateMessage     = "Este producto ya está agregado al kit."
 							onRemove             = { handleRemoveProduct }
 						/>
 					</div>
