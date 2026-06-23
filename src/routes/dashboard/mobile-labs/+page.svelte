@@ -44,16 +44,20 @@
 	}
 
 	interface MobileLab {
-		id          : string;
-		sku         : string;
-		name        : string;
-		description : string;
-		dimensions  : string;
-		active      : boolean;
-		files       : Array<{ id : string; url : string; alt : string; isMain : boolean }>;
-		category    : { id : string; name : string };
-		products    : LabProduct[];
-		kits        : LabKit[];
+		id           : string;
+		sku          : string;
+		name         : string;
+		description  : string;
+		dimensions   : string;
+		active       : boolean;
+		files        : Array<{ id : string; url : string; alt : string; isMain : boolean }>;
+		category     : { id : string; name : string };
+		products     : LabProduct[];
+		kits         : LabKit[];
+		currentPrice?: number;
+		currentStock?: number;
+		minStock?    : number;
+		maxStock?    : number;
 	}
 
 	interface LabCategory {
@@ -191,13 +195,17 @@
 		isEditing  = true;
 		editingId  = item.id;
 		editingLab = {
-			name		: item.name,
-			sku			: item.sku,
-			description	: item.description,
-			dimensions	: item.dimensions,
-			categoryId	: item.category?.id || '',
-			active		: item.active,
-			products	: ( item.products || [] ).map( ( p ) => ( {
+			name        : item.name,
+			sku         : item.sku,
+			description : item.description,
+			dimensions  : item.dimensions,
+			categoryId  : item.category?.id || '',
+			active      : item.active,
+			currentPrice: item.currentPrice ? Number( item.currentPrice ) : null,
+			currentStock: item.currentStock ? Number( item.currentStock ) : null,
+			minStock    : item.minStock ? Number( item.minStock ) : null,
+			maxStock    : item.maxStock ? Number( item.maxStock ) : null,
+			products    : ( item.products || [] ).map( ( p ) => ( {
 				productId : p.productId,
 				quantity  : p.quantity,
 				product   : p.product ? {
@@ -210,7 +218,7 @@
 					sku  : 'PROD',
 				},
 			} ) ),
-			kits		: ( item.kits || [] ).map( ( k ) => ( {
+			kits        : ( item.kits || [] ).map( ( k ) => ( {
 				kitId    : k.kitId,
 				quantity : k.quantity,
 				kit      : k.kit ? {
@@ -223,7 +231,7 @@
 					sku  : 'KIT',
 				},
 			} ) ),
-			files		: ( item.files || [] ).filter( ( f ) => f.id !== 'placeholder' ),
+			files       : ( item.files || [] ).filter( ( f ) => f.id !== 'placeholder' ),
 		};
 		showModal  = true;
 	}

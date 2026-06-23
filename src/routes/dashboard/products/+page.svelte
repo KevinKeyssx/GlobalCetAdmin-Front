@@ -14,8 +14,8 @@
 	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
-	import Select                           from '$lib/components/shared/Select.svelte';
-	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
+	import Select                           from '$lib/components/shared/Inputs/Select.svelte';
+	import SearchInput                      from '$lib/components/shared/Inputs/SearchInput.svelte';
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import type { MaterialInfo }            from '$lib/types/material';
 	import type { SubCategory }             from '$lib/types/category';
@@ -63,11 +63,11 @@
 
 	const productsQuery = createQuery( ( ) => ( {
 		queryKey : [ 'admin-products', page, size, Array.from( selectedMaterials ), Array.from( selectedSubcategories ), activeStatus, debouncedSearch ],
-		queryFn  : async ( ) : Promise< PaginatedResponse< AdminProduct > > => {
+		queryFn  : async ( ) : Promise<PaginatedResponse<AdminProduct>> => {
 			const params = new URLSearchParams( {
 				page : page.toString(),
 				size : size.toString(),
-			} );
+			});
 
 			selectedMaterials.forEach( ( id ) => params.append( 'materials', id ) );
 			selectedSubcategories.forEach( ( id ) => params.append( 'subcategories', id ) );
@@ -80,10 +80,10 @@
 				params.append( 'query', debouncedSearch );
 			}
 
-			const prodResponse = await connectRequest< PaginatedResponse< AdminProduct > >( {
+			const prodResponse = await connectRequest< PaginatedResponse<AdminProduct>>({
 				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.FILTERS }?${ params.toString() }`,
 				isInternal : true,
-			} );
+			});
 
 			if ( isApiError( prodResponse ) ) {
 				throw new Error( 'Error al cargar productos.' );
@@ -91,7 +91,7 @@
 
 			return prodResponse;
 		},
-	} ) );
+	}));
 
 
     const materialsQuery = createQuery( ( ) => ( {
@@ -169,6 +169,10 @@
 			subcategoryId  : item.subcategory?.id || '',
 			active         : item.active,
 			technicalSpecs : item.technical_specs ? ( typeof item.technical_specs === 'object' ? JSON.stringify( item.technical_specs ) : item.technical_specs ) : '{}',
+			currentPrice   : item.currentPrice ? Number( item.currentPrice ) : null,
+			currentStock   : item.currentStock ? Number( item.currentStock ) : null,
+			minStock       : item.minStock ? Number( item.minStock ) : null,
+			maxStock       : item.maxStock ? Number( item.maxStock ) : null,
 			files          : ( item.files || [] )
 				.filter( ( f ) => f.id !== 'placeholder' )
 				.map( ( f, index ) => ( {
