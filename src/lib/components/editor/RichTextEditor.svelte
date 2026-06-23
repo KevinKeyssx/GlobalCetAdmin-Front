@@ -29,7 +29,7 @@
 	import { TextStyle }            from '@tiptap/extension-text-style';
 	import pdfWorkerURL             from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 	
-    import SoftSelect   from '$lib/components/shared/SoftSelect.svelte';
+    import SoftSelect   from '$lib/components/shared/Inputs/SoftSelect.svelte';
 	import Popover      from '$lib/components/shared/Popover.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
