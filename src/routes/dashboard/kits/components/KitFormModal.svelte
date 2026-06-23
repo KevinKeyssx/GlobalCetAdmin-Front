@@ -7,15 +7,15 @@
 
 	import FileUploader, {
 		type UploadedFileItem
-	}                                       from '$lib/components/shared/FileUploader.svelte';
+	}                                       from '$lib/components/shared/Inputs/FileUploader.svelte';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import ProductSelectManager             from '$lib/components/shared/ProductSelectManager.svelte';
-	import Select                           from '$lib/components/shared/Select.svelte';
-	import InputText                        from '$lib/components/shared/InputText.svelte';
-	import TextArea                         from '$lib/components/shared/TextArea.svelte';
+	import Select                           from '$lib/components/shared/Inputs/Select.svelte';
+	import IdentificationFields             from '$lib/components/shared/Inputs/IdentificationFields.svelte';
+	import StockPriceFields                 from '$lib/components/shared/Inputs/StockPriceFields.svelte';
 	import type { KitInitial, KitProduct }  from '$lib/types/kit';
 	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
 	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
@@ -59,6 +59,18 @@
 	let skuError        = $state( '' );
 	let categoryError   = $state( '' );
 
+	// Inventory & Price states
+	let currentPrice      = $state<number | null>( null );
+	let currentStock      = $state<number | null>( null );
+	let minStock          = $state<number | null>( null );
+	let maxStock          = $state<number | null>( null );
+
+	// Error states for price and stocks
+	let priceError        = $state( '' );
+	let currentStockError = $state( '' );
+	let minStockError     = $state( '' );
+	let maxStockError     = $state( '' );
+
 	// Relations list state (Selected products in this kit)
 	let formProducts    = $state< KitProduct[] >( [] );
 
@@ -85,6 +97,10 @@
 			formCategoryId    = initialData.categoryId || '';
 			formActive        = initialData.active;
 			formProducts      = initialData.products || [];
+			currentPrice      = initialData.currentPrice    ?? null;
+			currentStock      = initialData.currentStock    ?? null;
+			minStock          = initialData.minStock        ?? null;
+			maxStock          = initialData.maxStock        ?? null;
 			if ( isEditing && initialData.files ) {
 				uploaderFiles = initialData.files.map( ( f ) => ( {
 					id             : f.id,
@@ -109,11 +125,19 @@
 			formCategoryId    = '';
 			formActive        = true;
 			formProducts      = [];
+			currentPrice      = null;
+			currentStock      = null;
+			minStock          = null;
+			maxStock          = null;
 			uploaderFiles     = [];
 			uploaderFilesInfo = '';
 			nameError         = '';
 			skuError          = '';
 			categoryError     = '';
+			priceError        = '';
+			currentStockError = '';
+			minStockError     = '';
+			maxStockError     = '';
 			filesError        = '';
 		}
 	} );
@@ -215,6 +239,10 @@
 		categoryError = '';
 		let hasError  = false;
 
+		if ( priceError || currentStockError || minStockError || maxStockError ) {
+			hasError = true;
+		}
+
 		if ( !formName.trim() ) {
 			nameError = 'El nombre es obligatorio.';
 			hasError  = true;
@@ -245,6 +273,11 @@
 		formData.append( 'description', formDescription );
 		formData.append( 'categoryId', formCategoryId );
 		formData.append( 'active', String( formActive ) );
+
+		if ( currentPrice !== null ) formData.append( 'currentPrice', String( currentPrice ) );
+		if ( currentStock !== null ) formData.append( 'currentStock', String( currentStock ) );
+		if ( minStock !== null ) formData.append( 'minStock', String( minStock ) );
+		if ( maxStock !== null ) formData.append( 'maxStock', String( maxStock ) );
 
 		// Format products relation info
 		const mappedRelations = formProducts.map( ( p ) => ( {
@@ -284,46 +317,29 @@
 				<!-- ── LEFT PANEL: Fields ── -->
 				<div class="flex flex-col gap-3">
 
-					<!-- Section: Identificación -->
-					<fieldset
-						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
-						style="--delay: 0ms"
-					>
-						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
-							Identificación
-						</legend>
+					<IdentificationFields
+						bind:name       = { formName }
+						bind:sku        = { formSku }
+						nameError       = { nameError }
+						skuError        = { skuError }
+						nameLabel       = "Nombre del Kit"
+						namePlaceholder = "Ej: Kit de Bioquímica Básica"
+						skuPlaceholder  = "Ej: CKIT-001"
+						idPrefix        = "kit"
+						delay           = "0ms"
+					/>
 
-                        <div class="grid grid-cols-1 gap-3">
-							<!-- Name -->
-							<div class="flex flex-col gap-1">
-								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="kit-name">
-									Nombre del Kit
-								</label>
-
-                                <TextArea
-									id="kit-name"
-									bind:value={ formName }
-									error={ nameError }
-									placeholder="Ej: Kit de Bioquímica Básica"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none focus:ring-2 focus:ring-brand/15"
-								/>
-							</div>
-
-							<!-- SKU -->
-							<div class="flex flex-col gap-1">
-								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="kit-sku">
-									SKU Identificador
-								</label>
-								<InputText
-									id="kit-sku"
-									bind:value={ formSku }
-									error={ skuError }
-									placeholder="Ej: CKIT-001"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none focus:ring-2 focus:ring-brand/15"
-								/>
-							</div>
-						</div>
-					</fieldset>
+					<StockPriceFields
+						bind:currentPrice      = { currentPrice }
+						bind:currentStock      = { currentStock }
+						bind:minStock          = { minStock }
+						bind:maxStock          = { maxStock }
+						bind:priceError        = { priceError }
+						bind:currentStockError = { currentStockError }
+						bind:minStockError     = { minStockError }
+						bind:maxStockError     = { maxStockError }
+						delay                  = "30ms"
+					/>
 
 					<!-- Section: Descripción -->
 					<fieldset
