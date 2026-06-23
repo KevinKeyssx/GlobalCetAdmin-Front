@@ -11,8 +11,8 @@
 	import JSZip                        from 'jszip';
 	import { PUBLIC_MAX_FILES_UPLOAD }  from '$env/static/public';
 
-    import ConfirmationModal    from './ConfirmationModal.svelte';
-	import InputNumber          from '$lib/components/shared/InputNumber.svelte';
+    import ConfirmationModal    from '../ConfirmationModal.svelte';
+	import InputNumber          from '$lib/components/shared/Inputs/InputNumber.svelte';
 	import ImagePreview         from '$lib/components/shared/ImagePreview.svelte';
 
 	const maxFilesUpload : number = Number( PUBLIC_MAX_FILES_UPLOAD ) || 7;

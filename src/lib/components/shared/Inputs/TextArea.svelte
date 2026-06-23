@@ -12,13 +12,13 @@
 	}
 
 	let {
-		value               = $bindable( '' ),
-		error               = '',
-		placeholder         = '',
-		id                  = '',
-		class : customClass = 'w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-y',
-		disabled            = false,
-		rows                = 3,
+		value       = $bindable( '' ),
+		error       = '',
+		placeholder = '',
+		id          = '',
+		class       : customClass = 'w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-y',
+		disabled    = false,
+		rows        = 3,
 	} : TextAreaProps = $props();
 
 	const hasError = $derived( !!error && !value.trim() );
