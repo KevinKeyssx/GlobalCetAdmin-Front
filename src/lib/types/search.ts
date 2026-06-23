@@ -25,16 +25,20 @@ export interface MaterialInfo {
 }
 
 export interface GlobalSearchProduct {
-	id          : string;
-	sku         : string;
-	name        : string;
-	description : string;
-	active      : boolean;
-	createdAt   : string;
-	updatedAt   : string;
-	files       : FileAttachment[];
-	subcategory : SubcategoryInfo;
-	material    : MaterialInfo;
+	id           : string;
+	sku          : string;
+	name         : string;
+	description  : string;
+	active       : boolean;
+	createdAt    : string;
+	updatedAt    : string;
+	files        : FileAttachment[];
+	subcategory  : SubcategoryInfo;
+	material     : MaterialInfo;
+	currentPrice?: number | null;
+	currentStock?: number | null;
+	minStock?    : number | null;
+	maxStock?    : number | null;
 }
 
 export interface ProductRelationInfo {
@@ -49,16 +53,20 @@ export interface GlobalSearchKitProduct {
 }
 
 export interface GlobalSearchKit {
-	id          : string;
-	sku         : string;
-	name        : string;
-	description : string;
-	active      : boolean;
-	createdAt   : string;
-	updatedAt   : string;
-	files       : FileAttachment[];
-	category    : CategoryInfo;
-	products    : GlobalSearchKitProduct[];
+	id           : string;
+	sku          : string;
+	name         : string;
+	description  : string;
+	active       : boolean;
+	createdAt    : string;
+	updatedAt    : string;
+	files        : FileAttachment[];
+	category     : CategoryInfo;
+	products     : GlobalSearchKitProduct[];
+	currentPrice?: number | null;
+	currentStock?: number | null;
+	minStock?    : number | null;
+	maxStock?    : number | null;
 }
 
 export interface KitRelationInfo {
@@ -74,18 +82,22 @@ export interface GlobalSearchMobileLabKit {
 }
 
 export interface GlobalSearchMobileLab {
-	id          : string;
-	sku         : string;
-	name        : string;
-	description : string;
-	dimensions  : string;
-	active      : boolean;
-	createdAt   : string;
-	updatedAt   : string;
-	files       : FileAttachment[];
-	category    : CategoryInfo;
-	kits        : GlobalSearchMobileLabKit[];
-	products    : GlobalSearchKitProduct[];
+	id           : string;
+	sku          : string;
+	name         : string;
+	description  : string;
+	dimensions   : string;
+	active       : boolean;
+	createdAt    : string;
+	updatedAt    : string;
+	files        : FileAttachment[];
+	category     : CategoryInfo;
+	kits         : GlobalSearchMobileLabKit[];
+	products     : GlobalSearchKitProduct[];
+	currentPrice?: number | null;
+	currentStock?: number | null;
+	minStock?    : number | null;
+	maxStock?    : number | null;
 }
 
 export interface GlobalSearchMeta {

@@ -60,6 +60,10 @@ export interface ProductInitial {
 	active         : boolean;
 	technicalSpecs : string;
 	files?         : InitialFile[];
+	currentPrice?  : number | null;
+	currentStock?  : number | null;
+	minStock?      : number | null;
+	maxStock?      : number | null;
 }
 
 // ─── Admin View Interfaces ─────────────────────────────────────────────────────
@@ -72,13 +76,13 @@ export interface AdminProductFile {
 }
 
 export interface AdminProduct {
-	id	                : string;
-	sku	                : string;
-	name	            : string;
+	id                  : string;
+	sku                 : string;
+	name                : string;
 	description         : string;
-	active	            : boolean;
-	files	            : AdminProductFile[];
-    technical_specs?    : any;
+	active              : boolean;
+	files               : AdminProductFile[];
+	technical_specs?    : any;
 	subcategory         : {
 		id   : string;
 		name : string;
@@ -88,6 +92,10 @@ export interface AdminProduct {
 		name : string;
 		slug : string;
 	};
+	currentPrice?       : number | null;
+	currentStock?       : number | null;
+	minStock?           : number | null;
+	maxStock?           : number | null;
 }
 
 export interface CategoryInfo {

@@ -13,13 +13,17 @@ export interface LabKit {
 }
 
 export interface LabInitial {
-	name        : string;
-	sku         : string;
-	description : string;
-	dimensions  : string;
-	categoryId  : string;
-	active      : boolean;
-	products    : LabProduct[];
-	kits        : LabKit[];
-	files?      : InitialFile[];
+	name         : string;
+	sku          : string;
+	description  : string;
+	dimensions   : string;
+	categoryId   : string;
+	active       : boolean;
+	products     : LabProduct[];
+	kits         : LabKit[];
+	files?       : InitialFile[];
+	currentPrice?: number | null;
+	currentStock?: number | null;
+	minStock?    : number | null;
+	maxStock?    : number | null;
 }

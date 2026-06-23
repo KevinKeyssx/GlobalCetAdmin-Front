@@ -13,6 +13,9 @@ export const POST: RequestHandler = async ( { request, fetch } ) => {
 		const backendData = new FormData();
 
 		for ( const [ key, value ] of clientData.entries() ) {
+			if ( [ 'currentPrice', 'currentStock', 'minStock', 'maxStock' ].includes( key ) && ( value === '' || value === null ) ) {
+				continue;
+			}
 			backendData.append( key, value );
 		}
 
@@ -56,13 +59,21 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		// 1. Update basic kit data (PATCH) to get existing/latest data
 		const basicData : any = {};
-		const fieldsToSync    = [ 'name', 'sku', 'description', 'categoryId', 'active' ];
+		const fieldsToSync    = [
+			'name', 'sku', 'description', 'categoryId', 'active',
+			'currentPrice', 'currentStock', 'minStock', 'maxStock'
+		];
 
 		for ( const key of fieldsToSync ) {
 			if ( clientData.has( key ) ) {
 				const val = clientData.get( key );
 				if ( key === 'active' ) {
 					basicData[ key ] = val === 'true';
+				} else if ( [ 'currentPrice', 'currentStock', 'minStock', 'maxStock' ].includes( key ) ) {
+					const numVal = val !== '' && val !== null ? Number( val ) : null;
+					if ( numVal !== null && !isNaN( numVal ) ) {
+						basicData[ key ] = numVal;
+					}
 				} else {
 					basicData[ key ] = val;
 				}

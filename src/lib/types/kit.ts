@@ -7,11 +7,15 @@ export interface KitProduct {
 }
 
 export interface KitInitial {
-	name        : string;
-	sku         : string;
-	description : string;
-	categoryId  : string;
-	active      : boolean;
-	products    : KitProduct[];
-	files?      : InitialFile[];
+	name         : string;
+	sku          : string;
+	description  : string;
+	categoryId   : string;
+	active       : boolean;
+	products     : KitProduct[];
+	files?       : InitialFile[];
+	currentPrice?: number | null;
+	currentStock?: number | null;
+	minStock?    : number | null;
+	maxStock?    : number | null;
 }
