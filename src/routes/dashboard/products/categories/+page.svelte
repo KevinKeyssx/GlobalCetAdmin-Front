@@ -15,8 +15,8 @@
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
-	import Select                           from '$lib/components/shared/Select.svelte';
-	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
+	import Select                           from '$lib/components/shared/Inputs/Select.svelte';
+	import SearchInput                      from '$lib/components/shared/Inputs/SearchInput.svelte';
 	import type { Category, SubCategory }   from '$lib/types/category';
 	import CategoryCard                     from '$lib/components/shared/itemCard/CategoryCard.svelte';
 	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';

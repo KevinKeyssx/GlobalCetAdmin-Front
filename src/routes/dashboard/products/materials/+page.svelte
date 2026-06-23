@@ -16,8 +16,8 @@
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import MaterialFormModal                from './components/MaterialFormModal.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
-	import Select                           from '$lib/components/shared/Select.svelte';
-	import SearchInput                      from '$lib/components/shared/SearchInput.svelte';
+	import Select                           from '$lib/components/shared/Inputs/Select.svelte';
+	import SearchInput                      from '$lib/components/shared/Inputs/SearchInput.svelte';
 	import MaterialCard                     from '$lib/components/shared/itemCard/MaterialCard.svelte';
 	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';
 	import ListSkeleton                     from '$lib/components/shared/ListSkeleton.svelte';

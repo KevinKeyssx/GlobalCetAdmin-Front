@@ -7,8 +7,8 @@
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import DashboardModal                   from '../../../components/DashboardModal.svelte';
-	import Select                           from '$lib/components/shared/Select.svelte';
-	import InputNumber                      from '$lib/components/shared/InputNumber.svelte';
+	import Select                           from '$lib/components/shared/Inputs/Select.svelte';
+	import InputNumber                      from '$lib/components/shared/Inputs/InputNumber.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface MaterialFormProps {

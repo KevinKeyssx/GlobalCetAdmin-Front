@@ -14,7 +14,7 @@
 	import ProductSelectManager from '$lib/components/shared/ProductSelectManager.svelte';
 	import KitSelectManager     from '$lib/components/shared/KitSelectManager.svelte';
 	import LabSelectManager     from '$lib/components/shared/LabSelectManager.svelte';
-	import InputText            from '$lib/components/shared/InputText.svelte';
+	import InputText            from '$lib/components/shared/Inputs/InputText.svelte';
 	import RichTextEditor       from '$lib/components/editor/RichTextEditor.svelte';
 	import DashboardModal       from '../../components/DashboardModal.svelte';
 
