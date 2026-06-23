@@ -7,7 +7,7 @@
 
 	import FileUploader, {
         type UploadedFileItem
-    }                                       from '$lib/components/shared/FileUploader.svelte';
+    }                                       from '$lib/components/shared/Inputs/FileUploader.svelte';
 	import type {
         LabInitial,
         LabProduct,
@@ -21,12 +21,12 @@
 	import ConfirmationModal                from '$lib/components/shared/ConfirmationModal.svelte';
 	import ProductSelectManager             from '$lib/components/shared/ProductSelectManager.svelte';
 	import KitSelectManager                 from '$lib/components/shared/KitSelectManager.svelte';
-	import Select                           from '$lib/components/shared/Select.svelte';
+	import Select                           from '$lib/components/shared/Inputs/Select.svelte';
 	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
 	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
-	import InputText                        from '$lib/components/shared/InputText.svelte';
-	import TextArea                         from '$lib/components/shared/TextArea.svelte';
-	import InputNumber                      from '$lib/components/shared/InputNumber.svelte';
+	import IdentificationFields             from '$lib/components/shared/Inputs/IdentificationFields.svelte';
+	import StockPriceFields                 from '$lib/components/shared/Inputs/StockPriceFields.svelte';
+	import InputNumber                      from '$lib/components/shared/Inputs/InputNumber.svelte';
 
 	interface LabCategory {
 		id   : string;
@@ -71,6 +71,18 @@
 	let nameError       = $state( '' );
 	let skuError        = $state( '' );
 	let categoryError   = $state( '' );
+
+	// Inventory & Price states
+	let currentPrice      = $state<number | null>( null );
+	let currentStock      = $state<number | null>( null );
+	let minStock          = $state<number | null>( null );
+	let maxStock          = $state<number | null>( null );
+
+	// Error states for price and stocks
+	let priceError        = $state( '' );
+	let currentStockError = $state( '' );
+	let minStockError     = $state( '' );
+	let maxStockError     = $state( '' );
 
 	function parseDimensions( dimStr: string ): { length: number; width: number; height: number } {
 		const regex = /^\s*([0-9.]+)\s*m\s*x\s*([0-9.]+)\s*m\s*x\s*([0-9.]+)\s*m\s*$/i;
@@ -121,6 +133,10 @@
 			formActive        = initialData.active;
 			formProducts      = initialData.products || [];
 			formKits          = initialData.kits || [];
+			currentPrice      = initialData.currentPrice    ?? null;
+			currentStock      = initialData.currentStock    ?? null;
+			minStock          = initialData.minStock        ?? null;
+			maxStock          = initialData.maxStock        ?? null;
 			if ( isEditing && initialData.files ) {
 				uploaderFiles = initialData.files.map( ( f ) => ( {
 					id             : f.id,
@@ -150,11 +166,19 @@
 			formActive        = true;
 			formProducts      = [];
 			formKits          = [];
+			currentPrice      = null;
+			currentStock      = null;
+			minStock          = null;
+			maxStock          = null;
 			uploaderFiles     = [];
 			uploaderFilesInfo = '';
 			nameError         = '';
 			skuError          = '';
 			categoryError     = '';
+			priceError        = '';
+			currentStockError = '';
+			minStockError     = '';
+			maxStockError     = '';
 			filesError        = '';
 		}
 	} );
@@ -299,6 +323,10 @@
 		categoryError = '';
 		let hasError  = false;
 
+		if ( priceError || currentStockError || minStockError || maxStockError ) {
+			hasError = true;
+		}
+
 		if ( !formName.trim() ) {
 			nameError = 'El nombre es obligatorio.';
 			hasError  = true;
@@ -330,6 +358,11 @@
 		formData.append( 'dimensions', formDimensions );
 		formData.append( 'categoryId', formCategoryId );
 		formData.append( 'active', String( formActive ) );
+
+		if ( currentPrice !== null ) formData.append( 'currentPrice', String( currentPrice ) );
+		if ( currentStock !== null ) formData.append( 'currentStock', String( currentStock ) );
+		if ( minStock !== null ) formData.append( 'minStock', String( minStock ) );
+		if ( maxStock !== null ) formData.append( 'maxStock', String( maxStock ) );
 
 		// Format products relation info
 		const mappedRelations = formProducts.map( ( p ) => ( {
@@ -376,47 +409,29 @@
 				<!-- ── LEFT PANEL: Fields ── -->
 				<div class="flex flex-col gap-3">
 
-					<!-- Section: Identificación -->
-					<fieldset
-						class="fade-in m-0 rounded-2xl border border-brand/10 bg-brand/3 p-3.5 px-4 transition-colors focus-within:border-brand/30 focus-within:bg-brand/5"
-						style="--delay: 0ms"
-					>
-						<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
-							Identificación
-						</legend>
+					<IdentificationFields
+						bind:name       = { formName }
+						bind:sku        = { formSku }
+						nameError       = { nameError }
+						skuError        = { skuError }
+						nameLabel       = "Nombre del Laboratorio"
+						namePlaceholder = "Ej: Laboratorio Móvil de Física"
+						skuPlaceholder  = "Ej: CLAB-001"
+						idPrefix        = "lab"
+						delay           = "0ms"
+					/>
 
-                        <div class="grid grid-cols-1 gap-3">
-							<!-- Name -->
-							<div class="flex flex-col gap-1">
-								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-name">
-									Nombre del Laboratorio
-								</label>
-
-                                <TextArea
-									id="lab-name"
-									bind:value={ formName }
-									error={ nameError }
-									placeholder="Ej: Laboratorio Móvil de Física"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 text-[0.8125rem] text-text outline-none focus:ring-2 focus:ring-brand/15"
-								/>
-							</div>
-
-							<!-- SKU -->
-							<div class="flex flex-col gap-1">
-								<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="lab-sku">
-									SKU Identificador
-								</label>
-
-                                <InputText
-									id="lab-sku"
-									bind:value={ formSku }
-									error={ skuError }
-									placeholder="Ej: CLAB-001"
-									class="w-full rounded-lg border border-brand/10 bg-input px-3 py-1.5 font-mono text-[0.8125rem] tracking-wide text-text outline-none focus:ring-2 focus:ring-brand/15"
-								/>
-							</div>
-						</div>
-					</fieldset>
+					<StockPriceFields
+						bind:currentPrice      = { currentPrice }
+						bind:currentStock      = { currentStock }
+						bind:minStock          = { minStock }
+						bind:maxStock          = { maxStock }
+						bind:priceError        = { priceError }
+						bind:currentStockError = { currentStockError }
+						bind:minStockError     = { minStockError }
+						bind:maxStockError     = { maxStockError }
+						delay                  = "30ms"
+					/>
 
 					<!-- Section: Dimensiones -->
 					<fieldset
