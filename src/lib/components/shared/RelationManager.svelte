@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Trash2, X, Plus } from '@lucide/svelte';
 	import toast               from 'svelte-french-toast';
-	import Select              from '$lib/components/shared/Select.svelte';
-	import InputNumber         from '$lib/components/shared/InputNumber.svelte';
+	import Select              from '$lib/components/shared/Inputs/Select.svelte';
+	import InputNumber         from '$lib/components/shared/Inputs/InputNumber.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface RelationManagerProps {

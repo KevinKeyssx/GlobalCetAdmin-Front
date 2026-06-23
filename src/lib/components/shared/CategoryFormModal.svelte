@@ -7,8 +7,8 @@
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
 	import DashboardModal                   from '../../../routes/dashboard/components/DashboardModal.svelte';
-	import Select                           from './Select.svelte';
-	import InputText                        from './InputText.svelte';
+	import Select                           from './Inputs/Select.svelte';
+	import InputText                        from './Inputs/InputText.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ParentCategory {

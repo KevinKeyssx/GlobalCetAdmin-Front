@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Select            from '$lib/components/shared/Select.svelte';
-	import SearchInput       from '$lib/components/shared/SearchInput.svelte';
+	import Select            from '$lib/components/shared/Inputs/Select.svelte';
+	import SearchInput       from '$lib/components/shared/Inputs/SearchInput.svelte';
 	import { BrushCleaning } from '@lucide/svelte';
 
 	interface Props {

@@ -2,7 +2,7 @@
 	import { Pagination as BitsPagination } from 'bits-ui';
 	import { ChevronLeft, ChevronRight }    from '@lucide/svelte';
 
-    import SoftSelect from './SoftSelect.svelte';
+    import SoftSelect from './Inputs/SoftSelect.svelte';
 
 
 	interface Props {
