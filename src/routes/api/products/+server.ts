@@ -1,10 +1,13 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import connectRequest, { isApiError, formatServerError } from '$lib/services/fetch.service';
-import { ENV }                          from '$lib/utils/env.server';
-import type { GlobalSearchProduct }     from '$lib/types/search';
-import { METHOD }                       from '$lib/services/http-codes';
-import { EXTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
+import connectRequest, {
+    isApiError,
+    formatServerError
+}                                   from '$lib/services/fetch.service';
+import { ENV }                      from '$lib/utils/env.server';
+import type { GlobalSearchProduct } from '$lib/types/search';
+import { METHOD }                   from '$lib/services/http-codes';
+import { EXTERNAL_ENDPOINTS }       from '$lib/utils/endpoints';
 
 // ─── POST Handler: Create a new product ───────────────────────────────────────
 export const POST: RequestHandler = async ( { request, fetch } ) => {
@@ -16,7 +19,8 @@ export const POST: RequestHandler = async ( { request, fetch } ) => {
 			if ( [ 'currentPrice', 'currentStock', 'minStock', 'maxStock' ].includes( key ) && ( value === '' || value === null ) ) {
 				continue;
 			}
-			backendData.append( key, value );
+
+            backendData.append( key, value );
 		}
 
 		const response = await connectRequest< GlobalSearchProduct >( {
@@ -28,25 +32,26 @@ export const POST: RequestHandler = async ( { request, fetch } ) => {
 				'x-secret' : ENV.INTERNAL_SECRET_KEY,
 			},
 			fetch      : fetch,
-		} );
+		});
 
-		if ( isApiError( response ) ) {
-			return json( { error : response.message }, { status : response.status || 500 } );
+		if ( isApiError( response )) {
+			return json({ error : response.message }, { status : response.status || 500 });
 		}
 
-		return json( response, { status : 201 } );
+		return json(response, { status : 201 });
 	} catch ( e : any ) {
 		const { status, error } = formatServerError( e, 'Producto' );
-		return json( { error }, { status } );
+		return json({ error }, { status });
 	}
 };
 
+// ─── PUT Handler: Update a product ────────────────────────────────────────
 export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 	try {
 		const id = url.searchParams.get( 'id' ) || '';
 
 		if ( !id ) {
-			return json( { error : 'Missing product ID' }, { status : 400 } );
+			return json({ error : 'Missing product ID' }, { status : 400 });
 		}
 
 		const clientData    = await request.formData();
@@ -63,14 +68,16 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 
 		for ( const key of fieldsToSync ) {
 			if ( clientData.has( key ) ) {
-				const val = clientData.get( key );
-				if ( key === 'active' ) {
+                const val = clientData.get( key );
+
+                if ( key === 'active' ) {
 					basicData[ key ] = val === 'true';
 				} else if ( key === 'technical_specs' ) {
 					basicData[ key ] = JSON.parse( val as string || '{}' );
 				} else if ( [ 'currentPrice', 'currentStock', 'minStock', 'maxStock' ].includes( key ) ) {
 					const numVal = val !== '' && val !== null ? Number( val ) : null;
-					if ( numVal !== null && !isNaN( numVal ) ) {
+
+                    if ( numVal !== null && !isNaN( numVal ) ) {
 						basicData[ key ] = numVal;
 					}
 				} else {
@@ -107,17 +114,17 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			const newImagesInfo  = clientImages.filter( ( img : any ) => !existingImageIds.has( img.id ) );
 			const uploadFormData = new FormData();
 
-			filesToUpload.forEach( ( file ) => {
+			filesToUpload.forEach(( file ) => {
 				uploadFormData.append( 'files', file );
-			} );
+			});
 
-			uploadFormData.append( 'imagesInfo', JSON.stringify( newImagesInfo.map( ( img : any ) => ( {
+			uploadFormData.append( 'imagesInfo', JSON.stringify( newImagesInfo.map(( img : any ) => ( {
 				name           : img.name,
 				alt            : img.alt,
 				isMain         : img.isMain,
 				order          : img.order,
 				attachmentType : img.attachmentType,
-			} ) ) ) );
+			}))));
 
 			const uploadRes = await connectRequest< any >( {
 				endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }/images`,
@@ -128,10 +135,10 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 					'x-secret' : ENV.INTERNAL_SECRET_KEY,
 				},
 				fetch      : fetch,
-			} );
+			});
 
-			if ( isApiError( uploadRes ) ) {
-				return json( { error : uploadRes.message }, { status : uploadRes.status || 500 } );
+			if ( isApiError( uploadRes )) {
+				return json({ error : uploadRes.message }, { status : uploadRes.status || 500 });
 			}
 
 			latestProduct = uploadRes;
@@ -142,12 +149,14 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 			newImagesInfo.forEach( ( img : any, index : number ) => {
 				const serverFile = newFilesFromResponse.find( ( sf : any ) => {
 					if ( !img.name ) return false;
-					const decodedUrl = decodeURIComponent( sf.url.toLowerCase() );
-					const clientNameLower = img.name.toLowerCase();
-					const clientBase = clientNameLower.substring( 0, clientNameLower.lastIndexOf( '.' ) ) || clientNameLower;
-					const serverBase = decodedUrl.substring( 0, decodedUrl.lastIndexOf( '.' ) ) || decodedUrl;
-					return serverBase.includes( clientBase ) || clientBase.includes( serverBase );
-				} ) || newFilesFromResponse[ index ];
+
+                    const decodedUrl        = decodeURIComponent( sf.url.toLowerCase() );
+					const clientNameLower   = img.name.toLowerCase();
+					const clientBase        = clientNameLower.substring( 0, clientNameLower.lastIndexOf( '.' ) ) || clientNameLower;
+					const serverBase        = decodedUrl.substring( 0, decodedUrl.lastIndexOf( '.' ) ) || decodedUrl;
+
+                    return serverBase.includes( clientBase ) || clientBase.includes( serverBase );
+				}) || newFilesFromResponse[ index ];
 
 				if ( serverFile ) {
 					finalImagesInfo.push( {
@@ -156,9 +165,9 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 						isMain         : img.isMain,
 						order          : img.order,
 						attachmentType : img.attachmentType,
-					} );
+					});
 				}
-			} );
+			});
 		}
 
 		// 3. Update metadata info for all remaining/new images
@@ -172,7 +181,7 @@ export const PUT: RequestHandler = async ( { request, url, fetch } ) => {
 					'x-secret' : ENV.INTERNAL_SECRET_KEY,
 				},
 				fetch      : fetch,
-			} );
+			});
 
 			if ( isApiError( updateInfoRes ) ) {
 				return json( { error : updateInfoRes.message }, { status : updateInfoRes.status || 500 } );
