@@ -6,7 +6,8 @@
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
-	import KitFormModal                     from './components/KitFormModal.svelte';
+	import { resolve }                      from '$app/paths';
+	import { goto }                         from '$app/navigation';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
@@ -16,7 +17,6 @@
 	import ItemCard                         from '$lib/components/shared/itemCard/ItemCard.svelte';
 	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';
 	import ListSkeleton                     from '$lib/components/shared/ListSkeleton.svelte';
-
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductRelation {
@@ -71,10 +71,7 @@
 	let page               = $state( 1 );
 	let size               = $state( 12 );
 	let view               = $state< 'cards' | 'list' >( 'cards' );
-	let showModal          = $state( false );
-	let isEditing          = $state( false );
-	let editingId          = $state( '' );
-	let editingKit         = $state< any >( null );
+
 	let deletingId         = $state( '' );
 	let duplicatingId      = $state( '' );
 
@@ -152,41 +149,11 @@
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
 	function openCreateModal() : void {
-		isEditing  = false;
-		editingId  = '';
-		editingKit = null;
-		showModal  = true;
+		goto( resolve( '/dashboard/kits/form' ) );
 	}
 
 	function openEditModal( item : Kit ) : void {
-		isEditing  = true;
-		editingId  = item.id;
-		editingKit = {
-			name        : item.name,
-			sku         : item.sku,
-			description : item.description,
-			categoryId  : item.category?.id || '',
-			active      : item.active,
-			currentPrice: item.currentPrice ? Number( item.currentPrice ) : null,
-			currentStock: item.currentStock ? Number( item.currentStock ) : null,
-			minStock    : item.minStock ? Number( item.minStock ) : null,
-			maxStock    : item.maxStock ? Number( item.maxStock ) : null,
-			products    : ( item.products || [] ).map( ( p ) => ( {
-				productId : p.productId,
-				quantity  : p.quantity,
-				product   : p.product ? {
-					id   : p.product.id,
-					name : p.product.name,
-					sku  : p.product.sku,
-				} : {
-					id   : p.productId,
-					name : 'Producto registrado',
-					sku  : 'PROD',
-				},
-			} ) ),
-			files       : ( item.files || [] ).filter( ( f ) => f.id !== 'placeholder' ),
-		};
-		showModal  = true;
+		goto( resolve( `/dashboard/kits/form?id=${ item.id }` ) );
 	}
 
 	async function deleteKit( id : string ) : Promise< void > {
@@ -394,21 +361,6 @@
             />
 		{/if}
 
-		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
-		{#if ( showModal )}
-			<KitFormModal
-				show={ showModal }
-				{ isEditing }
-				{ editingId }
-				initialData={ editingKit }
-				{ categories }
-				onSave={ () => {
-					showModal = false;
-				} }
-				onCancel={ () => {
-					showModal = false;
-				} }
-			/>
-		{/if}
+
 	</div>
 </main>
