@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 	}
 
 	const response = await connectRequest< GlobalSearchProduct >({
-		endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }?includeImages=true&includeKits=true&includeMobileLabs=true`,
+		endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }?includeFiles=true&includeKits=true&includeMobileLabs=true`,
 		isInternal : false,
 		headers    : {
 			'x-secret' : ENV.INTERNAL_SECRET_KEY,
