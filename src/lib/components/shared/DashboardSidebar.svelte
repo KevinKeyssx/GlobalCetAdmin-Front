@@ -176,7 +176,7 @@
 			</div>
 
             <div class="flex flex-col leading-tight">
-				<span class="font-display font-black text-base tracking-wider uppercase text-text">Panel Admin</span>
+				<span class="font-display font-black text-base tracking-wider uppercase dark:text-white text-brand-bright">Panel Admin</span>
 				<span class="text-[11px] font-bold text-brand/80">GlobalCET</span>
 			</div>
 		</a>
