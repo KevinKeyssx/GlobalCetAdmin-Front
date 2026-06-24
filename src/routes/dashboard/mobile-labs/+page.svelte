@@ -6,7 +6,8 @@
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
-	import LabFormModal                     from './components/LabFormModal.svelte';
+	import { resolve }                      from '$app/paths';
+	import { goto }                         from '$app/navigation';
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
@@ -95,10 +96,7 @@
 	let page               = $state( 1 );
 	let size               = $state( 12 );
 	let view               = $state< 'cards' | 'list' >( 'cards' );
-	let showModal          = $state( false );
-	let isEditing          = $state( false );
-	let editingId          = $state( '' );
-	let editingLab         = $state< any >( null );
+
 	let deletingId         = $state( '' );
 	let duplicatingId      = $state( '' );
 
@@ -185,55 +183,11 @@
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
 	function openCreateModal() : void {
-		isEditing  = false;
-		editingId  = '';
-		editingLab = null;
-		showModal  = true;
+		goto( resolve( '/dashboard/mobile-labs/form' ) );
 	}
 
 	function openEditModal( item : MobileLab ) : void {
-		isEditing  = true;
-		editingId  = item.id;
-		editingLab = {
-			name        : item.name,
-			sku         : item.sku,
-			description : item.description,
-			dimensions  : item.dimensions,
-			categoryId  : item.category?.id || '',
-			active      : item.active,
-			currentPrice: item.currentPrice ? Number( item.currentPrice ) : null,
-			currentStock: item.currentStock ? Number( item.currentStock ) : null,
-			minStock    : item.minStock ? Number( item.minStock ) : null,
-			maxStock    : item.maxStock ? Number( item.maxStock ) : null,
-			products    : ( item.products || [] ).map( ( p ) => ( {
-				productId : p.productId,
-				quantity  : p.quantity,
-				product   : p.product ? {
-					id   : p.product.id,
-					name : p.product.name,
-					sku  : p.product.sku,
-				} : {
-					id   : p.productId,
-					name : 'Producto registrado',
-					sku  : 'PROD',
-				},
-			} ) ),
-			kits        : ( item.kits || [] ).map( ( k ) => ( {
-				kitId    : k.kitId,
-				quantity : k.quantity,
-				kit      : k.kit ? {
-					id   : k.kit.id,
-					name : k.kit.name,
-					sku  : k.kit.sku,
-				} : {
-					id   : k.kitId,
-					name : 'Kit registrado',
-					sku  : 'KIT',
-				},
-			} ) ),
-			files       : ( item.files || [] ).filter( ( f ) => f.id !== 'placeholder' ),
-		};
-		showModal  = true;
+		goto( resolve( `/dashboard/mobile-labs/form?id=${ item.id }` ) );
 	}
 
 	async function deleteLab( id : string ) : Promise< void > {
@@ -448,21 +402,6 @@
             />
 		{/if}
 
-		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
-		{#if ( showModal )}
-			<LabFormModal
-				show={ showModal }
-				{ isEditing }
-				{ editingId }
-				initialData={ editingLab }
-				{ categories }
-				onSave={ () => {
-					showModal = false;
-				} }
-				onCancel={ () => {
-					showModal = false;
-				} }
-			/>
-		{/if}
+
 	</div>
 </main>

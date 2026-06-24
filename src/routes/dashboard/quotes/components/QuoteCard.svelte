@@ -92,11 +92,13 @@
 				<Users class="size-3.5 shrink-0 text-brand/60" />
 				<span class="truncate">{ quote.clientData.contactName } (RUT: { quote.clientData.rut })</span>
 			</div>
-			<div class="flex items-center gap-2">
+
+            <div class="flex items-center gap-2">
 				<Mail class="size-3.5 shrink-0 text-brand/60" />
 				<span class="truncate">{ quote.clientData.email }</span>
 			</div>
-			{#if ( quote.clientData.address )}
+
+            {#if ( quote.clientData.address )}
 				<div class="flex items-center gap-2">
 					<FileText class="size-3.5 shrink-0 text-brand/60" />
 					<span class="truncate">{ quote.clientData.address }</span>

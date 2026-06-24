@@ -1,8 +1,11 @@
 <script lang="ts">
-	import toast                            from 'svelte-french-toast';
+	import { resolve }                  from '$app/paths';
+	import { goto }                     from '$app/navigation';
+    import { PUBLIC_NOT_FOUND_IMAGE }   from '$env/static/public';
+
+    import toast                            from 'svelte-french-toast';
 	import { BrushCleaning }                from '@lucide/svelte';
 	import { createQuery, useQueryClient }  from '@tanstack/svelte-query';
-	import { PUBLIC_NOT_FOUND_IMAGE }       from '$env/static/public';
 
 	import type {
         AdminProduct,
@@ -19,7 +22,6 @@
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import type { MaterialInfo }            from '$lib/types/material';
 	import type { SubCategory }             from '$lib/types/category';
-	import ProductFormModal                 from './components/ProductFormModal.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
 	import { stripHtml }                    from '$lib/utils/string';
 	import ItemCard                         from '$lib/components/shared/itemCard/ItemCard.svelte';
@@ -46,9 +48,6 @@
 	let size                  = $state( 12 );
 	let activeStatus          = $state( 'all' );
 	let view                  = $state< 'cards' | 'list' >( 'cards' );
-	let showModal             = $state( false );
-	let isEditing             = $state( false );
-	let editingId             = $state( '' );
 	let deletingId            = $state( '' );
 	let duplicatingId         = $state( '' );
 
@@ -150,42 +149,6 @@
 	const categories    = $derived( categoriesQuery.data || [] );
 	const subcategories = $derived( subcategoriesQuery.data || [] );
 
-	const editingProduct = $derived.by( ( ) => {
-		if ( !isEditing || !editingId ) {
-			return null;
-		}
-
-		const item = products.find( ( p ) => p.id === editingId );
-
-		if ( !item ) {
-			return null;
-		}
-
-		return {
-			name           : item.name,
-			sku            : item.sku,
-			description    : item.description,
-			materialId     : item.material?.id || '',
-			subcategoryId  : item.subcategory?.id || '',
-			active         : item.active,
-			technicalSpecs : item.technical_specs ? ( typeof item.technical_specs === 'object' ? JSON.stringify( item.technical_specs ) : item.technical_specs ) : '{}',
-			currentPrice   : item.currentPrice ? Number( item.currentPrice ) : null,
-			currentStock   : item.currentStock ? Number( item.currentStock ) : null,
-			minStock       : item.minStock ? Number( item.minStock ) : null,
-			maxStock       : item.maxStock ? Number( item.maxStock ) : null,
-			files          : ( item.files || [] )
-				.filter( ( f ) => f.id !== 'placeholder' )
-				.map( ( f, index ) => ( {
-					id     : f.id,
-					url    : f.url,
-					alt    : f.alt || '',
-					isMain : f.isMain || false,
-					order  : ( f as any ).order ?? index,
-				} ) ),
-		};
-	} );
-
-
     const statusOptions = [
 		{ id : 'all',   name : 'Todos' },
 		{ id : 'true',  name : 'Activos' },
@@ -202,17 +165,13 @@
 	} );
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
-	function openCreateModal( ) : void {
-		isEditing = false;
-		editingId = '';
-		showModal = true;
+	function openCreateModal() : void {
+		goto( resolve( '/dashboard/products/form' ) );
 	}
 
 
-    function openEditModal( item : AdminProduct ) : void {
-		isEditing = true;
-		editingId = item.id;
-		showModal = true;
+	function openEditModal( item : AdminProduct ) : void {
+		goto( resolve( `/dashboard/products/form?id=${ item.id }` ) );
 	}
 
 
@@ -309,7 +268,6 @@
 			onclick     = { openCreateModal }
 			bind:view   = { view }
 		/>
-
 
 		<!-- ─── Search & Filters Tool ────────────────────────────────────────────── -->
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl">
@@ -489,22 +447,5 @@
             />
 		{/if}
 
-		<!-- ─── Form Modal ───────────────────────────────────────────────────────── -->
-		{#if ( showModal )}
-			<ProductFormModal
-				show={ showModal }
-				{ isEditing }
-				{ editingId }
-				initialData={ editingProduct }
-				{ materials }
-				{ categories } 
-				onSave={ () => {
-					showModal = false;
-				} }
-				onCancel={ () => {
-					showModal = false;
-				} }
-			/>
-		{/if}
 	</div>
 </main>
