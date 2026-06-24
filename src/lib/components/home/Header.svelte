@@ -39,7 +39,7 @@ const { darkMode, onToggle }: Props = $props();
 
             </a>
 
-            <h1 class="text-xl sm:text-2xl md:text-4xl font-extrabold tracking-tight">Panel de administración</h1>
+            <h1 class="text-xl sm:text-2xl md:text-4xl font-extrabold tracking-tight dark:text-white text-brand-bright">Panel de administración</h1>
         </div>
 
 		<!-- Dark Mode Toggle -->
