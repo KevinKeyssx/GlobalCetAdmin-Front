@@ -15,8 +15,15 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 		return json( { error : 'Missing mobile lab ID' }, { status : 400 } );
 	}
 
+    const params = new URLSearchParams( {
+        includeFiles    : 'true',
+        includeProducts : 'true',
+        includeKits     : 'true',
+        getAllStatus    : 'true',
+    });
+
 	const response = await connectRequest< GlobalSearchMobileLab >( {
-		endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }?includeFiles=true&includeProducts=true&includeKits=true`,
+		endpoint   : `${ EXTERNAL_ENDPOINTS.LABS.BASE }/${ id }?${ params.toString() }`,
 		isInternal : false,
 		headers    : {
 			'x-secret' : ENV.INTERNAL_SECRET_KEY,

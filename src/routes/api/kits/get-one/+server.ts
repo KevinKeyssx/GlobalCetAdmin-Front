@@ -15,8 +15,14 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 		return json( { error : 'Missing kit ID' }, { status : 400 } );
 	}
 
+    const params = new URLSearchParams( {
+		includeFiles    : 'true',
+        includeProducts : 'true',
+		getAllStatus    : 'true',
+	});
+
 	const response = await connectRequest< GlobalSearchKit >( {
-		endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }?includeFiles=true&includeProducts=true`,
+		endpoint   : `${ EXTERNAL_ENDPOINTS.KITS.BASE }/${ id }?${ params.toString() }`,
 		isInternal : false,
 		headers    : {
 			'x-secret' : ENV.INTERNAL_SECRET_KEY,

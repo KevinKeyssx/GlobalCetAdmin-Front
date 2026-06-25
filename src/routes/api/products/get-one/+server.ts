@@ -15,8 +15,15 @@ export const GET: RequestHandler = async ( { url, fetch } ) => {
 		return json({ error : 'Missing product ID' }, { status : 400 });
 	}
 
+    const params = new URLSearchParams( {
+        includeFiles        : 'true',
+        includeKits         : 'true',
+        includeMobileLabs   : 'true',
+        getAllStatus        : 'true',
+    });
+
 	const response = await connectRequest< GlobalSearchProduct >({
-		endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }?includeFiles=true&includeKits=true&includeMobileLabs=true`,
+		endpoint   : `${ EXTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }?${ params.toString() }`,
 		isInternal : false,
 		headers    : {
 			'x-secret' : ENV.INTERNAL_SECRET_KEY,
