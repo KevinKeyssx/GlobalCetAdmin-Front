@@ -46,6 +46,7 @@ export const INTERNAL_ENDPOINTS = {
 		BASE    : 'quotes',
 		CREATE  : 'quotes/create',
 		GET_ALL : 'quotes/get-all',
+		GET_ONE : 'quotes/get-one',
 		UPDATE  : 'quotes/update',
 	},
 };
