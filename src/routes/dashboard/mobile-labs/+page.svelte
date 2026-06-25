@@ -11,6 +11,7 @@
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import PageContainer                    from '$lib/components/shared/PageContainer.svelte';
 	import CatalogFilters                   from '$lib/components/shared/CatalogFilters.svelte';
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import { stripHtml }                    from '$lib/utils/string';
@@ -98,7 +99,6 @@
 	let view               = $state< 'cards' | 'list' >( 'cards' );
 
 	let deletingId         = $state( '' );
-	let duplicatingId      = $state( '' );
 
 
 	// Reset to page 1 on filter changes
@@ -213,38 +213,13 @@
 			deletingId = '';
 		}
 	}
-
-	async function duplicateLab( lab : MobileLab ) : Promise< void > {
-		duplicatingId = lab.id;
-
-		try {
-			const response = await connectRequest< any >( {
-				endpoint	: `${ INTERNAL_ENDPOINTS.DUPLICATE.BASE }?type=mobile-lab&id=${ lab.id }`,
-				method		: METHOD.POST,
-				isInternal	: true,
-			} );
-
-			if ( isApiError( response ) ) {
-				toast.error( `Error al duplicar: ${ response.message }` );
-				return;
-			}
-
-			toast.success( 'Laboratorio móvil duplicado con éxito.' );
-			queryClient.invalidateQueries( { queryKey : [ 'admin-labs' ] } );
-		} catch ( err ) {
-			toast.error( 'Error de red al intentar duplicar.' );
-		} finally {
-			duplicatingId = '';
-		}
-	}
 </script>
 
 <svelte:head>
 	<title>Administrar Laboratorios Móviles - GlobalCET</title>
 </svelte:head>
 
-<main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
-	<div class="mx-auto max-w-6xl space-y-8">
+<PageContainer>
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
 			title       = "Catálogo de Laboratorios Móviles"
@@ -286,15 +261,13 @@
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
 					{#each labs as item ( item.id )}
 						<ItemCard
-							itemType           = "lab"
+							itemType        = "lab"
 							{ item }
-							openEditModal      = { openEditModal }
-							deleteItem         = { ( l ) => deleteLab( l.id ) }
-							isDeleteLoading    = { deletingId === item.id }
-							duplicateItem      = { duplicateLab }
-							isDuplicateLoading = { duplicatingId === item.id }
-							confirmTitle       = "¿Eliminar laboratorio móvil?"
-							confirmMessage     = "¿Está seguro de que desea eliminar este laboratorio móvil? Esta acción no se puede deshacer."
+							openEditModal   = { openEditModal }
+							deleteItem      = { ( l ) => deleteLab( l.id ) }
+							isDeleteLoading = { deletingId === item.id }
+							confirmTitle    = "¿Eliminar laboratorio móvil?"
+							confirmMessage  = "¿Está seguro de que desea eliminar este laboratorio móvil? Esta acción no se puede deshacer."
 						/>
 					{/each}
 				</div>
@@ -377,6 +350,8 @@
 												isDeleteLoading = { deletingId === item.id }
 												confirmTitle    = "¿Eliminar laboratorio móvil?"
 												confirmMessage  = "¿Está seguro de que desea eliminar este laboratorio móvil? Esta acción no se puede deshacer."
+												itemType        = "lab"
+												showDuplicate   = { true }
 											/>
 										</td>
 									</tr>
@@ -403,5 +378,4 @@
 		{/if}
 
 
-	</div>
-</main>
+</PageContainer>

@@ -25,7 +25,8 @@
 	import RichTextEditor                   from '$lib/components/editor/RichTextEditor.svelte';
 	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
 	import ConfirmationModal                from '$lib/components/shared/ConfirmationModal.svelte';
-	import Breadcrum                        from '$lib/components/shared/Breadcrum.svelte';
+	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import PageContainer                    from '$lib/components/shared/PageContainer.svelte';
 	import { isFormDirty, getErrorMessage } from '$lib/utils/form';
 
 
@@ -438,48 +439,16 @@
 	<title>{ isEditing ? 'Modificar Kit' : 'Crear Nuevo Kit' } - GlobalCET</title>
 </svelte:head>
 
-<main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-[3.3rem]">
-	<div class="mx-auto max-w-6xl space-y-8">
-		<!-- Navigation & Header -->
-		<div class="flex items-center justify-between gap-4">
-			<div class="flex flex-col gap-4">
-				<Breadcrum items={ breadcrumbItems } />
-
-				<div class="flex flex-col gap-1.5">
-					<h1 class="font-display text-3xl font-black tracking-tight dark:text-white text-brand-bright">
-						{ isEditing ? 'Modificar Kit' : 'Crear Nuevo Kit' }
-					</h1>
-
-					<p class="text-xs text-text-muted">
-						{ isEditing ? 'Actualice las especificaciones, inventario, precios e imágenes del kit seleccionado.' : 'Complete el siguiente formulario para ingresar un nuevo kit al catálogo de GlobalCET.' }
-					</p>
-				</div>
-			</div>
-
-			<div class="flex items-center gap-2.5">
-				<button
-					type    = "button"
-					onclick = { handleCancel }
-					class   = "cursor-pointer rounded-lg border border-brand/20 bg-card/70 px-4 py-1.5 font-display text-[0.7rem] font-bold uppercase tracking-[0.08em] text-text-muted transition-all hover:border-brand/35 hover:bg-brand/10 hover:text-brand"
-				>
-					Cancelar
-				</button>
-
-				<button
-					type     = "submit"
-					form     = "kit-form"
-					disabled = { kitMutation.isPending }
-					class    = "flex cursor-pointer items-center gap-1.5 rounded-lg border-none bg-linear-to-tr from-brand via-brand-bright to-brand px-5 py-1.5 font-display text-[0.7rem] font-black uppercase tracking-[0.08em] text-white dark:text-brand-dark shadow-[0_0_16px_color-mix(in_srgb,var(--color-brand)_30%,transparent)] transition-all hover:shadow-[0_0_26px_color-mix(in_srgb,var(--color-brand)_50%,transparent)] disabled:cursor-not-allowed disabled:opacity-55"
-				>
-					{#if kitMutation.isPending}
-						<span class="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-						Guardando…
-					{:else}
-						{ isEditing ? 'Guardar Cambios' : 'Guardar Kit' }
-					{/if}
-				</button>
-			</div>
-		</div>
+<PageContainer>
+		<HeaderPage
+			title            = { isEditing ? 'Modificar Kit' : 'Crear Nuevo Kit' }
+			description      = { isEditing ? 'Actualice las especificaciones, inventario, precios e imágenes del kit seleccionado.' : 'Complete el siguiente formulario para ingresar un nuevo kit al catálogo de GlobalCET.' }
+			breadcrumb       = { breadcrumbItems }
+			showCancelButton = { true }
+			oncancel         = { handleCancel }
+			formId           = "kit-form"
+			isPending        = { kitMutation.isPending }
+		/>
 
 		{#if ( isEditing && kitQuery.isPending )}
 			<div class="flex min-h-[400px] items-center justify-center rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card p-12">
@@ -509,7 +478,7 @@
 					class="flex flex-col gap-5 text-[0.8125rem] font-semibold text-text-muted"
 				>
 					<!-- ── Two-panel grid: fields left / uploader right ── -->
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+					<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 						<!-- ── LEFT PANEL: Fields ── -->
 						<div class="flex flex-col gap-3">
 							<IdentificationFields
@@ -652,8 +621,7 @@
 				</form>
 			</div>
 		{/if}
-	</div>
-</main>
+</PageContainer>
 
 {#if ( showCategoryModal )}
 	<CategoryFormModal

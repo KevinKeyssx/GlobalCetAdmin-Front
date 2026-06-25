@@ -15,6 +15,7 @@
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import PageContainer                    from '$lib/components/shared/PageContainer.svelte';
 	import Select                           from '$lib/components/shared/Inputs/Select.svelte';
 	import SearchInput                      from '$lib/components/shared/Inputs/SearchInput.svelte';
 	import type { Category, SubCategory }   from '$lib/types/category';
@@ -254,8 +255,7 @@
 	<title>Administrar Categorías - GlobalCET</title>
 </svelte:head>
 
-<main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
-	<div class="mx-auto max-w-6xl space-y-4 sm:space-y-8">
+<PageContainer>
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
 			title       = "Categorías de Productos"
@@ -556,5 +556,4 @@
 				} }
 			/>
 		{/if}
-	</div>
-</main>
+</PageContainer>

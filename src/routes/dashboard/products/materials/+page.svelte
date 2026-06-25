@@ -3,9 +3,9 @@
         createQuery,
         createMutation,
         useQueryClient
-    }               from '@tanstack/svelte-query';
-	import toast                            from 'svelte-french-toast';
-	import { BrushCleaning }                from '@lucide/svelte';
+    }                           from '@tanstack/svelte-query';
+	import toast                from 'svelte-french-toast';
+	import { BrushCleaning }    from '@lucide/svelte';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { INTERNAL_ENDPOINTS }           from '$lib/utils/endpoints';
@@ -16,6 +16,7 @@
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import MaterialFormModal                from './components/MaterialFormModal.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import PageContainer                    from '$lib/components/shared/PageContainer.svelte';
 	import Select                           from '$lib/components/shared/Inputs/Select.svelte';
 	import SearchInput                      from '$lib/components/shared/Inputs/SearchInput.svelte';
 	import MaterialCard                     from '$lib/components/shared/itemCard/MaterialCard.svelte';
@@ -197,8 +198,7 @@
 	<title>Administrar Materiales - GlobalCET</title>
 </svelte:head>
 
-<main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12">
-	<div class="mx-auto max-w-6xl space-y-8">
+<PageContainer>
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
 			title       = "Administración de Materiales"
@@ -410,5 +410,4 @@
 				} }
 			/>
 		{/if}
-	</div>
-</main>
+</PageContainer>

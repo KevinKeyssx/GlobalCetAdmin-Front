@@ -29,7 +29,8 @@
 	import CategoryFormModal                from '$lib/components/shared/CategoryFormModal.svelte';
 	import MaterialFormModal                from '../materials/components/MaterialFormModal.svelte';
 	import ConfirmationModal                from '$lib/components/shared/ConfirmationModal.svelte';
-	import Breadcrum                        from '$lib/components/shared/Breadcrum.svelte';
+	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
+	import PageContainer                    from '$lib/components/shared/PageContainer.svelte';
 	import { isFormDirty, getErrorMessage } from '$lib/utils/form';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -493,48 +494,17 @@
 	<title>{ isEditing ? 'Modificar Producto' : 'Crear Nuevo Producto' } - GlobalCET</title>
 </svelte:head>
 
-<main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-[3.3rem]">
-	<div class="mx-auto max-w-6xl space-y-8">
+<PageContainer>
 		<!-- Navigation & Header -->
-        <div class="flex items-center justify-between gap-4">
-            <div class="flex flex-col gap-4">
-                <Breadcrum items={ breadcrumbItems } />
-
-                <div class="flex flex-col gap-1.5">
-                    <h1 class="font-display text-3xl font-black tracking-tight dark:text-white text-brand-bright">
-                        { isEditing ? 'Modificar Producto' : 'Crear Nuevo Producto' }
-                    </h1>
-
-                    <p class="text-xs text-text-muted">
-                        { isEditing ? 'Actualice las especificaciones, inventario, precios e imágenes del producto seleccionado.' : 'Complete el siguiente formulario para ingresar un nuevo producto al catálogo de GlobalCET.' }
-                    </p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2.5">
-                <button
-                    type    = "button"
-                    onclick = { handleCancel }
-                    class   = "cursor-pointer rounded-lg border border-brand/20 bg-card/70 px-4 py-1.5 font-display text-[0.7rem] font-bold uppercase tracking-[0.08em] text-text-muted transition-all hover:border-brand/35 hover:bg-brand/10 hover:text-brand"
-                >
-                    Cancelar
-                </button>
-
-                <button
-                    type     = "submit"
-                    form     = "product-form"
-                    disabled = { productMutation.isPending }
-                    class    = "flex cursor-pointer items-center gap-1.5 rounded-lg border-none bg-linear-to-tr from-brand via-brand-bright to-brand px-5 py-1.5 font-display text-[0.7rem] font-black uppercase tracking-[0.08em] text-white dark:text-brand-dark shadow-[0_0_16px_color-mix(in_srgb,var(--color-brand)_30%,transparent)] transition-all hover:shadow-[0_0_26px_color-mix(in_srgb,var(--color-brand)_50%,transparent)] disabled:cursor-not-allowed disabled:opacity-55"
-                >
-                    {#if productMutation.isPending}
-                        <span class="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                        Guardando…
-                    {:else}
-                        { isEditing ? 'Guardar Cambios' : 'Guardar Producto' }
-                    {/if}
-                </button>
-            </div>
-        </div>
+        <HeaderPage
+			title            = { isEditing ? 'Modificar Producto' : 'Crear Nuevo Producto' }
+			description      = { isEditing ? 'Actualice las especificaciones, inventario, precios e imágenes del producto seleccionado.' : 'Complete el siguiente formulario para ingresar un nuevo producto al catálogo de GlobalCET.' }
+			breadcrumb       = { breadcrumbItems }
+			showCancelButton = { true }
+			oncancel         = { handleCancel }
+			formId           = "product-form"
+			isPending        = { productMutation.isPending }
+		/>
 
 		{#if ( isEditing && productQuery.isPending )}
 			<div class="flex min-h-[400px] items-center justify-center rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card p-12">
@@ -548,8 +518,10 @@
 		{:else if ( isEditing && productQuery.isError )}
 			<div class="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-2xl border border-red-500/15 bg-card/60 backdrop-blur-md shadow-card p-12 text-center text-text-muted">
 				<p class="text-red-400 font-bold uppercase tracking-wider">Error al cargar el producto</p>
-				<p class="text-xs">{ productQuery.error?.message || 'Ocurrió un error inesperado al consultar los datos.' }</p>
-				<a
+
+                <p class="text-xs">{ productQuery.error?.message || 'Ocurrió un error inesperado al consultar los datos.' }</p>
+
+                <a
 					href="/dashboard/products"
 					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-2.5 font-bold uppercase tracking-wider text-brand hover:bg-brand/10 transition-colors cursor-pointer"
 				>
@@ -563,13 +535,10 @@
 					onsubmit={ handleSubmit }
 					class="flex flex-col gap-5 text-[0.8125rem] font-semibold text-text-muted"
 				>
-
 					<!-- ── Two-panel grid: fields left / uploader right ── -->
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
-
+					<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 						<!-- ── LEFT PANEL: Fields ── -->
 						<div class="flex flex-col gap-3">
-
 							<IdentificationFields
 								bind:name       = { formName }
 								bind:sku        = { formSku }
@@ -619,8 +588,7 @@
 									Clasificación
 								</legend>
 
-								<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-3">
-
+								<div class="grid grid-cols-1 gap-3">
 									<!-- Material -->
 									<div class="flex flex-col gap-1">
 										<div class="flex items-center justify-between">
@@ -654,7 +622,8 @@
 											<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="prod-subcat">
 												Subcategoría
 											</label>
-											<div class="flex items-center gap-2">
+
+                                            <div class="flex items-center gap-2">
 												<button
 													type="button"
 													onclick={ () => { showCategoryModal = true; } }
@@ -662,8 +631,10 @@
 												>
 													+ Crear Categoría
 												</button>
-												<span class="text-brand/30">|</span>
-												<button
+
+                                                <span class="text-brand/30">|</span>
+
+                                                <button
 													type="button"
 													onclick={ () => { showSubcategoryModal = true; } }
 													class="cursor-pointer text-brand hover:text-brand-bright transition-colors text-[0.65rem] font-black uppercase tracking-wider"
@@ -672,14 +643,16 @@
 												</button>
 											</div>
 										</div>
-										<Select
+
+                                        <Select
 											options     = { mappedSubcategories }
 											bind:value  = { formSubcategoryId }
 											multiple    = { false }
 											placeholder = "Seleccionar subcategoría..."
 											hasError    = { !!subcategoryError }
 										/>
-										{#if ( subcategoryError )}
+
+                                        {#if ( subcategoryError )}
 											<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ subcategoryError }</p>
 										{/if}
 									</div>
@@ -694,9 +667,11 @@
 								<legend class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
 									Especificaciones Técnicas
 								</legend>
-								<div class="flex flex-col gap-1">
+
+                                <div class="flex flex-col gap-1">
 									<label class="sr-only" for="prod-specs">Clave : Valor</label>
-									<KeyValueEditor id="prod-specs" bind:value={ formSpecs } error={ specsError } />
+
+                                    <KeyValueEditor id="prod-specs" bind:value={ formSpecs } error={ specsError } />
 								</div>
 							</fieldset>
 						</div>
@@ -706,7 +681,8 @@
 							<p class="block font-display text-[0.6rem] font-black tracking-[0.14em] uppercase text-brand opacity-80">
 								Carga de Imágenes Catálogo
 							</p>
-							<FileUploader
+
+                            <FileUploader
 								bind:files={ uploaderFiles }
 								bind:filesInfo={ uploaderFilesInfo }
 								isEditing={ isEditing }
@@ -738,12 +714,14 @@
 												bind:checked={ formActive }
 												class="sr-only"
 											/>
-											<!-- Thumb -->
+
+                                            <!-- Thumb -->
 											<span
 												class="absolute top-0.5 left-0.5 h-3.5 w-3.5 rounded-full transition-all duration-200 { formActive ? 'translate-x-4 bg-brand shadow-[0_0_8px_rgba(0,230,118,0.55)]' : 'bg-text-muted translate-x-0' }"
 											></span>
 										</span>
-										<!-- Label text -->
+
+                                        <!-- Label text -->
 										<span
 											class="text-[0.72rem] font-bold tracking-wide transition-colors duration-200"
 											class:text-brand={ formActive }
@@ -759,8 +737,7 @@
 				</form>
 			</div>
 		{/if}
-	</div>
-</main>
+</PageContainer>
 
 {#if ( showMaterialModal )}
 	<MaterialFormModal

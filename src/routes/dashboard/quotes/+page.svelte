@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { resolve }  from '$app/paths';
+	import { goto }     from '$app/navigation';
+
 	import {
         createQuery,
         createMutation,
@@ -8,22 +11,21 @@
 
     import connectRequest, {
         isApiError
-    }           from '$lib/services/fetch.service';
+    }                               from '$lib/services/fetch.service';
 	import type {
         Quote,
         QuoteStatus,
-        QuoteSavePayload
     }                               from '$lib/types/quotes';
 	import { METHOD }               from '$lib/services/http-codes';
 	import { globalLoadingStore }   from '$lib/state/loading';
 	import { INTERNAL_ENDPOINTS }   from '$lib/utils/endpoints';
 	import HeaderPage               from '$lib/components/shared/HeaderPage.svelte';
+	import PageContainer            from '$lib/components/shared/PageContainer.svelte';
 	import Pagination               from '$lib/components/shared/Pagination.svelte';
 	import ConfirmationModal        from '$lib/components/shared/ConfirmationModal.svelte';
 	import QuoteFilters             from './components/QuoteFilters.svelte';
 	import QuoteCard                from './components/QuoteCard.svelte';
 	import QuoteListTable           from './components/QuoteListTable.svelte';
-	import QuoteFormModal           from './components/QuoteFormModal.svelte';
 
 
 	interface PaginatedResponse< T > {
@@ -47,9 +49,7 @@
 	let view             = $state< 'cards' | 'list' >( 'cards' );
 
 	// Modals controls
-	let showFormModal      = $state( false );
-	let isEditing          = $state( false );
-	let editingQuote       = $state< Quote | null >( null );
+
 	let statusChangeTarget = $state<{ quote : Quote; newStatus : QuoteStatus } | null>( null );
 
 	// Reset page when filters change
@@ -89,49 +89,21 @@
 			}
 			return response;
 		},
-	} ) );
+	}));
 
 	const quotesResponse = $derived( quotesQuery.data );
 	const quotes         = $derived( quotesResponse?.data || [ ] );
 
 	// ─── Sync Loading State ────────────────────────────────────────────────────────
 	$effect( ( ) => {
-		$globalLoadingStore = quotesQuery.isFetching || saveMutation.isPending || statusMutation.isPending;
+		$globalLoadingStore = quotesQuery.isFetching || statusMutation.isPending;
 		return ( ) => {
 			$globalLoadingStore = false;
 		};
 	} );
 
 	// ─── Mutations ────────────────────────────────────────────────────────────────
-	const saveMutation = createMutation( ( ) => ( {
-		mutationFn : async ( { isEditing, id, payload } : { isEditing : boolean; id : string; payload : QuoteSavePayload } ) : Promise< Quote > => {
-			const endpoint = isEditing
-				? `${ INTERNAL_ENDPOINTS.QUOTES.UPDATE }?id=${ id }`
-				: `${ INTERNAL_ENDPOINTS.QUOTES.CREATE }`;
-
-			const response = await connectRequest< Quote >( {
-				endpoint,
-				method     : isEditing ? METHOD.PATCH : METHOD.POST,
-				body       : payload,
-				isInternal : true,
-			} );
-
-			if ( isApiError( response ) ) {
-				throw new Error( response.message || 'Error al guardar la cotización.' );
-			}
-			return response;
-		},
-		onSuccess : ( ) => {
-			toast.success( isEditing ? 'Cotización actualizada correctamente.' : 'Cotización creada correctamente.' );
-			showFormModal = false;
-			queryClient.invalidateQueries( { queryKey : [ 'admin-quotes' ] } );
-		},
-		onError : ( error : any ) => {
-			toast.error( error.message || 'Error al guardar la cotización.' );
-		},
-	} ) );
-
-	const statusMutation = createMutation( ( ) => ( {
+	const statusMutation = createMutation( () => ( {
 		mutationFn : async ( { id, status } : { id : string; status : QuoteStatus } ) : Promise< Quote > => {
 			const response = await connectRequest< Quote >( {
 				endpoint   : `${ INTERNAL_ENDPOINTS.QUOTES.UPDATE }?id=${ id }&status=true`,
@@ -145,7 +117,7 @@
 			}
 			return response;
 		},
-		onSuccess : ( ) => {
+		onSuccess : () => {
 			toast.success( 'Estado de cotización actualizado con éxito.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-quotes' ] } );
 		},
@@ -155,36 +127,24 @@
 	} ) );
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
-	function openCreateModal( ) : void {
-		isEditing     = false;
-		editingQuote  = null;
-		showFormModal = true;
+	function openCreateModal() : void {
+		goto( resolve( '/dashboard/quotes/form' ) );
 	}
 
 	function openEditModal( quote : Quote ) : void {
-		isEditing     = true;
-		editingQuote  = quote;
-		showFormModal = true;
+		goto( resolve( `/dashboard/quotes/form?id=${ quote.id }` ) );
 	}
 
 	function handleStatusChange( quote : Quote, newStatus : QuoteStatus ) : void {
 		statusChangeTarget = { quote, newStatus };
 	}
 
-	function confirmStatusChange( ) : void {
+	function confirmStatusChange() : void {
 		if ( !statusChangeTarget ) return;
 
 		const { quote, newStatus } = statusChangeTarget;
 		statusMutation.mutate( { id : quote.id, status : newStatus } );
 		statusChangeTarget = null;
-	}
-
-	function handleFormSave( payload : QuoteSavePayload ) : void {
-		saveMutation.mutate( {
-			isEditing,
-			id : editingQuote?.id || '',
-			payload,
-		} );
 	}
 </script>
 
@@ -192,8 +152,7 @@
 	<title>Administrar Cotizaciones - GlobalCET</title>
 </svelte:head>
 
-<main class="relative min-h-[calc(100vh-80px)] px-6 py-10 lg:py-12 select-none">
-	<div class="mx-auto max-w-6xl space-y-8">
+<PageContainer>
 		<!-- Header -->
 		<HeaderPage
 			title       = "Administración de Cotizaciones"
@@ -225,13 +184,13 @@
 		{#if ( view === 'cards' )}
 			{#if ( quotesQuery.isPending )}
 				<!-- Shimmer grid -->
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6">
 					{#each Array.from( { length : size } ) as _}
 						<div class="h-60 w-full animate-pulse rounded-2xl border border-brand/5 bg-card/45"></div>
 					{/each}
 				</div>
 			{:else if ( quotes.length > 0 )}
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6">
 					{#each quotes as quote ( quote.id )}
 						<QuoteCard
 							{ quote }
@@ -270,17 +229,7 @@
 				bind:page    = { page }
 			/>
 		{/if}
-	</div>
-</main>
-
-<!-- Create/Edit Form Modal -->
-<QuoteFormModal
-	show        = { showFormModal }
-	{ isEditing }
-	initialData = { editingQuote }
-	onSave      = { handleFormSave }
-	onCancel    = { ( ) => showFormModal = false }
-/>
+</PageContainer>
 
 <!-- Status Change Confirmation Modal -->
 <ConfirmationModal
