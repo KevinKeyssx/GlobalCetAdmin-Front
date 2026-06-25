@@ -461,7 +461,7 @@
 
 <div class="space-y-4">
 	<!-- ─── Dual Drag and Drop Area ───────────────────────────────────────────── -->
-	<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+	<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
 		<!-- Left: Images, PDF, DOCX -->
 		<div
 			role        = "button"
@@ -558,7 +558,7 @@
 				{/if}
 			</div>
 
-			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-3">
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
 				{#each files as item ( item.id ) }
 					<div class="group relative flex flex-col gap-3 rounded-xl border border-brand/10 bg-card/40 backdrop-blur-xs p-3 transition-all duration-300 hover:border-brand/20 hover:bg-card/70 hover:shadow-[0_8px_20px_color-mix(in_srgb,var(--color-brand)_5%,transparent)]">
 						<div class="flex gap-3">

@@ -129,7 +129,7 @@
 		Inventario y Precio
 	</legend>
 
-	<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 2xl:grid-cols-4 gap-3">
 		<!-- Precio Actual -->
 		<div class="flex flex-col gap-1">
 			<label class="text-[0.65rem] font-bold tracking-wider text-text-muted uppercase" for="current-price">
