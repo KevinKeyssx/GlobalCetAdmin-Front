@@ -64,14 +64,16 @@
 	<!-- Page Size Selector -->
 	<div class="flex items-center gap-2 text-sm font-semibold text-text-muted mx-auto lg:mx-0">
 		<span>Mostrar:</span>
-		<div class="w-16">
+
+        <div class="w-16">
 			<SoftSelect
 				options={ sizeOptions }
 				bind:value={ sizeStr }
 				placeholder="Size"
 			/>
 		</div>
-		<span>resultados por página</span>
+
+        <span>resultados por página</span>
 	</div>
 
 	<!-- Pagination controls -->
@@ -81,7 +83,7 @@
 		bind:page={ page }
 	>
 		{#snippet children( { pages } )}
-			<div class="flex items-center gap-2">
+			<div class="flex items-center gap-2 justify-center">
 				<BitsPagination.PrevButton
 					class="
 						inline-flex h-9 w-9 items-center justify-center rounded-xl
