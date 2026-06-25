@@ -158,10 +158,10 @@
 	{#if isDrawer }
 		<div class="absolute top-4 right-4 md:hidden">
 			<button
-				type    = "button"
-				onclick = { ( ) => { isDrawerOpen = false; } }
-				class   = "flex h-8 w-8 items-center justify-center rounded-lg border border-brand/10 bg-brand/5 text-text-muted transition-colors hover:bg-brand/10 hover:text-brand cursor-pointer"
-				aria-label = "Cerrar menú"
+				type        = "button"
+				onclick     = { ( ) => { isDrawerOpen = false; } }
+				class       = "flex h-8 w-8 items-center justify-center rounded-lg border border-brand/10 bg-brand/5 text-text-muted transition-colors hover:bg-brand/10 hover:text-brand cursor-pointer"
+				aria-label  = "Cerrar menú"
 			>
 				<X class="h-4 w-4" />
 			</button>
