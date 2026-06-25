@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { Copy } from '@lucide/svelte';
 
     import type {
         GlobalSearchProduct,
@@ -13,6 +12,8 @@
 	import { getItemImages }    from '$lib/utils/image';
 	import { stripHtml }        from '$lib/utils/string';
 	import TableActions         from '../TableActions.svelte';
+	import Status               from '../Status.svelte';
+    import DuplicateButton      from '../DuplicateButton.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	export interface SubProduct {
@@ -63,15 +64,13 @@
 	}
 
 	interface Props {
-		itemType            : 'product' | 'kit' | 'lab';
-		item                : GlobalSearchProduct | Product | AdminProduct | GlobalSearchKit | DashboardKit | GlobalSearchMobileLab | DashboardMobileLab;
-		openEditModal       : ( item : any ) => void;
-		deleteItem          : ( item : any ) => void;
-		isDeleteLoading     : boolean;
-		duplicateItem?      : ( item : any ) => void | Promise< void >;
-		isDuplicateLoading? : boolean;
-		confirmTitle?       : string;
-		confirmMessage?     : string;
+		itemType        : 'product' | 'kit' | 'lab';
+		item            : GlobalSearchProduct | Product | AdminProduct | GlobalSearchKit | DashboardKit | GlobalSearchMobileLab | DashboardMobileLab;
+		openEditModal   : ( item : any ) => void;
+		deleteItem      : ( item : any ) => void;
+		isDeleteLoading : boolean;
+		confirmTitle?   : string;
+		confirmMessage? : string;
 	}
 
 	let {
@@ -80,10 +79,8 @@
 		openEditModal,
 		deleteItem,
 		isDeleteLoading,
-		duplicateItem,
-		isDuplicateLoading = false,
-		confirmTitle       = '¿Eliminar elemento?',
-		confirmMessage     = '¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.'
+		confirmTitle   = '¿Eliminar elemento?',
+		confirmMessage = '¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.'
 	} : Props = $props();
 
 	// ─── Reactivity: Carousel State ───────────────────────────────────────────────
@@ -211,20 +208,9 @@
 			{/each}
 		</div>
 
-		<!-- Single Top-Left Type Badge -->
-		<span class="
-			absolute left-3 top-3 z-30
-			rounded-full px-2.5 py-0.5
-			text-[9px] font-black uppercase tracking-wider backdrop-blur-md
-			{ itemType === 'lab'
-				? 'border border-blue-400/30 bg-blue-400/20 text-blue-300'
-				: itemType === 'kit'
-					? 'border border-emerald-400/30 bg-emerald-400/20 text-emerald-300'
-					: 'border border-brand/30 bg-brand/20 text-brand-bright'
-			}
-		">
-			{ itemType === 'lab' ? 'Laboratorio Móvil' : itemType === 'kit' ? 'Kit Científico' : 'Producto' }
-		</span>
+		<div class="absolute left-3 top-3 z-30">
+			<Status status={ ( item as any ).active } color />
+		</div>
 
 		<!-- Floating Top-Right Actions -->
 		<div class="absolute right-3 top-3 z-30 shrink-0">
@@ -291,19 +277,12 @@
 			</div>
 		{/if}
 
-		{#if ( duplicateItem )}
-			<button
-				onclick  = { ( e ) => { e.preventDefault(); e.stopPropagation(); duplicateItem( item ); } }
-				disabled = { isDuplicateLoading }
-				class    = "absolute right-3 bottom-3 z-30 flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-brand/80 text-white transition-all duration-300 hover:bg-brand hover:text-surface-dark hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer shadow-md"
-				title    = "Duplicar"
-			>
-				{#if ( isDuplicateLoading )}
-					<div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-				{:else}
-					<Copy size={ 14 } />
-				{/if}
-			</button>
+		{#if ( itemType )}
+			<DuplicateButton
+				{ item }
+				{ itemType }
+				class = "absolute right-3 bottom-3 z-30 flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-brand/80 text-white transition-all duration-300 hover:bg-brand hover:text-surface-dark hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer shadow-md"
+			/>
 		{/if}
 	</div>
 
