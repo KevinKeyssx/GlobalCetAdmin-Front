@@ -11,10 +11,16 @@ export interface CurrentFormState {
 	currentStock    : number | null;
 	minStock        : number | null;
 	maxStock        : number | null;
-	files           : Array<{ id : string; file? : File; alt : string; isMain : boolean; order : number }>;
+	files?          : Array<{ id : string; file? : File; alt : string; isMain : boolean; order : number }>;
 	products?       : Array<{ productId : string; quantity : number }>;
 	kits?           : Array<{ kitId : string; quantity : number }>;
 	dimensions?     : string;
+	companyName?    : string;
+	rut?            : string;
+	email?          : string;
+	contactName?    : string;
+	address?        : string;
+	adminNotes?     : string | null;
 }
 
 export interface InitialFormState {
@@ -34,6 +40,12 @@ export interface InitialFormState {
 	products?       : Array<{ productId : string; quantity : number }>;
 	kits?           : Array<{ kitId : string; quantity : number }>;
 	dimensions?     : string;
+	companyName?    : string;
+	rut?            : string;
+	email?          : string;
+	contactName?    : string;
+	address?        : string;
+	adminNotes?     : string | null;
 }
 
 export function isFormDirty(
@@ -42,7 +54,7 @@ export function isFormDirty(
 	isEditing : boolean
 ) : boolean {
 	if ( !isEditing ) {
-		const hasFiles    = current.files.length > 0;
+		const hasFiles    = current.files && current.files.length > 0;
 		const hasProducts = current.products && current.products.length > 0;
 		const hasKits     = current.kits && current.kits.length > 0;
 
@@ -61,7 +73,13 @@ export function isFormDirty(
 			|| ( current.dimensions !== undefined && current.dimensions !== '0m x 0m x 0m' )
 			|| !!hasFiles
 			|| !!hasProducts
-			|| !!hasKits;
+			|| !!hasKits
+			|| ( current.companyName !== undefined && current.companyName !== '' )
+			|| ( current.rut !== undefined && current.rut !== '' )
+			|| ( current.email !== undefined && current.email !== '' )
+			|| ( current.contactName !== undefined && current.contactName !== '' )
+			|| ( current.address !== undefined && current.address !== '' )
+			|| ( current.adminNotes !== undefined && current.adminNotes !== null && current.adminNotes !== '' );
 	}
 
 	if ( !initial ) {
@@ -116,13 +134,13 @@ export function isFormDirty(
 
 	// 6. Compare files
 	const initialFilesCount = initial.files?.length || 0;
-	const currentFilesCount = current.files.length;
+	const currentFilesCount = current.files?.length || 0;
 
 	if ( initialFilesCount !== currentFilesCount ) {
 		return true;
 	}
 
-	if ( initial.files ) {
+	if ( initial.files && current.files ) {
 		const filesChanged = current.files.some( ( uf ) => {
 			if ( uf.file ) {
 				return true;
@@ -192,6 +210,26 @@ export function isFormDirty(
 			return true;
 		}
 	} else if (( current.kits && current.kits.length > 0 ) || ( initial.kits && initial.kits.length > 0 )) {
+		return true;
+	}
+
+	// 9. Compare quote fields
+	if ( current.companyName !== undefined && current.companyName !== ( initial.companyName || '' ) ) {
+		return true;
+	}
+	if ( current.rut !== undefined && current.rut !== ( initial.rut || '' ) ) {
+		return true;
+	}
+	if ( current.email !== undefined && current.email !== ( initial.email || '' ) ) {
+		return true;
+	}
+	if ( current.contactName !== undefined && current.contactName !== ( initial.contactName || '' ) ) {
+		return true;
+	}
+	if ( current.address !== undefined && current.address !== ( initial.address || '' ) ) {
+		return true;
+	}
+	if ( current.adminNotes !== undefined && current.adminNotes !== ( initial.adminNotes || '' ) ) {
 		return true;
 	}
 
