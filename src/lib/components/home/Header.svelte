@@ -36,7 +36,6 @@ const { darkMode, onToggle }: Props = $props();
                     <!-- Transparent Logo image protruding past the header edge -->
                     <img src="/logo/logo.avif" alt="GlobalCET" class="relative z-10 h-full w-full object-contain" />
                 </div>
-
             </a>
 
             <h1 class="text-xl sm:text-2xl md:text-4xl font-extrabold tracking-tight dark:text-white text-brand-bright">Panel de administración</h1>
@@ -55,7 +54,6 @@ const { darkMode, onToggle }: Props = $props();
                 <Moon class="size-3.5" />
 			{/if}
 		</button>
-
 	</div>
 </header>
 
