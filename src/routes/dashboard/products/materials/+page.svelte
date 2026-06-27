@@ -160,6 +160,23 @@
 		};
 	} );
 
+	const materialsResponse = $derived( materialsQuery.data );
+	let absoluteTotal = $state( 0 );
+
+	$effect( ( ) => {
+		if ( materialsResponse?.meta?.total !== undefined ) {
+			if ( !search && activeStatus === 'all' && autoclavableStatus === 'all' ) {
+				absoluteTotal = materialsResponse.meta.total;
+			}
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( absoluteTotal === 0 && materialsResponse?.meta?.total !== undefined ) {
+			absoluteTotal = materialsResponse.meta.total;
+		}
+	} );
+
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
 	function openCreateModal( ) : void {
 		isEditing       = false;
@@ -201,9 +218,9 @@
 <PageContainer>
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
-			title       = "Administración de Materiales"
-			description = "Gestione las propiedades mecánicas y térmicas de los materiales de catálogo (vidrio, metales, plásticos)."
-			breadcrumb  = { [
+			title         = "Administración de Materiales"
+			description   = "Gestione las propiedades mecánicas y térmicas de los materiales de catálogo (vidrio, metales, plásticos)."
+			breadcrumb    = { [
 				{
 					label : 'Dashboard',
 					href  : '/dashboard'
@@ -212,14 +229,16 @@
 					label : 'Materiales de Productos'
 				}
 			] }
-			buttonText  = "Agregar Material"
-			onclick     = { openCreateModal }
-			bind:view   = { view }
+			buttonText    = "Agregar Material"
+			onclick       = { openCreateModal }
+			bind:view     = { view }
+			totalCount    = { absoluteTotal }
+			filteredCount = { materialsResponse?.meta?.total || 0 }
 		/>
 
 
 		<!-- ─── Search & Filter Tool ────────────────────────────────────────────── -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs">
+		<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 sm:-mt-3 p-4 rounded-2xl w-full text-xs">
 			<!-- Search -->
 			<div class="space-y-1.5 w-full sm:col-span-2 md:col-span-2">
 				<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider">Buscar</label>

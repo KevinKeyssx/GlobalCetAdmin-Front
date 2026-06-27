@@ -249,6 +249,37 @@
 			typeOrder = 'asc';
 		}
 	}
+
+	let absoluteCategoriesTotal    = $state( 0 );
+	let absoluteSubcategoriesTotal = $state( 0 );
+
+	$effect( ( ) => {
+		if ( categoriesQuery.data?.meta?.total !== undefined ) {
+			if ( !search && activeStatus === 'all' ) {
+				absoluteCategoriesTotal = categoriesQuery.data.meta.total;
+			}
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( absoluteCategoriesTotal === 0 && categoriesQuery.data?.meta?.total !== undefined ) {
+			absoluteCategoriesTotal = categoriesQuery.data.meta.total;
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( subcategoriesQuery.data?.meta?.total !== undefined ) {
+			if ( !search && activeStatus === 'all' && selectedCategories.size === 0 ) {
+				absoluteSubcategoriesTotal = subcategoriesQuery.data.meta.total;
+			}
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( absoluteSubcategoriesTotal === 0 && subcategoriesQuery.data?.meta?.total !== undefined ) {
+			absoluteSubcategoriesTotal = subcategoriesQuery.data.meta.total;
+		}
+	} );
 </script>
 
 <svelte:head>
@@ -258,9 +289,9 @@
 <PageContainer>
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
-			title       = "Categorías de Productos"
-			description = "Administre las categorías analíticas y subcategorías estructuradas de sus productos científicos."
-			breadcrumb  = { [
+			title         = "Categorías de Productos"
+			description   = "Administre las categorías analíticas y subcategorías estructuradas de sus productos científicos."
+			breadcrumb    = { [
 				{
 					label : 'Dashboard',
 					href  : '/dashboard'
@@ -269,14 +300,16 @@
 					label : 'Categorías & Subcategorías de Productos'
 				}
 			] }
-			buttonText  = { activeTab === 'categories' ? 'Agregar Categoría' : 'Agregar Subcategoría' }
-			onclick     = { openCreateModal }
-			bind:view   = { view }
+			buttonText    = { activeTab === 'categories' ? 'Agregar Categoría' : 'Agregar Subcategoría' }
+			onclick       = { openCreateModal }
+			bind:view     = { view }
+			totalCount    = { activeTab === 'categories' ? absoluteCategoriesTotal : absoluteSubcategoriesTotal }
+			filteredCount = { activeTab === 'categories' ? ( categoriesQuery.data?.meta?.total ?? 0 ) : ( subcategoriesQuery.data?.meta?.total ?? 0 ) }
 		/>
 
 
 		<!-- ─── Tab Switcher ────────────────────────────────────────────────────── -->
-		<div class="flex rounded-xl bg-input p-1 border border-brand/10 max-w-xs gap-1 text-xs">
+		<div class="flex rounded-xl bg-input p-1 border border-brand/10 max-w-xs gap-1 text-xs sm:-mt-3">
 			<button
 				onclick={ ( ) => { activeTab = 'categories'; } }
 				class="flex-1 rounded-lg px-4 py-1 font-bold tracking-wider uppercase transition-all duration-200 { activeTab === 'categories' ? 'bg-brand text-surface-dark shadow-sm' : 'text-text-muted hover:text-text' }"

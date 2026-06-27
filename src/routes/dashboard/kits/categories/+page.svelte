@@ -155,6 +155,22 @@
 			typeOrder = 'asc';
 		}
 	}
+
+	let absoluteTotal = $state( 0 );
+
+	$effect( ( ) => {
+		if ( categoriesQuery.data?.meta?.total !== undefined ) {
+			if ( !search && activeStatus === 'all' ) {
+				absoluteTotal = categoriesQuery.data.meta.total;
+			}
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( absoluteTotal === 0 && categoriesQuery.data?.meta?.total !== undefined ) {
+			absoluteTotal = categoriesQuery.data.meta.total;
+		}
+	} );
 </script>
 
 <svelte:head>
@@ -164,9 +180,9 @@
 <PageContainer>
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
-			title       = "Categorías de Kits"
-			description = "Gestione las áreas científicas de los Kits de laboratorio pedagógicos (Física, Bioquímica, Robótica)."
-			breadcrumb  = { [
+			title         = "Categorías de Kits"
+			description   = "Gestione las áreas científicas de los Kits de laboratorio pedagógicos (Física, Bioquímica, Robótica)."
+			breadcrumb    = { [
 				{
 					label : 'Dashboard',
 					href  : '/dashboard'
@@ -175,9 +191,11 @@
 					label : 'Categorías de Kits'
 				}
 			] }
-			buttonText  = "Agregar Categoría"
-			onclick     = { openCreateModal }
-			bind:view   = { view }
+			buttonText    = "Agregar Categoría"
+			onclick       = { openCreateModal }
+			bind:view     = { view }
+			totalCount    = { absoluteTotal }
+			filteredCount = { categoriesQuery.data?.meta?.total ?? 0 }
 		/>
 
 
@@ -187,6 +205,7 @@
 			bind:debouncedSearch = { debouncedSearch }
 			bind:activeStatus    = { activeStatus }
 			placeholder          = "Buscar categoría de kits..."
+			class                = "-mt-3"
 		/>
 
 		<!-- ─── Content ────────────────────────────────────────────────────── -->

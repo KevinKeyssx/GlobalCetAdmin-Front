@@ -146,6 +146,21 @@
 		statusMutation.mutate( { id : quote.id, status : newStatus } );
 		statusChangeTarget = null;
 	}
+	let absoluteTotal = $state( 0 );
+
+	$effect( ( ) => {
+		if ( quotesResponse?.meta?.total !== undefined ) {
+			if ( !search && selectedStatuses.size === 0 ) {
+				absoluteTotal = quotesResponse.meta.total;
+			}
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( absoluteTotal === 0 && quotesResponse?.meta?.total !== undefined ) {
+			absoluteTotal = quotesResponse.meta.total;
+		}
+	} );
 </script>
 
 <svelte:head>
@@ -155,9 +170,9 @@
 <PageContainer>
 		<!-- Header -->
 		<HeaderPage
-			title       = "Administración de Cotizaciones"
-			description = "Cree, modifique y gestione las cotizaciones de clientes y sus respectivos estados."
-			breadcrumb  = { [
+			title         = "Administración de Cotizaciones"
+			description   = "Cree, modifique y gestione las cotizaciones de clientes y sus respectivos estados."
+			breadcrumb    = { [
 				{
 					label : 'Dashboard',
 					href  : '/dashboard'
@@ -166,9 +181,11 @@
 					label : 'Cotizaciones'
 				}
 			] }
-			buttonText  = "Nueva Cotización"
-			onclick     = { openCreateModal }
-			bind:view   = { view }
+			buttonText    = "Nueva Cotización"
+			onclick       = { openCreateModal }
+			bind:view     = { view }
+			totalCount    = { absoluteTotal }
+			filteredCount = { quotesResponse?.meta?.total ?? 0 }
 		/>
 
 		<!-- Filters -->
@@ -178,6 +195,7 @@
 			bind:selectedStatuses = { selectedStatuses }
 			bind:orderBy          = { orderBy }
 			bind:order            = { order }
+			class                 = "sm:-mt-3"
 		/>
 
 		<!-- Content -->

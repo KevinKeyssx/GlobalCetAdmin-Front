@@ -156,6 +156,22 @@
 			typeOrder = 'asc';
 		}
 	}
+
+	let absoluteTotal = $state( 0 );
+
+	$effect( ( ) => {
+		if ( categoriesQuery.data?.meta?.total !== undefined ) {
+			if ( !search && activeStatus === 'all' ) {
+				absoluteTotal = categoriesQuery.data.meta.total;
+			}
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( absoluteTotal === 0 && categoriesQuery.data?.meta?.total !== undefined ) {
+			absoluteTotal = categoriesQuery.data.meta.total;
+		}
+	} );
 </script>
 
 <svelte:head>
@@ -165,9 +181,9 @@
 <PageContainer>
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
-			title       = "Categorías de Laboratorios"
-			description = "Gestione las áreas científicas e infraestructuras de sus carros y laboratorios móviles."
-			breadcrumb  = { [
+			title         = "Categorías de Laboratorios"
+			description   = "Gestione las áreas científicas e infraestructuras de sus carros y laboratorios móviles."
+			breadcrumb    = { [
 				{
 					label : 'Dashboard',
 					href  : '/dashboard'
@@ -176,9 +192,11 @@
 					label : 'Categorías de Laboratorios'
 				}
 			] }
-			buttonText  = "Agregar Categoría"
-			onclick     = { openCreateModal }
-			bind:view   = { view }
+			buttonText    = "Agregar Categoría"
+			onclick       = { openCreateModal }
+			bind:view     = { view }
+			totalCount    = { absoluteTotal }
+			filteredCount = { categoriesQuery.data?.meta?.total ?? 0 }
 		/>
 
 
@@ -188,6 +206,7 @@
 			bind:debouncedSearch = { debouncedSearch }
 			bind:activeStatus    = { activeStatus }
 			placeholder          = "Buscar categoría de laboratorios..."
+			class                = "sm:-mt-3"
 		/>
 
 		<!-- ─── Content ────────────────────────────────────────────────────── -->
