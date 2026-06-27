@@ -1,8 +1,7 @@
 <script lang="ts" generics="T">
-	import { Pencil, Trash2 } from '@lucide/svelte';
-
-    import ConfirmationModal  from './ConfirmationModal.svelte';
-	import DuplicateButton    from './DuplicateButton.svelte';
+	import { Pencil, Trash2, TrendingUp } from '@lucide/svelte';
+	import ConfirmationModal              from './ConfirmationModal.svelte';
+	import DuplicateButton                from './DuplicateButton.svelte';
 
 	interface Props< T > {
 		item            : T;
@@ -14,6 +13,8 @@
 		color?          : boolean;
 		itemType?       : 'product' | 'kit' | 'lab';
 		showDuplicate?  : boolean;
+		showHistory?    : boolean;
+		onViewHistory?  : ( item : T ) => void;
 	}
 
 	let {
@@ -25,7 +26,9 @@
 		confirmMessage,
 		color         = false,
 		itemType,
-		showDuplicate = false
+		showDuplicate = false,
+		showHistory   = false,
+		onViewHistory
 	} : Props< T > = $props();
 
 	let showConfirm = $state( false );
@@ -51,6 +54,16 @@
 			{ itemType }
 			class = "flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 { color ? 'bg-brand/80 text-white' : 'bg-brand/10 text-brand' } transition-all duration-200 hover:bg-brand hover:text-surface-dark disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
 		/>
+	{/if}
+
+	{#if ( showHistory && onViewHistory )}
+		<button
+			onclick = { ( ) => onViewHistory( item ) }
+			class   = "flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 { color ? 'bg-brand/80 text-white' : 'bg-brand/10 text-brand' } transition-all duration-200 hover:bg-brand hover:text-surface-dark cursor-pointer"
+			title   = "Historial de Precios"
+		>
+			<TrendingUp size={ 14 } />
+		</button>
 	{/if}
 
 	<button
