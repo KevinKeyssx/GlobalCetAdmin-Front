@@ -5,12 +5,13 @@ import { PUBLIC_BACKEND_URL } from '$env/static/public';
 
 
 type Connect = {
-	endpoint    : string;
-	method?     : METHOD;
-	body?       : object | FormData;
-	isInternal? : boolean;
-	headers?    : Record<string, string>;
-	fetch?      : typeof fetch;
+	endpoint     : string;
+	method?      : METHOD;
+	body?        : object | FormData;
+	isInternal?  : boolean;
+	headers?     : Record< string, string >;
+	fetch?       : typeof fetch;
+	responseType? : 'json' | 'blob';
 }
 
 
@@ -22,18 +23,19 @@ export type ApiError = {
 }
 
 
-export const isApiError = ( error: any ): error is ApiError => 
+export const isApiError = ( error : any ) : error is ApiError => 
 	typeof error === 'object' && error !== null && 'message' in error && 'code' in error;
 
 
-export default async function connectRequest<T>( {
+export default async function connectRequest< T >( {
 	method = METHOD.GET,
 	body,
 	endpoint,
 	headers,
 	isInternal = true,
-	fetch: customFetch = fetch,
-}: Connect ): Promise<T | ApiError> {
+	fetch : customFetch = fetch,
+	responseType,
+} : Connect ) : Promise< T | ApiError > {
 	const finalURL = isInternal
 		? resolve( `/api/${ endpoint.replace( /^\/+/, '' ) }` as any )
 		: `${ PUBLIC_BACKEND_URL.replace( /\/+$/, '' ) }/${ endpoint.replace( /^\/+/, '' ) }`;
@@ -45,10 +47,10 @@ export default async function connectRequest<T>( {
 		cache   : 'no-cache',
 		headers : {
 			...( isFormData ? {} : { 'Content-Type' : 'application/json' } ),
-			Accept         : 'application/json',
+			Accept         : responseType === 'blob' ? '*/*' : 'application/json',
 			...headers
 		}
-	});
+	} );
 
 	if ( !response.ok ) {
 		const errorData = await response.json().catch( ( ) => ( {} ) );
@@ -58,6 +60,12 @@ export default async function connectRequest<T>( {
 			status	: response.status,
 			data	: errorData,
 		} as ApiError;
+	}
+
+	if ( responseType === 'blob' ) {
+		const blob = await response.blob();
+		const contentDisposition = response.headers.get( 'content-disposition' );
+		return { blob, contentDisposition } as unknown as T;
 	}
 
 	return response.status === 204 ? ( true as T ) : ( await response.json() as T );
