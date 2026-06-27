@@ -9,6 +9,7 @@
 	import DashboardModal                   from '../../../routes/dashboard/components/DashboardModal.svelte';
 	import Select                           from './Inputs/Select.svelte';
 	import InputText                        from './Inputs/InputText.svelte';
+	import Switch                           from './Inputs/Switch.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ParentCategory {
@@ -264,14 +265,14 @@
 			</div>
 
 			<!-- Estado Activo -->
-			<div class="flex items-center gap-3 pt-2">
-				<input
-					id="item-active"
-					type="checkbox"
-					bind:checked={ formActive }
-					class="accent-brand h-4 w-4 cursor-pointer"
+			<div class="flex items-center justify-between pt-2">
+				<span class="cursor-pointer select-none">Estado Activo</span>
+				<Switch
+					bind:checked  = { formActive }
+					id            = "category-active"
+					labelActive   = "Activo"
+					labelInactive = "Inactivo"
 				/>
-				<label for="item-active" class="cursor-pointer select-none">Estado Activo</label>
 			</div>
 
 			<!-- Actions -->
