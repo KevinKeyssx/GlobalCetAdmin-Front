@@ -10,12 +10,18 @@
 		options      : Option[];
 		value        : string;
 		placeholder? : string;
+		label?       : string;
+		disabled?    : boolean;
+		placement?   : 'top' | 'bottom';
 	}
 
 	let {
 		options     = [],
 		value       = $bindable( '' ),
-		placeholder = 'Seleccionar...'
+		placeholder = 'Seleccionar...',
+		label,
+		disabled    = false,
+		placement   = 'bottom',
 	} : Props = $props();
 
 	// ─── Reactive States ──────────────────────────────────────────────────────────
@@ -44,16 +50,17 @@
 
 <div
 	bind:this={ container }
-	class="relative w-full text-left select-none text-xs font-semibold"
+	class="relative w-full text-left select-none text-xs font-semibold { isOpen ? 'z-50' : 'z-0' }"
 >
 	<!-- Trigger -->
 	<button
-		type="button"
-		onclick={ () : void => { isOpen = !isOpen; } }
-		class="flex h-9 w-full items-center justify-between gap-1.5 rounded-lg border border-brand/20 dark:border-brand/10 bg-surface/40 hover:bg-surface/60 px-3 py-1.5 text-text outline-none transition-all duration-200 cursor-pointer { isOpen ? 'ring-2 ring-brand border-brand/40' : '' }"
+		type     = "button"
+		onclick  = { ( ) : void => { isOpen = !isOpen; } }
+		disabled = { disabled }
+		class    = "flex h-9 w-full items-center justify-between gap-1.5 rounded-lg border border-brand/20 dark:border-brand/10 bg-surface/40 px-3 py-1.5 text-text outline-none transition-all duration-200 { disabled ? 'cursor-not-allowed opacity-55' : 'cursor-pointer hover:bg-surface/60' } { isOpen ? 'ring-2 ring-brand border-brand/40' : '' }"
 	>
 		<span class="truncate text-left text-text-muted">
-			{ selectedItem ? selectedItem.name : placeholder }
+			{ label || ( selectedItem ? selectedItem.name : placeholder ) }
 		</span>
 		<ChevronDown class="size-3 text-text-muted transition-transform duration-200 { isOpen ? 'rotate-180 text-brand' : '' }" />
 	</button>
@@ -61,7 +68,7 @@
 	<!-- Dropdown Menu -->
 	{#if isOpen}
 		<div
-			class="absolute z-50 mt-1 min-w-full w-max max-h-60 overflow-y-auto rounded-lg border border-brand/10 bg-card/95 p-1 shadow-lg backdrop-blur-md"
+			class="absolute z-55 min-w-full w-max max-h-60 overflow-y-auto rounded-lg border border-brand/10 bg-card/95 p-1 shadow-lg backdrop-blur-md { placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1' } right-0"
 		>
 			<div class="flex flex-col gap-0.5">
 				{#each options as opt}
