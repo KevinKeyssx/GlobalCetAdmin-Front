@@ -17,6 +17,7 @@
 		searchPlaceholder?    : string;
 		categoriesLabel?      : string;
 		categoriesPlaceholder?: string;
+		class?                : string;
 	}
 
 	let {
@@ -27,7 +28,8 @@
 		categories,
 		searchPlaceholder     = 'Buscar...',
 		categoriesLabel       = 'Categorías',
-		categoriesPlaceholder = 'Todas las categorías'
+		categoriesPlaceholder = 'Todas las categorías',
+		class : className     = ''
 	} : Props = $props();
 
 	const statusOptions = [
@@ -53,7 +55,7 @@
 	}
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs">
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs { className }">
 	<!-- Search -->
 	<div class="space-y-1.5 w-full md:col-span-2">
 		<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider block mb-1.5">Buscar</label>
