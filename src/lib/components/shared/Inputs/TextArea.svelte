@@ -13,7 +13,7 @@
 
 	let {
 		value       = $bindable( '' ),
-		error       = '',
+		error       = $bindable( '' ),
 		placeholder = '',
 		id          = '',
 		class       : customClass = 'w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-y',
@@ -21,7 +21,7 @@
 		rows        = 3,
 	} : TextAreaProps = $props();
 
-	const hasError = $derived( !!error && !value.trim() );
+	const hasError = $derived( !!error );
 
 	// Dynamically replace brand/normal classes with red classes when there is an error
 	const finalClass = $derived.by( () => {
@@ -55,6 +55,7 @@
 			{ id }
 			{ rows }
 			bind:value={ value }
+			oninput={ ( ) => { error = ''; } }
 			{ placeholder }
 			{ disabled }
 			class="transition-all placeholder:text-text-muted/50 pr-10 { finalClass } min-h-12 max-h-28"

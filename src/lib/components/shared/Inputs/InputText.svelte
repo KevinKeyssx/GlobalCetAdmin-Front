@@ -13,7 +13,7 @@
 
 	let {
 		value       = $bindable( '' ),
-		error       = '',
+		error       = $bindable( '' ),
 		placeholder = '',
 		id          = '',
 		type        = 'text',
@@ -21,7 +21,7 @@
 		disabled    = false,
 	} : InputTextProps = $props();
 
-	const hasError = $derived( !!error && !value.trim() );
+	const hasError = $derived( !!error );
 
 	// Dynamically replace brand/normal classes with red classes when there is an error
 	const finalClass = $derived.by( () => {
@@ -55,6 +55,7 @@
 			{ id }
 			{ type }
 			bind:value={ value }
+			oninput={ ( ) => { error = ''; } }
 			{ placeholder }
 			{ disabled }
 			class="transition-all placeholder:text-text-muted/50 pr-10 { finalClass }"
