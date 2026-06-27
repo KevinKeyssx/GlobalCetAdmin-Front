@@ -478,175 +478,175 @@
 </svelte:head>
 
 <PageContainer>
-		<!-- Navigation & Header -->
-		<HeaderPage
-			title            = { isEditing ? 'Modificar Cotización' : 'Crear Nueva Cotización' }
-			description      = { isEditing ? 'Actualice los datos del cliente, notas administrativas e ítems asociados de la cotización seleccionada.' : 'Complete el siguiente formulario para registrar una nueva cotización en el sistema de GlobalCET.' }
-			breadcrumb       = { breadcrumbItems }
-			showCancelButton = { true }
-			oncancel         = { handleCancel }
-			formId           = "quote-form"
-			isPending        = { saveMutation.isPending }
-		/>
+    <!-- Navigation & Header -->
+    <HeaderPage
+        title            = { isEditing ? 'Modificar Cotización' : 'Crear Nueva Cotización' }
+        description      = { isEditing ? 'Actualice los datos del cliente, notas administrativas e ítems asociados de la cotización seleccionada.' : 'Complete el siguiente formulario para registrar una nueva cotización en el sistema de GlobalCET.' }
+        breadcrumb       = { breadcrumbItems }
+        showCancelButton = { true }
+        oncancel         = { handleCancel }
+        formId           = "quote-form"
+        isPending        = { saveMutation.isPending }
+    />
 
-		{#if ( isEditing && quoteQuery.isPending )}
-			<div class="flex min-h-[400px] items-center justify-center rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card p-12">
-				<div class="flex flex-col items-center gap-4">
-					<div class="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent"></div>
+    {#if ( isEditing && quoteQuery.isPending )}
+        <div class="flex min-h-[400px] items-center justify-center rounded-2xl border border-brand/15 bg-card/60 backdrop-blur-md shadow-card p-12">
+            <div class="flex flex-col items-center gap-4">
+                <div class="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent"></div>
 
-                    <p class="font-display text-xs font-black uppercase tracking-widest text-brand animate-pulse">
-						Cargando datos de la cotización...
-					</p>
-				</div>
-			</div>
-		{:else if ( isEditing && quoteQuery.isError )}
-			<div class="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-2xl border border-red-500/15 bg-card/60 backdrop-blur-md shadow-card p-12 text-center text-text-muted">
-				<p class="text-red-400 font-bold uppercase tracking-wider">Error al cargar la cotización</p>
+                <p class="font-display text-xs font-black uppercase tracking-widest text-brand animate-pulse">
+                    Cargando datos de la cotización...
+                </p>
+            </div>
+        </div>
+    {:else if ( isEditing && quoteQuery.isError )}
+        <div class="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-2xl border border-red-500/15 bg-card/60 backdrop-blur-md shadow-card p-12 text-center text-text-muted">
+            <p class="text-red-400 font-bold uppercase tracking-wider">Error al cargar la cotización</p>
 
-                <p class="text-xs">{ quoteQuery.error?.message || 'Ocurrió un error inesperado al consultar los datos.' }</p>
+            <p class="text-xs">{ quoteQuery.error?.message || 'Ocurrió un error inesperado al consultar los datos.' }</p>
 
-                <a
-					href={ resolve( '/dashboard/quotes' ) }
-					class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-2.5 font-bold uppercase tracking-wider text-brand hover:bg-brand/10 transition-colors cursor-pointer"
-				>
-					Volver a la lista
-				</a>
-			</div>
-		{:else}
-				<form
-					id="quote-form"
-					onsubmit={ handleSubmit }
-					class="flex flex-col gap-5 text-[0.8125rem] font-semibold text-text-muted -mt-3 md:mt-0"
-				>
-					<!-- ── Two-panel grid ── -->
-					<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-						<!-- ── LEFT PANEL: Client Details and Notes ── -->
-						<div class="flex flex-col gap-3">
-							<fieldset class="border border-brand/10 p-4 rounded-2xl bg-surface/10">
-								<legend class="px-2 font-display text-[10px] font-black uppercase text-brand tracking-widest">
-									Datos del Cliente
-								</legend>
+            <a
+                href={ resolve( '/dashboard/quotes' ) }
+                class="rounded-xl border border-brand/20 bg-surface/30 px-5 py-2.5 font-bold uppercase tracking-wider text-brand hover:bg-brand/10 transition-colors cursor-pointer"
+            >
+                Volver a la lista
+            </a>
+        </div>
+    {:else}
+        <form
+            id="quote-form"
+            onsubmit={ handleSubmit }
+            class="flex flex-col gap-5 text-[0.8125rem] font-semibold text-text-muted -mt-3 md:mt-0"
+        >
+            <!-- ── Two-panel grid ── -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+                <!-- ── LEFT PANEL: Client Details and Notes ── -->
+                <div class="flex flex-col gap-3">
+                    <fieldset class="border border-brand/10 p-4 rounded-2xl bg-surface/10">
+                        <legend class="px-2 font-display text-[10px] font-black uppercase text-brand tracking-widest">
+                            Datos del Cliente
+                        </legend>
 
-								<div class="space-y-1 mb-4">
-									<label for="company-name" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
-										Empresa / Cliente *
-									</label>
-									<InputText
-										id          = "company-name"
-										bind:value  = { formCompanyName }
-										error       = { companyNameError }
-										placeholder = "Empresa Globalcet S.A."
-									/>
-								</div>
+                        <div class="space-y-1 mb-4">
+                            <label for="company-name" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
+                                Empresa / Cliente *
+                            </label>
+                            <InputText
+                                id          = "company-name"
+                                bind:value  = { formCompanyName }
+                                bind:error  = { companyNameError }
+                                placeholder = "Empresa Globalcet S.A."
+                            />
+                        </div>
 
-								<div class="space-y-1 mb-4">
-									<label for="rut-input" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
-										RUT *
-									</label>
-									<InputText
-										id          = "rut-input"
-										bind:value  = { formRut }
-										error       = { rutError }
-										placeholder = "77.777.777-7"
-									/>
-								</div>
+                        <div class="space-y-1 mb-4">
+                            <label for="rut-input" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
+                                RUT *
+                            </label>
+                            <InputText
+                                id          = "rut-input"
+                                bind:value  = { formRut }
+                                bind:error  = { rutError }
+                                placeholder = "77.777.777-7"
+                            />
+                        </div>
 
-								<div class="space-y-1 mb-4">
-									<label for="email-input" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
-										Email de contacto *
-									</label>
-									<InputText
-										id          = "email-input"
-										bind:value  = { formEmail }
-										error       = { emailError }
-										placeholder = "contacto@globalcet.cl"
-									/>
-								</div>
+                        <div class="space-y-1 mb-4">
+                            <label for="email-input" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
+                                Email de contacto *
+                            </label>
+                            <InputText
+                                id          = "email-input"
+                                bind:value  = { formEmail }
+                                bind:error  = { emailError }
+                                placeholder = "contacto@globalcet.cl"
+                            />
+                        </div>
 
-								<div class="space-y-1 mb-4">
-									<label for="contact-name" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
-										Nombre de contacto *
-									</label>
-									<InputText
-										id          = "contact-name"
-										bind:value  = { formContactName }
-										error       = { contactNameError }
-										placeholder = "Juan Pérez"
-									/>
-								</div>
+                        <div class="space-y-1 mb-4">
+                            <label for="contact-name" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
+                                Nombre de contacto *
+                            </label>
+                            <InputText
+                                id          = "contact-name"
+                                bind:value  = { formContactName }
+                                bind:error  = { contactNameError }
+                                placeholder = "Juan Pérez"
+                            />
+                        </div>
 
-								<div class="space-y-1">
-									<label for="address-input" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
-										Dirección de despacho *
-									</label>
-									<InputText
-										id          = "address-input"
-										bind:value  = { formAddress }
-										error       = { addressError }
-										placeholder = "Av. Providencia 1234, Oficina 501"
-									/>
-								</div>
-							</fieldset>
+                        <div class="space-y-1">
+                            <label for="address-input" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
+                                Dirección de despacho *
+                            </label>
+                            <InputText
+                                id          = "address-input"
+                                bind:value  = { formAddress }
+                                bind:error  = { addressError }
+                                placeholder = "Av. Providencia 1234, Oficina 501"
+                            />
+                        </div>
+                    </fieldset>
 
-							<fieldset class="border border-brand/10 p-4 rounded-2xl bg-surface/10">
-								<legend class="px-2 font-display text-[10px] font-black uppercase text-brand tracking-widest">
-									Notas Administrativas
-								</legend>
-								<div class="space-y-1">
-									<span class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
-										Notas internas
-									</span>
-									<RichTextEditor
-										bind:html={ formAdminNotes }
-										placeholder="Notas internas para control administrativo de la cotización..."
-									/>
-								</div>
-							</fieldset>
-						</div>
+                    <fieldset class="border border-brand/10 p-4 rounded-2xl bg-surface/10">
+                        <legend class="px-2 font-display text-[10px] font-black uppercase text-brand tracking-widest">
+                            Notas Administrativas
+                        </legend>
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
+                                Notas internas
+                            </span>
+                            <RichTextEditor
+                                bind:html={ formAdminNotes }
+                                placeholder="Notas internas para control administrativo de la cotización..."
+                            />
+                        </div>
+                    </fieldset>
+                </div>
 
-						<!-- ── RIGHT PANEL: Select Managers ── -->
-						<div class="flex flex-col gap-3">
-							<fieldset class="border border-brand/10 p-4 rounded-2xl bg-surface/10 flex flex-col h-full">
-								<legend class="px-2 font-display text-[10px] font-black uppercase text-brand tracking-widest">
-									Ítems Asociados *
-								</legend>
+                <!-- ── RIGHT PANEL: Select Managers ── -->
+                <div class="flex flex-col gap-3">
+                    <fieldset class="border border-brand/10 p-4 rounded-2xl bg-surface/10 flex flex-col h-full">
+                        <legend class="px-2 font-display text-[10px] font-black uppercase text-brand tracking-widest">
+                            Ítems Asociados *
+                        </legend>
 
-								{#if ( itemsError )}
-									<div class="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-[10px] font-bold text-red-400 uppercase tracking-wider text-center shrink-0">
-										{ itemsError }
-									</div>
-								{/if}
+                        {#if ( itemsError )}
+                            <div class="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-[10px] font-bold text-red-400 uppercase tracking-wider text-center shrink-0 mb-4">
+                                { itemsError }
+                            </div>
+                        {/if}
 
-								<div class="space-y-4 max-h-full overflow-y-auto pr-1 flex-1">
-									<!-- PRODUCTS RELATION -->
-									<ProductSelectManager
-										bind:items           = { formProducts }
-										isEditing            = { isEditing }
-										initialDataRelations = { initialProductsRelation }
-										onRemove             = { removeProduct }
-									/>
+                        <div class="space-y-4 max-h-full overflow-y-auto pr-1 flex-1">
+                            <!-- PRODUCTS RELATION -->
+                            <ProductSelectManager
+                                bind:items           = { formProducts }
+                                isEditing            = { isEditing }
+                                initialDataRelations = { initialProductsRelation }
+                                onRemove             = { removeProduct }
+                            />
 
-									<!-- KITS RELATION -->
-									<KitSelectManager
-										bind:items           = { formKits }
-										isEditing            = { isEditing }
-										initialDataRelations = { initialKitsRelation }
-										onRemove             = { removeKit }
-									/>
+                            <!-- KITS RELATION -->
+                            <KitSelectManager
+                                bind:items           = { formKits }
+                                isEditing            = { isEditing }
+                                initialDataRelations = { initialKitsRelation }
+                                onRemove             = { removeKit }
+                            />
 
-									<!-- LABS RELATION -->
-									<LabSelectManager
-										bind:items           = { formLabs }
-										isEditing            = { isEditing }
-										initialDataRelations = { initialLabsRelation }
-										onRemove             = { removeLab }
-									/>
-								</div>
-							</fieldset>
-						</div>
-					</div>
-				</form>
-		{/if}
+                            <!-- LABS RELATION -->
+                            <LabSelectManager
+                                bind:items           = { formLabs }
+                                isEditing            = { isEditing }
+                                initialDataRelations = { initialLabsRelation }
+                                onRemove             = { removeLab }
+                            />
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+        </form>
+    {/if}
 </PageContainer>
 
 {#if ( showCancelConfirm )}
