@@ -11,6 +11,7 @@
 		selectedStatuses : Set< string >;
 		orderBy          : string;
 		order            : string;
+		class?           : string;
 	}
 
 	let {
@@ -19,6 +20,7 @@
 		selectedStatuses = $bindable( new Set< string >() ),
 		orderBy          = $bindable( 'createdAt' ),
 		order            = $bindable( 'desc' ),
+		class : className = '',
 	} : Props = $props();
 
 	const statusOptions = [
@@ -55,7 +57,7 @@
 </script>
 
 <div
-	class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs"
+	class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs { className }"
 >
 	<!-- Search -->
 	<div class="space-y-1.5 w-full md:col-span-2">
