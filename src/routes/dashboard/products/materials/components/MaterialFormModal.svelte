@@ -7,8 +7,11 @@
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
 	import DashboardModal                   from '../../../components/DashboardModal.svelte';
-	import Select                           from '$lib/components/shared/Inputs/Select.svelte';
+	import InputText                        from '$lib/components/shared/Inputs/InputText.svelte';
+	import TextArea                         from '$lib/components/shared/Inputs/TextArea.svelte';
 	import InputNumber                      from '$lib/components/shared/Inputs/InputNumber.svelte';
+	import Switch                           from '$lib/components/shared/Inputs/Switch.svelte';
+	import SoftSelect                       from '$lib/components/shared/Inputs/SoftSelect.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface MaterialFormProps {
@@ -163,40 +166,36 @@
 			<!-- Name -->
 			<div class="space-y-1.5">
 				<label for="material-name">Nombre del Material</label>
-				<input
+				<InputText
 					id="material-name"
-					type="text"
 					bind:value={ formName }
+					error={ nameError }
 					placeholder="Ej: Vidrio de Borosilicato 3.3"
-					class="w-full rounded-xl border { nameError ? 'border-red-500 bg-red-500/5 focus:border-red-500' : 'border-brand/15 bg-input focus:border-brand focus:bg-card' } px-4 py-2.5 text-text outline-none"
 				/>
-				{#if ( nameError )}
-					<p class="text-red-400 text-[10px] font-bold mt-1 uppercase tracking-wider">{ nameError }</p>
-				{/if}
 			</div>
 
 			<!-- Description -->
 			<div class="space-y-1.5">
 				<label for="material-desc">Descripción</label>
-				<textarea
+				<TextArea
 					id="material-desc"
 					bind:value={ formDescription }
 					placeholder="Escriba las especificaciones o usos recomendados..."
-					rows="3"
+					rows={ 3 }
 					class="w-full rounded-xl border border-brand/15 bg-input px-4 py-2.5 text-text outline-none focus:border-brand focus:bg-card resize-none"
-				></textarea>
+				/>
 			</div>
 
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<!-- Autoclavable -->
-				<div class="flex items-center gap-3 rounded-xl border border-brand/10 bg-input p-3">
-					<input
-						id="material-auto"
-						type="checkbox"
-						bind:checked={ formAutoclavable }
-						class="accent-brand h-4 w-4 cursor-pointer"
+				<div class="flex items-center justify-between rounded-xl border border-brand/10 bg-surface/30 p-3.5 px-4 h-[62px] self-end">
+					<span class="select-none">¿Es Autoclavable?</span>
+					<Switch
+						bind:checked  = { formAutoclavable }
+						id            = "material-autoclavable"
+						labelActive   = "Sí"
+						labelInactive = "No"
 					/>
-					<label for="material-auto" class="cursor-pointer select-none">¿Es Autoclavable?</label>
 				</div>
 
 				<!-- Max Temp -->
@@ -216,34 +215,32 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
                 <div class="space-y-1.5">
                     <label for="acid-res">Frente a Ácidos</label>
-                    <Select
+                    <SoftSelect
                         options={ resistanceOptions }
                         bind:value={ formAcidResistance }
-                        multiple={ false }
                         placeholder="Seleccionar resistencia..."
                     />
                 </div>
 
                 <div class="space-y-1.5">
                     <label for="alkaline-res">Frente a Alcalinos</label>
-                    <Select
+                    <SoftSelect
                         options={ resistanceOptions }
                         bind:value={ formAlkalineResistance }
-                        multiple={ false }
                         placeholder="Seleccionar resistencia..."
                     />
                 </div>
             </div>
 
 			<!-- Active checkbox -->
-			<div class="flex items-center gap-3 pt-2">
-				<input
-					id="material-active"
-					type="checkbox"
-					bind:checked={ formActive }
-					class="accent-brand h-4 w-4 cursor-pointer"
+			<div class="flex items-center justify-between pt-2">
+				<span class="cursor-pointer select-none">Habilitar en Catálogo</span>
+				<Switch
+					bind:checked  = { formActive }
+					id            = "material-active"
+					labelActive   = "Habilitado"
+					labelInactive = "Deshabilitado"
 				/>
-				<label for="material-active" class="cursor-pointer select-none">Habilitar en Catálogo</label>
 			</div>
 
 			<!-- Actions -->
