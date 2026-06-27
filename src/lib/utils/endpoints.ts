@@ -5,6 +5,7 @@ export const INTERNAL_ENDPOINTS = {
 		TECHNICAL_SPECS : 'products/get-technical-specs',
 		GET_ONE         : 'products/get-one',
 		FILES           : 'products/files',
+		EXPORT          : 'products/export',
 		MATERIALS       : {
 			GET_ALL : 'products/materials/get-all',
 			BASE    : 'products/materials',
@@ -21,6 +22,7 @@ export const INTERNAL_ENDPOINTS = {
 		BASE       : 'kits',
 		FILTERS    : 'kits/filters',
 		GET_ONE    : 'kits/get-one',
+		EXPORT     : 'kits/export',
 		CATEGORIES : {
 			BASE    : 'kits/categories',
 			GET_ALL : 'kits/categories/get-all',
@@ -30,6 +32,7 @@ export const INTERNAL_ENDPOINTS = {
 		BASE       : 'labs',
 		FILTERS    : 'labs/filters',
 		GET_ONE    : 'labs/get-one',
+		EXPORT     : 'labs/export',
 		CATEGORIES : {
 			BASE    : 'labs/categories',
 			GET_ALL : 'labs/categories/get-all',
@@ -49,11 +52,15 @@ export const INTERNAL_ENDPOINTS = {
 		GET_ONE : 'quotes/get-one',
 		UPDATE  : 'quotes/update',
 	},
+	PRICE_HISTORY : {
+		GET_PRICES : 'price-history/get-prices',
+	},
 };
 
 export const EXTERNAL_ENDPOINTS = {
 	PRODUCTS      : {
 		BASE       : '/products',
+		EXPORT     : '/products/export/file',
 		MATERIALS  : {
 			GET_ALL : '/materials/paginated',
 			BASE    : '/materials',
@@ -71,6 +78,7 @@ export const EXTERNAL_ENDPOINTS = {
 	},
 	KITS          : {
 		BASE       : '/kits',
+		EXPORT     : '/kits/export/file',
 		CATEGORIES : {
 			GET_ALL : '/kit-categories/paginated',
 			BASE    : '/kit-categories',
@@ -78,6 +86,7 @@ export const EXTERNAL_ENDPOINTS = {
 	},
 	LABS          : {
 		BASE       : '/mobile-labs',
+		EXPORT     : '/mobile-labs/export/file',
 		CATEGORIES : {
 			GET_ALL : '/lab-categories/paginated',
 			BASE    : '/lab-categories',
@@ -90,6 +99,9 @@ export const EXTERNAL_ENDPOINTS = {
 	},
 	QUOTES        : {
 		BASE : '/quotes',
+	},
+	PRICE_HISTORY : {
+		BASE : '/price-history',
 	},
 };
 
