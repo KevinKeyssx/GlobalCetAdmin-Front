@@ -1,7 +1,16 @@
 <script lang="ts">
-	import toast                            from 'svelte-french-toast';
-	import { createQuery, useQueryClient }  from '@tanstack/svelte-query';
+	import {
+        createQuery,
+        useQueryClient,
+        createMutation
+    }               from '@tanstack/svelte-query';
+	import toast    from 'svelte-french-toast';
 
+	import {
+        exportToExcel,
+        exportToPdf,
+        downloadBlob
+    }                                       from '$lib/services/export.service';
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
@@ -11,13 +20,14 @@
 	import TableActions                     from '$lib/components/shared/TableActions.svelte';
 	import Status                           from '$lib/components/shared/Status.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
-	import PageContainer                     from '$lib/components/shared/PageContainer.svelte';
+	import PageContainer                    from '$lib/components/shared/PageContainer.svelte';
 	import CatalogFilters                   from '$lib/components/shared/CatalogFilters.svelte';
 	import Pagination                       from '$lib/components/shared/Pagination.svelte';
 	import { stripHtml }                    from '$lib/utils/string';
 	import ItemCard                         from '$lib/components/shared/itemCard/ItemCard.svelte';
 	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';
 	import ListSkeleton                     from '$lib/components/shared/ListSkeleton.svelte';
+	import PriceHistoryDrawer               from '$lib/components/shared/PriceHistoryDrawer.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface ProductRelation {
@@ -65,16 +75,16 @@
 	}
 
 	// ─── Reactive State (Svelte 5 Runes) ──────────────────────────────────────────
-	let search             = $state( '' );
-	let debouncedSearch    = $state( '' );
-	let activeStatus       = $state( 'all' );
-	let selectedCategories = $state( new Set< string >() );
-	let page               = $state( 1 );
-	let size               = $state( 12 );
-	let view               = $state< 'cards' | 'list' >( 'cards' );
-
-	let deletingId         = $state( '' );
-
+	let search                  = $state( '' );
+	let debouncedSearch         = $state( '' );
+	let activeStatus            = $state( 'all' );
+	let selectedCategories      = $state( new Set< string >() );
+	let page                    = $state( 1 );
+	let size                    = $state( 12 );
+	let view                    = $state< 'cards' | 'list' >( 'cards' );
+	let deletingId              = $state( '' );
+	let showPriceHistory        = $state( false );
+	let selectedPriceHistoryId  = $state( '' );
 
 	// Reset to page 1 on filter changes
 	$effect( ( ) => {
@@ -147,6 +157,23 @@
 		};
 	} );
 
+	// ─── Absolute Total Count logic ───────────────────────────────────────────────
+	let absoluteTotal = $state( 0 );
+
+	$effect( ( ) => {
+		if ( kitsResponse?.meta?.total !== undefined ) {
+			if ( !search && activeStatus === 'all' && selectedCategories.size === 0 ) {
+				absoluteTotal = kitsResponse.meta.total;
+			}
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( absoluteTotal === 0 && kitsResponse?.meta?.total !== undefined ) {
+			absoluteTotal = kitsResponse.meta.total;
+		}
+	} );
+
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
 	function openCreateModal() : void {
 		goto( resolve( '/dashboard/kits/form' ) );
@@ -154,6 +181,11 @@
 
 	function openEditModal( item : Kit ) : void {
 		goto( resolve( `/dashboard/kits/form?id=${ item.id }` ) );
+	}
+
+	function handleViewPriceHistory( item : Kit ) : void {
+		selectedPriceHistoryId = item.id;
+		showPriceHistory       = true;
 	}
 
 	async function deleteKit( id : string ) : Promise< void > {
@@ -179,6 +211,64 @@
 			deletingId = '';
 		}
 	}
+
+	const exportMutation = createMutation( ( ) => ( {
+		mutationFn : async ( { type, onlyOnScreen } : { type : 'excel' | 'pdf'; onlyOnScreen : boolean } ) : Promise< void > => {
+			if ( onlyOnScreen ) {
+				if ( type === 'excel' ) {
+					exportToExcel( {
+						filenamePrefix : 'kits',
+						headers        : [ 'SKU', 'Nombre', 'Estado', 'Categoría', 'Fecha Creación', 'Fecha Modificación' ],
+						keys           : [ 'sku', 'name', 'active', 'category.name', 'createdAt', 'updatedAt' ],
+						data           : kits,
+					} );
+				} else {
+					exportToPdf( {
+						filenamePrefix : 'kits',
+						title          : 'Catálogo de Kits',
+						headers        : [ 'SKU', 'Nombre', 'Estado', 'Categoría', 'Fecha Creación', 'Fecha Modificación' ],
+						keys           : [ 'sku', 'name', 'active', 'category.name', 'createdAt', 'updatedAt' ],
+						data           : kits,
+					} );
+				}
+			} else {
+				const params = new URLSearchParams( {
+					fileType     : type,
+					getAllStatus : 'true',
+				} );
+
+				selectedCategories.forEach( ( id ) => params.append( 'categories', id ) );
+
+				if ( activeStatus !== 'all' ) {
+					params.append( 'active', activeStatus );
+				}
+
+				if ( debouncedSearch ) {
+					params.append( 'query', debouncedSearch );
+				}
+
+				const response = await connectRequest<{ blob : Blob; contentDisposition : string | null }>( {
+					endpoint     : `${ INTERNAL_ENDPOINTS.KITS.EXPORT }?${ params.toString() }`,
+					isInternal   : true,
+					responseType : 'blob',
+				} );
+
+				if ( isApiError( response ) ) {
+					throw new Error( response.message || 'Error al exportar desde el servidor' );
+				}
+
+				downloadBlob( response.blob, response.contentDisposition, `kits_filtrados.${ type === 'excel' ? 'xlsx' : 'pdf' }` );
+			}
+		}
+	} ) );
+
+	async function handleDownloadExcel( onlyOnScreen : boolean ) : Promise< void > {
+		await exportMutation.mutateAsync( { type : 'excel', onlyOnScreen } );
+	}
+
+	async function handleDownloadPdf( onlyOnScreen : boolean ) : Promise< void > {
+		await exportMutation.mutateAsync( { type : 'pdf', onlyOnScreen } );
+	}
 </script>
 
 <svelte:head>
@@ -188,9 +278,9 @@
 <PageContainer>
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
-			title       = "Catálogo de Kits"
-			description = "Administre sets pedagógicos y kits de laboratorio combinando reactivos, borosilicato e instrumentos."
-			breadcrumb  = { [
+			title            = "Catálogo de Kits"
+			description      = "Administre sets pedagógicos y kits de laboratorio combinando reactivos, borosilicato e instrumentos."
+			breadcrumb       = { [
 				{
 					label : 'Dashboard',
 					href  : '/dashboard'
@@ -199,9 +289,13 @@
 					label : 'Kits'
 				}
 			] }
-			buttonText  = "Agregar Kit"
-			onclick     = { openCreateModal }
-			bind:view   = { view }
+			buttonText       = "Agregar Kit"
+			onclick          = { openCreateModal }
+			bind:view        = { view }
+			totalCount       = { absoluteTotal }
+			filteredCount    = { kitsResponse?.meta?.total || 0 }
+			onDownloadExcel  = { handleDownloadExcel }
+			onDownloadPdf    = { handleDownloadPdf }
 		/>
 
 
@@ -214,6 +308,7 @@
 			categories              = { categories }
 			searchPlaceholder       = "Buscar kit por SKU o Nombre..."
 			categoriesLabel         = "Categorías de Kits"
+			class                   = "-mt-3"
 		/>
 
 		<!-- ─── Content ────────────────────────────────────────────────────── -->
@@ -235,6 +330,7 @@
 							isDeleteLoading = { deletingId === item.id }
 							confirmTitle    = "¿Eliminar kit?"
 							confirmMessage  = "¿Está seguro de que desea eliminar este kit? Esta acción no se puede deshacer."
+							onViewHistory   = { handleViewPriceHistory }
 						/>
 					{/each}
 				</div>
@@ -311,6 +407,8 @@
 												confirmMessage  = "¿Está seguro de que desea eliminar este kit? Esta acción no se puede deshacer."
 												itemType        = "kit"
 												showDuplicate   = { true }
+												showHistory     = { true }
+												onViewHistory   = { handleViewPriceHistory }
 											/>
 										</td>
 									</tr>
@@ -337,4 +435,10 @@
 		{/if}
 
 
+	<PriceHistoryDrawer
+		bind:show = { showPriceHistory }
+		itemId    = { selectedPriceHistoryId }
+		itemType  = "kit"
+		onClose   = { ( ) => { showPriceHistory = false; } }
+	/>
 </PageContainer>

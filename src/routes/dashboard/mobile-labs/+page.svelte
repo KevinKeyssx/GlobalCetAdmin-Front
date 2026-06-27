@@ -1,6 +1,6 @@
 <script lang="ts">
 	import toast                            from 'svelte-french-toast';
-	import { createQuery, useQueryClient }  from '@tanstack/svelte-query';
+	import { createQuery, useQueryClient, createMutation }  from '@tanstack/svelte-query';
 
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
@@ -18,6 +18,8 @@
 	import ItemCard                         from '$lib/components/shared/itemCard/ItemCard.svelte';
 	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';
 	import ListSkeleton                     from '$lib/components/shared/ListSkeleton.svelte';
+	import PriceHistoryDrawer               from '$lib/components/shared/PriceHistoryDrawer.svelte';
+	import { exportToExcel, exportToPdf, downloadBlob } from '$lib/services/export.service';
 
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -99,6 +101,8 @@
 	let view               = $state< 'cards' | 'list' >( 'cards' );
 
 	let deletingId         = $state( '' );
+	let showPriceHistory      = $state( false );
+	let selectedPriceHistoryId = $state( '' );
 
 
 	// Reset to page 1 on filter changes
@@ -181,6 +185,23 @@
 		};
 	} );
 
+	// ─── Absolute Total Count logic ───────────────────────────────────────────────
+	let absoluteTotal = $state( 0 );
+
+	$effect( ( ) => {
+		if ( labsResponse?.meta?.total !== undefined ) {
+			if ( !search && activeStatus === 'all' && selectedCategories.size === 0 ) {
+				absoluteTotal = labsResponse.meta.total;
+			}
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( absoluteTotal === 0 && labsResponse?.meta?.total !== undefined ) {
+			absoluteTotal = labsResponse.meta.total;
+		}
+	} );
+
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
 	function openCreateModal() : void {
 		goto( resolve( '/dashboard/mobile-labs/form' ) );
@@ -188,6 +209,11 @@
 
 	function openEditModal( item : MobileLab ) : void {
 		goto( resolve( `/dashboard/mobile-labs/form?id=${ item.id }` ) );
+	}
+
+	function handleViewPriceHistory( item : MobileLab ) : void {
+		selectedPriceHistoryId = item.id;
+		showPriceHistory       = true;
 	}
 
 	async function deleteLab( id : string ) : Promise< void > {
@@ -213,6 +239,64 @@
 			deletingId = '';
 		}
 	}
+
+	const exportMutation = createMutation( ( ) => ( {
+		mutationFn : async ( { type, onlyOnScreen } : { type : 'excel' | 'pdf'; onlyOnScreen : boolean } ) : Promise< void > => {
+			if ( onlyOnScreen ) {
+				if ( type === 'excel' ) {
+					exportToExcel( {
+						filenamePrefix : 'laboratorios',
+						headers        : [ 'SKU', 'Nombre', 'Dimensiones', 'Estado', 'Categoría', 'Fecha Creación', 'Fecha Modificación' ],
+						keys           : [ 'sku', 'name', 'dimensions', 'active', 'category.name', 'createdAt', 'updatedAt' ],
+						data           : labs,
+					} );
+				} else {
+					exportToPdf( {
+						filenamePrefix : 'laboratorios',
+						title          : 'Catálogo de Laboratorios Móviles',
+						headers        : [ 'SKU', 'Nombre', 'Dimensiones', 'Estado', 'Categoría', 'Fecha Creación', 'Fecha Modificación' ],
+						keys           : [ 'sku', 'name', 'dimensions', 'active', 'category.name', 'createdAt', 'updatedAt' ],
+						data           : labs,
+					} );
+				}
+			} else {
+				const params = new URLSearchParams( {
+					fileType     : type,
+					getAllStatus : 'true',
+				} );
+
+				selectedCategories.forEach( ( id ) => params.append( 'categories', id ) );
+
+				if ( activeStatus !== 'all' ) {
+					params.append( 'active', activeStatus );
+				}
+
+				if ( debouncedSearch ) {
+					params.append( 'query', debouncedSearch );
+				}
+
+				const response = await connectRequest<{ blob : Blob; contentDisposition : string | null }>( {
+					endpoint     : `${ INTERNAL_ENDPOINTS.LABS.EXPORT }?${ params.toString() }`,
+					isInternal   : true,
+					responseType : 'blob',
+				} );
+
+				if ( isApiError( response ) ) {
+					throw new Error( response.message || 'Error al exportar desde el servidor' );
+				}
+
+				downloadBlob( response.blob, response.contentDisposition, `laboratorios_filtrados.${ type === 'excel' ? 'xlsx' : 'pdf' }` );
+			}
+		}
+	} ) );
+
+	async function handleDownloadExcel( onlyOnScreen : boolean ) : Promise< void > {
+		await exportMutation.mutateAsync( { type : 'excel', onlyOnScreen } );
+	}
+
+	async function handleDownloadPdf( onlyOnScreen : boolean ) : Promise< void > {
+		await exportMutation.mutateAsync( { type : 'pdf', onlyOnScreen } );
+	}
 </script>
 
 <svelte:head>
@@ -222,9 +306,9 @@
 <PageContainer>
 		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
-			title       = "Catálogo de Laboratorios Móviles"
-			description = "Administre estaciones de ciencias móviles, nodolabs e infraestructuras pedagógicas autónomas."
-			breadcrumb  = { [
+			title            = "Catálogo de Laboratorios Móviles"
+			description      = "Administre estaciones de ciencias móviles, nodolabs e infraestructuras pedagógicas autónomas."
+			breadcrumb       = { [
 				{
 					label : 'Dashboard',
 					href  : '/dashboard'
@@ -233,9 +317,13 @@
 					label : 'Laboratorios Móviles'
 				}
 			] }
-			buttonText  = "Agregar Laboratorio"
-			onclick     = { openCreateModal }
-			bind:view   = { view }
+			buttonText       = "Agregar Laboratorio"
+			onclick          = { openCreateModal }
+			bind:view        = { view }
+			totalCount       = { absoluteTotal }
+			filteredCount    = { labsResponse?.meta?.total || 0 }
+			onDownloadExcel  = { handleDownloadExcel }
+			onDownloadPdf    = { handleDownloadPdf }
 		/>
 
 		<!-- ─── Search & Filters Tool ────────────────────────────────────────────── -->
@@ -247,6 +335,7 @@
 			categories              = { categories }
 			searchPlaceholder       = "Buscar laboratorio por SKU o Nombre..."
 			categoriesLabel         = "Categorías de Laboratorios"
+			class                   = "sm:-mt-3"
 		/>
 
 		<!-- ─── Content ────────────────────────────────────────────────────── -->
@@ -268,6 +357,7 @@
 							isDeleteLoading = { deletingId === item.id }
 							confirmTitle    = "¿Eliminar laboratorio móvil?"
 							confirmMessage  = "¿Está seguro de que desea eliminar este laboratorio móvil? Esta acción no se puede deshacer."
+							onViewHistory   = { handleViewPriceHistory }
 						/>
 					{/each}
 				</div>
@@ -352,6 +442,8 @@
 												confirmMessage  = "¿Está seguro de que desea eliminar este laboratorio móvil? Esta acción no se puede deshacer."
 												itemType        = "lab"
 												showDuplicate   = { true }
+												showHistory     = { true }
+												onViewHistory   = { handleViewPriceHistory }
 											/>
 										</td>
 									</tr>
@@ -378,4 +470,10 @@
 		{/if}
 
 
+	<PriceHistoryDrawer
+		bind:show = { showPriceHistory }
+		itemId    = { selectedPriceHistoryId }
+		itemType  = "lab"
+		onClose   = { ( ) => { showPriceHistory = false; } }
+	/>
 </PageContainer>

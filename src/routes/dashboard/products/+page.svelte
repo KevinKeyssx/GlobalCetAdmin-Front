@@ -3,14 +3,23 @@
 	import { goto }                     from '$app/navigation';
     import { PUBLIC_NOT_FOUND_IMAGE }   from '$env/static/public';
 
-    import toast                            from 'svelte-french-toast';
-	import { BrushCleaning }                from '@lucide/svelte';
-	import { createQuery, useQueryClient }  from '@tanstack/svelte-query';
+	import {
+        createQuery,
+        useQueryClient,
+        createMutation
+    }                           from '@tanstack/svelte-query';
+    import toast                from 'svelte-french-toast';
+	import { BrushCleaning }    from '@lucide/svelte';
 
 	import type {
         AdminProduct,
         CategoryInfo
     }                                       from '$lib/types/product';
+	import {
+        exportToExcel,
+        exportToPdf,
+        downloadBlob
+    }                                       from '$lib/services/export.service';
 	import connectRequest, { isApiError }   from '$lib/services/fetch.service';
 	import { METHOD }                       from '$lib/services/http-codes';
 	import { globalLoadingStore }           from '$lib/state/loading';
@@ -28,6 +37,7 @@
 	import ItemCard                         from '$lib/components/shared/itemCard/ItemCard.svelte';
 	import CardSkeleton                     from '$lib/components/shared/CardSkeleton.svelte';
 	import ListSkeleton                     from '$lib/components/shared/ListSkeleton.svelte';
+	import PriceHistoryDrawer               from '$lib/components/shared/PriceHistoryDrawer.svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface PaginatedResponse< T > {
@@ -50,6 +60,8 @@
 	let activeStatus          = $state( 'all' );
 	let view                  = $state< 'cards' | 'list' >( 'cards' );
 	let deletingId            = $state( '' );
+	let showPriceHistory      = $state( false );
+	let selectedPriceHistoryId = $state( '' );
 
 	// Reset to page 1 on filter changes
 	$effect( ( ) => {
@@ -164,6 +176,23 @@
 		};
 	} );
 
+	// ─── Absolute Total Count logic ───────────────────────────────────────────────
+	let absoluteTotal = $state( 0 );
+
+	$effect( ( ) => {
+		if ( productsResponse?.meta?.total !== undefined ) {
+			if ( !search && selectedMaterials.size === 0 && selectedSubcategories.size === 0 && activeStatus === 'all' ) {
+				absoluteTotal = productsResponse.meta.total;
+			}
+		}
+	} );
+
+	$effect( ( ) => {
+		if ( absoluteTotal === 0 && productsResponse?.meta?.total !== undefined ) {
+			absoluteTotal = productsResponse.meta.total;
+		}
+	} );
+
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
 	function openCreateModal() : void {
 		goto( resolve( '/dashboard/products/form' ) );
@@ -174,29 +203,92 @@
 		goto( resolve( `/dashboard/products/form?id=${ item.id }` ) );
 	}
 
+	function handleViewPriceHistory( item : AdminProduct ) : void {
+		selectedPriceHistoryId = item.id;
+		showPriceHistory       = true;
+	}
 
-    async function deleteProduct( id : string ) : Promise< void > {
+
+    async function deleteProduct( id : string ) : Promise<void> {
 		deletingId = id;
-
 		try {
-			const response = await connectRequest< any >( {
-				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.BASE }?id=${ id }`,
+			const res = await connectRequest<void>({
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }`,
 				method     : METHOD.DELETE,
 				isInternal : true,
-			} );
+			});
 
-			if ( isApiError( response ) ) {
-				toast.error( `Error al eliminar: ${ response.message }` );
+			if ( isApiError( res ) ) {
+				toast.error( res.message || 'No se pudo eliminar el producto.' );
 				return;
 			}
 
-			toast.success( 'Producto eliminado con éxito.' );
+			toast.success( 'Producto eliminado correctamente.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-products' ] } );
-		} catch ( err ) {
-			toast.error( 'Error de red al intentar eliminar.' );
+		} catch ( error : any ) {
+			toast.error( error.message || 'Ocurrió un error al eliminar el producto.' );
 		} finally {
 			deletingId = '';
 		}
+	}
+
+	const exportMutation = createMutation( ( ) => ( {
+		mutationFn : async ( { type, onlyOnScreen } : { type : 'excel' | 'pdf'; onlyOnScreen : boolean } ) : Promise< void > => {
+			if ( onlyOnScreen ) {
+				if ( type === 'excel' ) {
+					exportToExcel( {
+						filenamePrefix : 'productos',
+						headers        : [ 'SKU', 'Nombre', 'Material', 'Ficha Técnica', 'Estado', 'Fecha Creación', 'Fecha Modificación' ],
+						keys           : [ 'sku', 'name', 'material.name', 'technical_specs', 'active', 'createdAt', 'updatedAt' ],
+						data           : products,
+					} );
+				} else {
+					exportToPdf( {
+						filenamePrefix : 'productos',
+						title          : 'Catálogo de Productos',
+						headers        : [ 'SKU', 'Nombre', 'Material', 'Ficha Técnica', 'Estado', 'Fecha Creación', 'Fecha Modificación' ],
+						keys           : [ 'sku', 'name', 'material.name', 'technical_specs', 'active', 'createdAt', 'updatedAt' ],
+						data           : products,
+					} );
+				}
+			} else {
+				const params = new URLSearchParams( {
+					fileType     : type,
+					getAllStatus : 'true',
+				} );
+
+				selectedMaterials.forEach( ( id ) => params.append( 'materials', id ) );
+				selectedSubcategories.forEach( ( id ) => params.append( 'subcategories', id ) );
+
+				if ( activeStatus !== 'all' ) {
+					params.append( 'active', activeStatus );
+				}
+
+				if ( debouncedSearch ) {
+					params.append( 'query', debouncedSearch );
+				}
+
+				const response = await connectRequest<{ blob : Blob; contentDisposition : string | null }>( {
+					endpoint     : `${ INTERNAL_ENDPOINTS.PRODUCTS.EXPORT }?${ params.toString() }`,
+					isInternal   : true,
+					responseType : 'blob',
+				} );
+
+				if ( isApiError( response ) ) {
+					throw new Error( response.message || 'Error al exportar desde el servidor' );
+				}
+
+				downloadBlob( response.blob, response.contentDisposition, `productos_filtrados.${ type === 'excel' ? 'xlsx' : 'pdf' }` );
+			}
+		}
+	} ) );
+
+	async function handleDownloadExcel( onlyOnScreen : boolean ) : Promise< void > {
+		await exportMutation.mutateAsync( { type : 'excel', onlyOnScreen } );
+	}
+
+	async function handleDownloadPdf( onlyOnScreen : boolean ) : Promise< void > {
+		await exportMutation.mutateAsync( { type : 'pdf', onlyOnScreen } );
 	}
 
 
@@ -225,11 +317,10 @@
 </svelte:head>
 
 <PageContainer>
-		<!-- ─── Header & Breadcrumb ─────────────────────────────────────────────── -->
 		<HeaderPage
-			title       = "Catálogo de Productos"
-			description = "Administre reactivos cromatográficos, borosilicato, instrumental médico y equipos analíticos."
-			breadcrumb  = { [
+			title            = "Catálogo de Productos"
+			description      = "Administre reactivos cromatográficos, borosilicato, instrumental médico y equipos analíticos."
+			breadcrumb       = { [
 				{
 					label : 'Dashboard',
 					href  : '/dashboard'
@@ -238,13 +329,17 @@
 					label : 'Productos'
 				}
 			] }
-			buttonText  = "Agregar Producto"
-			onclick     = { openCreateModal }
-			bind:view   = { view }
+			buttonText       = "Agregar Producto"
+			onclick          = { openCreateModal }
+			bind:view        = { view }
+			totalCount       = { absoluteTotal }
+			filteredCount    = { productsResponse?.meta?.total || 0 }
+			onDownloadExcel  = { handleDownloadExcel }
+			onDownloadPdf    = { handleDownloadPdf }
 		/>
 
 		<!-- ─── Search & Filters Tool ────────────────────────────────────────────── -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl">
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 sm:-mt-3 p-4 rounded-2xl">
 			<!-- Search -->
 			<div class="space-y-1.5 w-full">
 				<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider">Buscar</label>
@@ -324,6 +419,7 @@
 							isDeleteLoading = { deletingId === item.id }
 							confirmTitle    = "¿Eliminar producto?"
 							confirmMessage  = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
+							onViewHistory   = { handleViewPriceHistory }
 						/>
 					{/each}
 				</div>
@@ -396,6 +492,8 @@
 												confirmMessage  = "¿Está seguro de que desea eliminar este producto del catálogo? Esta acción no se puede deshacer."
 												itemType        = "product"
 												showDuplicate   = { true }
+												showHistory     = { true }
+												onViewHistory   = { handleViewPriceHistory }
 											/>
 										</td>
 									</tr>
@@ -421,4 +519,10 @@
             />
 		{/if}
 
+	<PriceHistoryDrawer
+		bind:show = { showPriceHistory }
+		itemId    = { selectedPriceHistoryId }
+		itemType  = "product"
+		onClose   = { ( ) => { showPriceHistory = false; } }
+	/>
 </PageContainer>
