@@ -14,6 +14,7 @@
 	import TableActions         from '../TableActions.svelte';
 	import Status               from '../Status.svelte';
     import DuplicateButton      from '../DuplicateButton.svelte';
+	import { TrendingUp }       from '@lucide/svelte';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	export interface SubProduct {
@@ -64,13 +65,14 @@
 	}
 
 	interface Props {
-		itemType        : 'product' | 'kit' | 'lab';
-		item            : GlobalSearchProduct | Product | AdminProduct | GlobalSearchKit | DashboardKit | GlobalSearchMobileLab | DashboardMobileLab;
-		openEditModal   : ( item : any ) => void;
-		deleteItem      : ( item : any ) => void;
-		isDeleteLoading : boolean;
-		confirmTitle?   : string;
-		confirmMessage? : string;
+		itemType		: 'product' | 'kit' | 'lab';
+		item			: GlobalSearchProduct | Product | AdminProduct | GlobalSearchKit | DashboardKit | GlobalSearchMobileLab | DashboardMobileLab;
+		openEditModal	: ( item : any ) => void;
+		deleteItem		: ( item : any ) => void;
+		isDeleteLoading	: boolean;
+		confirmTitle?	: string;
+		confirmMessage?	: string;
+		onViewHistory?	: ( item : any ) => void;
 	}
 
 	let {
@@ -80,7 +82,8 @@
 		deleteItem,
 		isDeleteLoading,
 		confirmTitle   = '¿Eliminar elemento?',
-		confirmMessage = '¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.'
+		confirmMessage = '¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.',
+		onViewHistory
 	} : Props = $props();
 
 	// ─── Reactivity: Carousel State ───────────────────────────────────────────────
@@ -277,13 +280,25 @@
 			</div>
 		{/if}
 
-		{#if ( itemType )}
-			<DuplicateButton
-				{ item }
-				{ itemType }
-				class = "absolute right-3 bottom-3 z-30 flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-brand/80 text-white transition-all duration-300 hover:bg-brand hover:text-surface-dark hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer shadow-md"
-			/>
-		{/if}
+		<div class="absolute right-3 bottom-3 z-30 flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all duration-300">
+			{#if ( itemType )}
+				<DuplicateButton
+					{ item }
+					{ itemType }
+					class = "flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-brand/80 text-white transition-all duration-300 hover:bg-brand hover:text-surface-dark hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-md"
+				/>
+			{/if}
+
+			{#if ( onViewHistory )}
+				<button
+					onclick = { ( e ) => { e.preventDefault(); e.stopPropagation(); onViewHistory( item ); } }
+					class   = "flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-brand/80 text-white transition-all duration-300 hover:bg-brand hover:text-surface-dark hover:scale-105 cursor-pointer shadow-md"
+					title   = "Historial de Precios"
+				>
+					<TrendingUp size={ 14 } />
+				</button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Card Body Container -->
