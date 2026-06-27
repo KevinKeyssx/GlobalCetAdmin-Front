@@ -8,13 +8,15 @@
 		debouncedSearch : string;
 		activeStatus    : string;
 		placeholder?    : string;
+		class?          : string;
 	}
 
 	let {
 		search          = $bindable( '' ),
 		debouncedSearch = $bindable( '' ),
 		activeStatus    = $bindable( 'all' ),
-		placeholder     = 'Buscar...'
+		placeholder     = 'Buscar...',
+		class : className = ''
 	} : Props = $props();
 
 	const statusOptions = [
@@ -39,7 +41,7 @@
 	}
 </script>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs">
+<div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end bg-card/40 border border-brand/10 p-4 rounded-2xl w-full text-xs { className }">
 	<!-- Search -->
 	<div class="space-y-1.5 w-full lg:col-span-2 xl:col-span-3">
 		<label for="search-input" class="text-xs font-bold text-text-muted uppercase tracking-wider block mb-1.5">Buscar</label>
