@@ -31,6 +31,7 @@
 	import ConfirmationModal                from '$lib/components/shared/ConfirmationModal.svelte';
 	import HeaderPage                       from '$lib/components/shared/HeaderPage.svelte';
 	import PageContainer                    from '$lib/components/shared/PageContainer.svelte';
+	import Switch                           from '$lib/components/shared/Inputs/Switch.svelte';
 	import { isFormDirty, getErrorMessage } from '$lib/utils/form';
 
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -304,6 +305,9 @@
 		onSuccess  : () => {
 			toast.success( isEditing ? 'Producto editado con éxito.' : 'Producto creado con éxito.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-products' ] } );
+			if ( isEditing ) {
+				queryClient.invalidateQueries( { queryKey : [ 'price-history', productId, 'product' ] } );
+			}
 			goto( resolve( '/dashboard/products' ) );
 		},
 		onError    : ( error : any ) => {
@@ -703,33 +707,12 @@
 										Habilitar Catálogo
 									</span>
 
-									<label class="flex cursor-pointer select-none items-center gap-2.5" for="prod-active">
-										<!-- Track -->
-										<span
-											class="relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-200 { formActive ? 'bg-brand/30 border-brand' : 'bg-input border-brand/20' }"
-										>
-											<input
-												id="prod-active"
-												type="checkbox"
-												bind:checked={ formActive }
-												class="sr-only"
-											/>
-
-                                            <!-- Thumb -->
-											<span
-												class="absolute top-0.5 left-0.5 h-3.5 w-3.5 rounded-full transition-all duration-200 { formActive ? 'translate-x-4 bg-brand shadow-[0_0_8px_rgba(0,230,118,0.55)]' : 'bg-text-muted translate-x-0' }"
-											></span>
-										</span>
-
-                                        <!-- Label text -->
-										<span
-											class="text-[0.72rem] font-bold tracking-wide transition-colors duration-200"
-											class:text-brand={ formActive }
-											class:text-text-muted={ !formActive }
-										>
-											{ formActive ? 'Habilitado' : 'Deshabilitado' }
-										</span>
-									</label>
+									<Switch
+										bind:checked  = { formActive }
+										id            = "product-active"
+										labelActive   = "Habilitado"
+										labelInactive = "Deshabilitado"
+									/>
 								</div>
 							</fieldset>
 						</div>
