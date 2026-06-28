@@ -357,9 +357,13 @@
 			}
 			return response;
 		},
-		onSuccess  : () => {
+		onSuccess  : ( data ) => {
 			toast.success( isEditing ? 'Cotización actualizada correctamente.' : 'Cotización creada correctamente.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-quotes' ] } );
+			if ( isEditing && quoteId ) {
+				queryClient.setQueryData( [ 'edit-quote', quoteId ], data );
+				queryClient.invalidateQueries( { queryKey : [ 'edit-quote', quoteId ] } );
+			}
 			goto( resolve( '/dashboard/quotes' ) );
 		},
 		onError    : ( error : any ) => {
