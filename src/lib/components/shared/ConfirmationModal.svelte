@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { fade, slide } from 'svelte/transition';
+import { fade, slide } from 'svelte/transition';
+	import type { Snippet } from 'svelte';
 
 	interface ConfirmationModalProps {
 		show         : boolean;
@@ -10,6 +11,8 @@
 		onConfirm    : ( ) => void;
 		onCancel     : ( ) => void;
 		isPending?   : boolean;
+		children?    : Snippet;
+		pendingText? : string;
 	}
 
 	let {
@@ -18,9 +21,11 @@
 		message,
 		confirmText = 'Confirmar',
 		cancelText = 'Cancelar',
+		pendingText = 'Eliminando...',
 		onConfirm,
 		onCancel,
 		isPending = false,
+		children,
 	} : ConfirmationModalProps = $props();
 
 	function portal( node : HTMLElement ) {
@@ -55,6 +60,10 @@
 				{ message }
 			</div>
 
+			{#if children}
+				{@render children()}
+			{/if}
+
 			<div class="flex items-center justify-end gap-3 border-t border-brand/10 pt-4">
 				<button
 					type="button"
@@ -70,7 +79,7 @@
 					disabled={ isPending }
 					class="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 font-bold uppercase tracking-wider text-red-400 hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
 				>
-					{ isPending ? 'Eliminando...' : confirmText }
+					{ isPending ? pendingText : confirmText }
 				</button>
 			</div>
 		</div>
