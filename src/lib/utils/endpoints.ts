@@ -46,11 +46,12 @@ export const INTERNAL_ENDPOINTS = {
 		TOTALS : 'global-search/totals',
 	},
 	QUOTES        : {
-		BASE    : 'quotes',
-		CREATE  : 'quotes/create',
-		GET_ALL : 'quotes/get-all',
-		GET_ONE : 'quotes/get-one',
-		UPDATE  : 'quotes/update',
+		BASE      : 'quotes',
+		CREATE    : 'quotes/create',
+		GET_ALL   : 'quotes/get-all',
+		GET_ONE   : 'quotes/get-one',
+		UPDATE    : 'quotes/update',
+		GET_STOCK : 'quotes/get-stock',
 	},
 	PRICE_HISTORY : {
 		GET_PRICES : 'price-history/get-prices',
@@ -98,7 +99,8 @@ export const EXTERNAL_ENDPOINTS = {
 		MOBILE_LAB	: '/duplicates/mobile-lab',
 	},
 	QUOTES        : {
-		BASE : '/quotes',
+		BASE   : '/quotes',
+		STOCKS : ( id : string ) => `/quotes/${ id }/stocks`,
 	},
 	PRICE_HISTORY : {
 		BASE : '/price-history',
