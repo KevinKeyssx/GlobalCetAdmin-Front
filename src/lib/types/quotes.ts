@@ -53,3 +53,15 @@ export interface QuoteSavePayload {
 	items      : QuotePayloadItems;
 	adminNotes : string | null;
 }
+
+export interface QuoteStockInfo {
+	id             : string;
+	sku            : string;
+	name           : string;
+	currentStock   : number;
+	minStock       : number;
+	maxStock       : number;
+	projectedStock : number;
+	type           : 'product' | 'kit' | 'mobileLab';
+}
+
