@@ -13,9 +13,11 @@
         isApiError
     }                               from '$lib/services/fetch.service';
 	import type {
-        Quote,
-        QuoteStatus,
-    }                               from '$lib/types/quotes';
+		Quote,
+		QuoteStatus,
+		QuoteResponseItem,
+		QuoteStockInfo,
+	}                               from '$lib/types/quotes';
 	import { METHOD }               from '$lib/services/http-codes';
 	import { globalLoadingStore }   from '$lib/state/loading';
 	import { INTERNAL_ENDPOINTS }   from '$lib/utils/endpoints';
@@ -51,6 +53,39 @@
 	// Modals controls
 
 	let statusChangeTarget = $state<{ quote : Quote; newStatus : QuoteStatus } | null>( null );
+
+	let quoteStocks   = $state< QuoteStockInfo[] | null >( null );
+	let loadingStocks = $state( false );
+	let stocksError   = $state( '' );
+
+	$effect( ( ) => {
+		if ( statusChangeTarget && ( statusChangeTarget.newStatus === 'COMPLETED' || statusChangeTarget.quote.status === 'COMPLETED' ) ) {
+			const quoteId   = statusChangeTarget.quote.id;
+			const newStatus = statusChangeTarget.newStatus;
+			loadingStocks   = true;
+			quoteStocks     = null;
+			stocksError     = '';
+
+			connectRequest< QuoteStockInfo[] >( {
+				endpoint   : `${ INTERNAL_ENDPOINTS.QUOTES.GET_STOCK }?id=${ quoteId }&status=${ newStatus }`,
+				isInternal : true,
+			} ).then( ( res ) => {
+				if ( isApiError( res ) ) {
+					stocksError = res.message;
+				} else {
+					quoteStocks = res;
+				}
+				loadingStocks = false;
+			} ).catch( ( err ) => {
+				stocksError   = err.message || 'Error al obtener stocks';
+				loadingStocks = false;
+			} );
+		} else {
+			quoteStocks   = null;
+			loadingStocks = false;
+			stocksError   = '';
+		}
+	} );
 
 	// Reset page when filters change
 	$effect( ( ) => {
@@ -102,9 +137,47 @@
 		};
 	} );
 
-	// ─── Mutations ────────────────────────────────────────────────────────────────
+	function invalidateQuoteItemsCache( items : QuoteResponseItem[] ) : void {
+		items.forEach( ( item : QuoteResponseItem ) => {
+			if ( item.type === 'product' ) {
+				queryClient.refetchQueries( { queryKey : [ 'edit-product', item.id ] } );
+			} else if ( item.type === 'kit' ) {
+				queryClient.refetchQueries( { queryKey : [ 'edit-kit', item.id ] } );
+			} else if ( item.type === 'mobileLab' ) {
+				queryClient.refetchQueries( { queryKey : [ 'edit-lab', item.id ] } );
+			}
+		} );
+	}
+
+	function getStockStatus( projectedStock : number, minStock : number ) : { color : string; label : string; bg : string } {
+		const redLimit = minStock * 1.05;
+		const greenLimit = minStock * 1.10;
+
+		if ( projectedStock < redLimit ) {
+			return {
+				color : 'text-red-400',
+				bg    : 'bg-red-500/10 border-red-500/20',
+				label : 'Bajo Stock Mínimo',
+			};
+		}
+
+		if ( projectedStock >= greenLimit ) {
+			return {
+				color : 'text-green-400',
+				bg    : 'bg-green-500/10 border-green-500/20',
+				label : 'Stock Seguro',
+			};
+		}
+
+		return {
+			color : 'text-amber-400',
+			bg    : 'bg-amber-500/10 border-amber-500/20',
+			label : 'Cerca de Stock Mínimo',
+		};
+	}
+
 	const statusMutation = createMutation( () => ( {
-		mutationFn : async ( { id, status } : { id : string; status : QuoteStatus } ) : Promise< Quote > => {
+		mutationFn : async ( { id, status, previousStatus } : { id : string; status : QuoteStatus; previousStatus : QuoteStatus } ) : Promise< Quote > => {
 			const response = await connectRequest< Quote >( {
 				endpoint   : `${ INTERNAL_ENDPOINTS.QUOTES.UPDATE }?id=${ id }&status=true`,
 				method     : METHOD.PATCH,
@@ -117,11 +190,18 @@
 			}
 			return response;
 		},
-		onSuccess : () => {
+		onSuccess  : ( data, variables ) => {
 			toast.success( 'Estado de cotización actualizado con éxito.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-quotes' ] } );
+
+			const transitionedToCompleted   = data.status === 'COMPLETED';
+			const transitionedFromCompleted = variables.previousStatus === 'COMPLETED' && data.status !== 'COMPLETED';
+
+			if ( ( transitionedToCompleted || transitionedFromCompleted ) && data.items ) {
+				invalidateQuoteItemsCache( data.items );
+			}
 		},
-		onError : ( error : any ) => {
+		onError    : ( error : any ) => {
 			toast.error( error.message || 'Error al actualizar el estado.' );
 		},
 	} ) );
@@ -143,7 +223,7 @@
 		if ( !statusChangeTarget ) return;
 
 		const { quote, newStatus } = statusChangeTarget;
-		statusMutation.mutate( { id : quote.id, status : newStatus } );
+		statusMutation.mutate( { id : quote.id, status : newStatus, previousStatus : quote.status } );
 		statusChangeTarget = null;
 	}
 	let absoluteTotal = $state( 0 );
@@ -256,6 +336,66 @@
 	message     = "Cambiar el estado de la cotización notificará al cliente por correo electrónico con la actualización. ¿Desea confirmar el cambio?"
 	confirmText = "Confirmar"
 	cancelText  = "Cancelar"
+	pendingText = { loadingStocks ? 'Obteniendo stocks...' : 'Confirmando...' }
+	isPending   = { statusMutation.isPending || loadingStocks }
 	onConfirm   = { confirmStatusChange }
 	onCancel    = { ( ) => statusChangeTarget = null }
-/>
+>
+	{#if ( loadingStocks )}
+		<div class="flex flex-col items-center justify-center py-6 gap-3">
+			<div class="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent"></div>
+			<span class="text-text-muted text-xs">Calculando proyección de stock...</span>
+		</div>
+	{:else if ( stocksError )}
+		<div class="p-3.5 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-xs">
+			<strong>Error al cargar proyección de stock:</strong> { stocksError }
+		</div>
+	{:else if ( quoteStocks && quoteStocks.length > 0 )}
+		<div class="mt-4 space-y-3">
+			<h4 class="font-display font-bold text-text-muted text-xs uppercase tracking-wider">
+				Proyección de Stock
+			</h4>
+			<div class="max-h-96 overflow-y-auto pr-1 space-y-2.5 text-xs">
+				{#each quoteStocks as item}
+					{@const status = getStockStatus( item.projectedStock, item.minStock )}
+					{@const quoteItem = statusChangeTarget?.quote.items.find( ( i ) => i.id === item.id )}
+					{@const qty = quoteItem?.quantity || 0}
+					{@const isTransitioningToCompleted = statusChangeTarget?.newStatus === 'COMPLETED' && statusChangeTarget?.quote.status !== 'COMPLETED'}
+					<div class="flex flex-col gap-1.5 p-3 rounded-xl border bg-surface/20 { status.bg }">
+						<div class="flex items-start justify-between gap-2">
+							<div class="flex flex-col">
+								<span class="font-display font-bold text-text text-sm">
+									{ item.name || item.sku }
+								</span>
+								<span class="text-text-muted text-xs">
+									SKU: { item.sku } • { item.type === 'product' ? 'Producto' : item.type === 'kit' ? 'Kit' : 'Laboratorio' }
+								</span>
+							</div>
+							<span class="text-xs px-2 py-0.5 rounded-md font-bold uppercase tracking-wider { status.color } bg-black/20">
+								{ status.label }
+							</span>
+						</div>
+						<div class="grid grid-cols-3 gap-2 mt-1 pt-1.5 border-t border-brand/5 text-xs text-text-muted">
+							<div>
+								Stock Actual: <strong class="text-text font-bold">{ item.currentStock }</strong>
+							</div>
+							<div>
+								Proyectado: <strong class="text-text font-bold { status.color }">
+									{ item.projectedStock }
+									{#if ( qty > 0 )}
+										<span class="text-[10px] font-medium ml-0.5">
+											({ isTransitioningToCompleted ? '-' : '+' }{ qty })
+										</span>
+									{/if}
+								</strong>
+							</div>
+							<div>
+								Mínimo: <strong class="text-text font-bold">{ item.minStock }</strong>
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
+</ConfirmationModal>
