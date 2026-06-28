@@ -118,8 +118,8 @@
 	} ) );
 
 	const kitQuery = createQuery( () => ( {
-		queryKey : [ 'edit-kit', kitId ],
-		queryFn  : async () : Promise< KitDetail > => {
+		queryKey       : [ 'edit-kit', kitId ],
+		queryFn        : async () : Promise< KitDetail > => {
 			const response = await connectRequest< KitDetail >( {
 				endpoint   : `${ INTERNAL_ENDPOINTS.KITS.GET_ONE }?id=${ kitId }`,
 				isInternal : true,
@@ -131,7 +131,9 @@
 
 			return response;
 		},
-		enabled  : isEditing,
+		enabled        : isEditing,
+		staleTime      : 0,
+		refetchOnMount : true,
 	} ) );
 
 	const categories = $derived( categoriesQuery.data || [] );
@@ -144,6 +146,7 @@
 		}
 
 		return {
+			fetchedAt    : Date.now(),
 			name         : item.name,
 			sku          : item.sku,
 			description  : item.description,
@@ -169,9 +172,11 @@
 
 	// ─── Sync data on open/load ───────────────────────────────────────────────────
 	let loadedId = $state( '' );
+	// Plain JS variable (not $state) — writing it inside $effect does NOT re-trigger the effect.
+	let lastFetchedAt = 0;
 
 	$effect( () => {
-		if ( isEditing && initialData && loadedId !== kitId ) {
+		if ( isEditing && initialData && ( loadedId !== kitId || initialData.fetchedAt > lastFetchedAt ) ) {
 			formName          = initialData.name;
 			formSku           = initialData.sku;
 			formDescription   = initialData.description;
@@ -196,7 +201,8 @@
 				uploaderFiles = [];
 			}
 
-			loadedId = kitId;
+			loadedId      = kitId;
+			lastFetchedAt = initialData.fetchedAt;
 		} else if ( !isEditing && loadedId !== '' ) {
 			formName          = '';
 			formSku           = '';
@@ -219,7 +225,8 @@
 			maxStockError     = '';
 			filesError        = '';
 
-			loadedId = '';
+			loadedId      = '';
+			lastFetchedAt = 0;
 		}
 	} );
 
@@ -306,11 +313,15 @@
 
 			return response;
 		},
-		onSuccess  : () => {
+		onSuccess  : ( data ) => {
 			toast.success( isEditing ? 'Kit editado con éxito.' : 'Kit creado con éxito.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-kits' ] } );
 			if ( isEditing ) {
 				queryClient.invalidateQueries( { queryKey : [ 'price-history', kitId, 'kit' ] } );
+				if ( kitId ) {
+					queryClient.setQueryData( [ 'edit-kit', kitId ], data );
+					queryClient.invalidateQueries( { queryKey : [ 'edit-kit', kitId ] } );
+				}
 			}
 			goto( resolve( '/dashboard/kits' ) );
 		},

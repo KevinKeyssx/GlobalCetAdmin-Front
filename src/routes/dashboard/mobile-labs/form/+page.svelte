@@ -145,8 +145,8 @@
 	} ) );
 
 	const labQuery = createQuery( () => ( {
-		queryKey : [ 'edit-lab', labId ],
-		queryFn  : async () : Promise< LabDetail > => {
+		queryKey       : [ 'edit-lab', labId ],
+		queryFn        : async () : Promise< LabDetail > => {
 			const response = await connectRequest< LabDetail >( {
 				endpoint   : `${ INTERNAL_ENDPOINTS.LABS.GET_ONE }?id=${ labId }`,
 				isInternal : true,
@@ -158,7 +158,9 @@
 
 			return response;
 		},
-		enabled  : isEditing,
+		enabled        : isEditing,
+		staleTime      : 0,
+		refetchOnMount : true,
 	} ) );
 
 	const categories = $derived( categoriesQuery.data || [] );
@@ -171,6 +173,7 @@
 		}
 
 		return {
+			fetchedAt    : Date.now(),
 			name         : item.name,
 			sku          : item.sku,
 			description  : item.description,
@@ -198,9 +201,11 @@
 
 	// ─── Sync data on open/load ───────────────────────────────────────────────────
 	let loadedId = $state( '' );
+	// Plain JS variable (not $state) — writing it inside $effect does NOT re-trigger the effect.
+	let lastFetchedAt = 0;
 
 	$effect( () => {
-		if ( isEditing && initialData && loadedId !== labId ) {
+		if ( isEditing && initialData && ( loadedId !== labId || initialData.fetchedAt > lastFetchedAt ) ) {
 			formName          = initialData.name;
 			formSku           = initialData.sku;
 			formDescription   = initialData.description;
@@ -230,7 +235,8 @@
 				uploaderFiles = [];
 			}
 
-			loadedId = labId;
+			loadedId      = labId;
+			lastFetchedAt = initialData.fetchedAt;
 		} else if ( !isEditing && loadedId !== '' ) {
 			formName          = '';
 			formSku           = '';
@@ -258,7 +264,8 @@
 			maxStockError     = '';
 			filesError        = '';
 
-			loadedId = '';
+			loadedId      = '';
+			lastFetchedAt = 0;
 		}
 	} );
 
@@ -365,11 +372,15 @@
 
 			return response;
 		},
-		onSuccess  : () => {
+		onSuccess  : ( data ) => {
 			toast.success( isEditing ? 'Laboratorio editado con éxito.' : 'Laboratorio creado con éxito.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-labs' ] } );
 			if ( isEditing ) {
 				queryClient.invalidateQueries( { queryKey : [ 'price-history', labId, 'lab' ] } );
+				if ( labId ) {
+					queryClient.setQueryData( [ 'edit-lab', labId ], data );
+					queryClient.invalidateQueries( { queryKey : [ 'edit-lab', labId ] } );
+				}
 			}
 			goto( resolve( '/dashboard/mobile-labs' ) );
 		},

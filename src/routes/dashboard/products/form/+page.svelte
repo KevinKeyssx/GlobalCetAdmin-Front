@@ -124,8 +124,8 @@
 	} ) );
 
 	const productQuery = createQuery( () => ( {
-		queryKey : [ 'edit-product', productId ],
-		queryFn  : async () : Promise< AdminProduct > => {
+		queryKey       : [ 'edit-product', productId ],
+		queryFn        : async () : Promise< AdminProduct > => {
 			const response = await connectRequest< AdminProduct >( {
 				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.GET_ONE }?id=${ productId }`,
 				isInternal : true,
@@ -137,7 +137,9 @@
 
 			return response;
 		},
-		enabled  : isEditing,
+		enabled        : isEditing,
+		staleTime      : 0,
+		refetchOnMount : true,
 	} ) );
 
 	const materials  = $derived( materialsQuery.data || [] );
@@ -160,6 +162,7 @@
 		}
 
 		return {
+			fetchedAt      : Date.now(),
 			name           : item.name,
 			sku            : item.sku,
 			description    : item.description,
@@ -186,9 +189,11 @@
 
 	// ─── Sync data on open/load ───────────────────────────────────────────────────
 	let loadedId = $state( '' );
+	// Plain JS variable (not $state) — writing it inside $effect does NOT re-trigger the effect.
+	let lastFetchedAt = 0;
 
 	$effect( () => {
-		if ( isEditing && initialData && loadedId !== productId ) {
+		if ( isEditing && initialData && ( loadedId !== productId || initialData.fetchedAt > lastFetchedAt ) ) {
 			formName          = initialData.name           || '';
 			formSku           = initialData.sku            || '';
 			formDescription   = initialData.description    || '';
@@ -214,7 +219,8 @@
 				uploaderFiles = [];
 			}
 
-			loadedId = productId;
+			loadedId      = productId;
+			lastFetchedAt = initialData.fetchedAt;
 		} else if ( !isEditing && loadedId !== '' ) {
 			formName          = '';
 			formSku           = '';
@@ -240,7 +246,8 @@
 			maxStockError     = '';
 			filesError        = '';
 
-			loadedId = '';
+			loadedId      = '';
+			lastFetchedAt = 0;
 		}
 	} );
 
@@ -302,11 +309,15 @@
 
 			return response;
 		},
-		onSuccess  : () => {
+		onSuccess  : ( data ) => {
 			toast.success( isEditing ? 'Producto editado con éxito.' : 'Producto creado con éxito.' );
 			queryClient.invalidateQueries( { queryKey : [ 'admin-products' ] } );
 			if ( isEditing ) {
 				queryClient.invalidateQueries( { queryKey : [ 'price-history', productId, 'product' ] } );
+				if ( productId ) {
+					queryClient.setQueryData( [ 'edit-product', productId ], data );
+					queryClient.invalidateQueries( { queryKey : [ 'edit-product', productId ] } );
+				}
 			}
 			goto( resolve( '/dashboard/products' ) );
 		},
