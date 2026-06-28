@@ -47,7 +47,7 @@ import { fade, slide } from 'svelte/transition';
 		transition:fade={ { duration : 150 } }
 	>
 		<div
-			class="w-full max-w-md rounded-2xl border border-brand/20 bg-card p-6 shadow-card-hover space-y-6 my-8 text-sm"
+			class="w-full { children ? 'max-w-lg' : 'max-w-md' } rounded-2xl border border-brand/20 bg-card p-6 shadow-card-hover space-y-6 my-8 text-sm"
 			transition:slide={ { duration : 250 } }
 		>
 			<div class="flex items-center justify-between border-b border-brand/10 pb-4">
