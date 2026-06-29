@@ -213,7 +213,7 @@
 		deletingId = id;
 		try {
 			const res = await connectRequest<void>({
-				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.BASE }/${ id }`,
+				endpoint   : `${ INTERNAL_ENDPOINTS.PRODUCTS.BASE }?id=${ id }`,
 				method     : METHOD.DELETE,
 				isInternal : true,
 			});
