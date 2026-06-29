@@ -14,7 +14,8 @@
 	import {
 		formatRut,
 		validateRut,
-		validateEmail
+		validateEmail,
+		validatePhoneNumber
 	}                                       from '$lib/utils/string';
 	import type {
 		Quote,
@@ -59,11 +60,12 @@
 	const quoteId   = $derived( page.url.searchParams.get( 'id' ) || '' );
 	const isEditing = $derived( !!quoteId );
 
-	// ─── Form Fields ──────────────────────────────────────────────────────────────
+		// ─── Form Fields ──────────────────────────────────────────────────────────────
 	let formCompanyName = $state( '' );
 	let formRut         = $state( '' );
 	let formEmail       = $state( '' );
 	let formContactName = $state( '' );
+	let formPhoneNumber = $state( '' );
 	let formAddress     = $state( '' );
 	let formAdminNotes  = $state( '' );
 
@@ -72,11 +74,12 @@
 	let formKits     = $state< KitRelation[] >( [] );
 	let formLabs     = $state< LabRelation[] >( [] );
 
-	// Error states
+		// Error states
 	let companyNameError = $state( '' );
 	let rutError         = $state( '' );
 	let emailError       = $state( '' );
 	let contactNameError = $state( '' );
+	let phoneNumberError = $state( '' );
 	let addressError     = $state( '' );
 	let itemsError       = $state( '' );
 
@@ -123,7 +126,7 @@
 			.map( ( item ) => ( { mobileLabId : item.id } ) ) || []
 	);
 
-	// ─── Mapped Initial Data for isFormDirty ──────────────────────────────────────
+		// ─── Mapped Initial Data for isFormDirty ──────────────────────────────────────
 	const initialDataMapped = $derived.by( () => {
 		if ( !initialData ) return null;
 
@@ -136,6 +139,7 @@
 			rut          : initialData.clientData.rut,
 			email        : initialData.clientData.email,
 			contactName  : initialData.clientData.contactName,
+			phoneNumber  : initialData.clientData.phoneNumber || '',
 			address      : initialData.clientData.address || '',
 			adminNotes   : initialData.adminNotes || '',
 			products     : initialData.items
@@ -161,6 +165,7 @@
 			formRut         = initialData.clientData.rut;
 			formEmail       = initialData.clientData.email;
 			formContactName = initialData.clientData.contactName;
+			formPhoneNumber = initialData.clientData.phoneNumber || '';
 			formAddress     = initialData.clientData.address || '';
 			formAdminNotes  = initialData.adminNotes || '';
 
@@ -201,6 +206,7 @@
 			formRut         = '';
 			formEmail       = '';
 			formContactName = '';
+			formPhoneNumber = '';
 			formAddress     = '';
 			formAdminNotes  = '';
 			formProducts    = [];
@@ -211,6 +217,7 @@
 			rutError         = '';
 			emailError       = '';
 			contactNameError = '';
+			phoneNumberError = '';
 			addressError     = '';
 			itemsError       = '';
 
@@ -219,9 +226,9 @@
 	} );
 
 	// ─── Reactive RUT Formatting and Real-time Validation ─────────────────────────
-	$effect( () => {
+	$effect( ( ) => {
 		const raw = formRut;
-		untrack( () => {
+		untrack( ( ) => {
 			const formatted = formatRut( raw );
 			if ( formatted !== raw ) {
 				formRut = formatted;
@@ -234,6 +241,29 @@
 				}
 			} else {
 				rutError = '';
+			}
+		} );
+	} );
+
+	// ─── Reactive Phone Number Filtering and Real-time Validation ─────────────────
+	$effect( ( ) => {
+		const raw = formPhoneNumber;
+		untrack( ( ) => {
+			const cleaned = raw.replace( /\D/g, '' );
+			const limited = cleaned.slice( 0, 9 );
+			if ( limited !== raw ) {
+				formPhoneNumber = limited;
+			}
+			if ( formPhoneNumber.length === 9 ) {
+				if ( !validatePhoneNumber( formPhoneNumber ) ) {
+					phoneNumberError = 'Número inválido (debe empezar con un dígito de 2 a 9)';
+				} else {
+					phoneNumberError = '';
+				}
+			} else if ( formPhoneNumber.length > 0 ) {
+				phoneNumberError = 'Debe tener exactamente 9 dígitos';
+			} else {
+				phoneNumberError = '';
 			}
 		} );
 	} );
@@ -292,7 +322,7 @@
 	}
 
 	// ─── Shared Utilities Bindings ────────────────────────────────────────────────
-	const isDirty = $derived.by( () => {
+	const isDirty = $derived.by( ( ) => {
 		return isFormDirty(
 			{
 				name         : '',
@@ -308,6 +338,7 @@
 				rut          : formRut,
 				email        : formEmail,
 				contactName  : formContactName,
+				phoneNumber  : formPhoneNumber,
 				address      : formAddress,
 				adminNotes   : formAdminNotes,
 				products     : formProducts.map( ( p ) => ( { productId : p.productId, quantity : p.quantity } ) ),
@@ -387,6 +418,7 @@
 		rutError         = '';
 		emailError       = '';
 		contactNameError = '';
+		phoneNumberError = '';
 		addressError     = '';
 		itemsError       = '';
 
@@ -415,6 +447,14 @@
 
 		if ( !formContactName.trim() ) {
 			contactNameError = 'El nombre de contacto es obligatorio';
+			isValid          = false;
+		}
+
+		if ( !formPhoneNumber.trim() ) {
+			phoneNumberError = 'El número de contacto es obligatorio';
+			isValid          = false;
+		} else if ( !validatePhoneNumber( formPhoneNumber.trim() ) ) {
+			phoneNumberError = 'El número de contacto debe tener 9 dígitos y empezar con un número de 2 a 9';
 			isValid          = false;
 		}
 
@@ -454,6 +494,7 @@
 				address     : formAddress.trim(),
 				email       : formEmail.trim(),
 				contactName : formContactName.trim(),
+				phoneNumber : formPhoneNumber.trim(),
 			},
 			items      : {
 				products   : formProducts.map( ( p ) => ( { id : p.productId, quantity : p.quantity } ) ),
@@ -576,6 +617,18 @@
                                 bind:value  = { formContactName }
                                 bind:error  = { contactNameError }
                                 placeholder = "Juan Pérez"
+                            />
+                        </div>
+
+                        <div class="space-y-1 mb-4">
+                            <label for="phone-input" class="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
+                                Número de contacto *
+                            </label>
+                            <InputText
+                                id          = "phone-input"
+                                bind:value  = { formPhoneNumber }
+                                bind:error  = { phoneNumberError }
+                                placeholder = "+56 9 1234 5678"
                             />
                         </div>
 
