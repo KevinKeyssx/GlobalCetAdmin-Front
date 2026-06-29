@@ -63,7 +63,8 @@
 					<!-- Contact Details -->
 					<td class="px-6 py-4">
 						<div class="font-bold text-text-muted">{ quote.clientData.contactName }</div>
-						<div class="text-[10px] text-text-muted font-normal truncate max-w-xs">{ quote.clientData.email }</div>
+						<div class="text-[11px] text-text-muted font-normal truncate max-w-xs">{ quote.clientData.email }</div>
+						<div class="text-[11px] text-text-muted font-normal truncate max-w-xs">{ quote.clientData.phoneNumber || "-"}</div>
 					</td>
 
 					<!-- Total Items Count -->
