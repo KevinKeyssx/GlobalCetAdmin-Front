@@ -16,6 +16,7 @@ export interface QuoteClientData {
 	address     : string;
 	companyName : string;
 	contactName : string;
+	phoneNumber : string;
 }
 
 export interface QuoteResponseItem {

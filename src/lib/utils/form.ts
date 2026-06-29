@@ -19,6 +19,7 @@ export interface CurrentFormState {
 	rut?            : string;
 	email?          : string;
 	contactName?    : string;
+	phoneNumber?    : string;
 	address?        : string;
 	adminNotes?     : string | null;
 }
@@ -44,6 +45,7 @@ export interface InitialFormState {
 	rut?            : string;
 	email?          : string;
 	contactName?    : string;
+	phoneNumber?    : string;
 	address?        : string;
 	adminNotes?     : string | null;
 }
@@ -78,6 +80,7 @@ export function isFormDirty(
 			|| ( current.rut !== undefined && current.rut !== '' )
 			|| ( current.email !== undefined && current.email !== '' )
 			|| ( current.contactName !== undefined && current.contactName !== '' )
+			|| ( current.phoneNumber !== undefined && current.phoneNumber !== '' )
 			|| ( current.address !== undefined && current.address !== '' )
 			|| ( current.adminNotes !== undefined && current.adminNotes !== null && current.adminNotes !== '' );
 	}
@@ -224,6 +227,9 @@ export function isFormDirty(
 		return true;
 	}
 	if ( current.contactName !== undefined && current.contactName !== ( initial.contactName || '' ) ) {
+		return true;
+	}
+	if ( current.phoneNumber !== undefined && current.phoneNumber !== ( initial.phoneNumber || '' ) ) {
 		return true;
 	}
 	if ( current.address !== undefined && current.address !== ( initial.address || '' ) ) {
