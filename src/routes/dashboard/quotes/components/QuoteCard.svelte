@@ -5,7 +5,8 @@
         Users,
         Mail,
         FileText,
-        ClipboardList
+        ClipboardList,
+		Phone
     } from '@lucide/svelte';
 
 	import {
@@ -78,6 +79,11 @@
 				<span class="truncate">{ quote.clientData.email }</span>
 			</div>
 
+            <div class="flex items-center gap-2">
+				<Phone class="size-3.5 shrink-0 text-brand/60" />
+				<span class="truncate">{ quote.clientData.phoneNumber || '—' }</span>
+			</div>
+
             {#if ( quote.clientData.address )}
 				<div class="flex items-center gap-2">
 					<FileText class="size-3.5 shrink-0 text-brand/60" />
@@ -93,11 +99,11 @@
 		</div>
 
 		<!-- Admin Notes if exist -->
-		{#if ( quote.adminNotes )}
+		<!-- {#if ( quote.adminNotes )}
 			<div class="mt-2 rounded-xl bg-surface/40 border border-brand/5 p-2.5 text-[11px] text-text-muted italic line-clamp-2">
 				"{ quote.adminNotes }"
 			</div>
-		{/if}
+		{/if} -->
 	</div>
 
 	<!-- Footer Actions -->
