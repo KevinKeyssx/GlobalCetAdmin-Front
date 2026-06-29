@@ -76,3 +76,8 @@ export function validateEmail( email : string ) : boolean {
 	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 	return emailRegex.test( email );
 }
+
+export function validatePhoneNumber( phone : string ) : boolean {
+	const phoneRegex = /^[2-9]\d{8}$/;
+	return phoneRegex.test( phone );
+}
