@@ -2,9 +2,9 @@
 	import { fade }         from 'svelte/transition';
 	import { navigating }   from '$app/state';
 
-    import { Moon, Sun } from '@lucide/svelte';
-
-    import { globalLoadingStore } from '$lib/state/loading';
+	import { globalLoadingStore }   from '$lib/state/loading';
+	import AuthButton               from '$lib/components/shared/AuthButton.svelte';
+	import ToggleTheme              from '$lib/components/home/ToggleTheme.svelte';
 
 
 	const isLoading = $derived( !!navigating || $globalLoadingStore );
@@ -16,7 +16,7 @@
 	}
 
 
-const { darkMode, onToggle }: Props = $props();
+    const { darkMode, onToggle }: Props = $props();
 </script>
 
 <!-- ─── Header Shell ─────────────────────────────────────────────────────────── -->
@@ -41,19 +41,13 @@ const { darkMode, onToggle }: Props = $props();
             <h1 class="text-xl sm:text-2xl md:text-4xl font-extrabold tracking-tight dark:text-white text-brand-bright">Panel de administración</h1>
         </div>
 
-		<!-- Dark Mode Toggle -->
-		<button
-			id="dark-mode-toggle"
-			onclick={onToggle}
-			aria-label="Alternar modo oscuro"
-			class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand/20 bg-brand/10 text-brand transition-all duration-300 hover:bg-brand/25 hover:scale-105"
-		>
-			{#if darkMode}
-				<Sun class="size-3.5" />
-			{:else}
-                <Moon class="size-3.5" />
-			{/if}
-		</button>
+		<!-- Session Auth Action -->
+        <div class="flex justify-center items-center gap-3">
+            <!-- Dark Mode Toggle -->
+            <ToggleTheme { darkMode } { onToggle } variant="header" />
+
+            <AuthButton { darkMode } { onToggle } />
+        </div>
 	</div>
 </header>
 
