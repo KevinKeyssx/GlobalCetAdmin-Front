@@ -95,7 +95,7 @@
 
     <!-- ─── Global Live Metrics Cards ────────────────────────────────────────── -->
     {#if stats }
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Products Card -->
             <div class="rounded-2xl border border-brand/10 bg-card/60 backdrop-blur-md p-6 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25 space-y-4">
                 <div class="flex items-center gap-3 border-b border-brand/10 pb-3">
@@ -241,7 +241,7 @@
 
             {#if ( activeSection === 'productos' ) }
                 <div transition:slide={ { duration : 350 } } class="border-t border-brand/10 bg-brand/5 p-6">
-                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
                         <!-- Link: Administrar Productos -->
                         <a
                             href="/dashboard/products"
