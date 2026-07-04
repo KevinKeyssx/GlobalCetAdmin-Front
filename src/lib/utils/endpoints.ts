@@ -105,5 +105,8 @@ export const EXTERNAL_ENDPOINTS = {
 	PRICE_HISTORY : {
 		BASE : '/price-history',
 	},
+	USERS         : {
+		VALIDATE_LOGIN : '/users/validate-login',
+	},
 };
 
