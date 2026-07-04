@@ -5,6 +5,7 @@
 
     import { LayoutDashboard, Menu, X } from '@lucide/svelte';
 	import { resolve }                  from '$app/paths';
+
 	// ─── Interfaces ───────────────────────────────────────────────────────────────
 	interface NavChild {
 		label : string;
@@ -52,10 +53,11 @@
 
         {
 			id       : 'quotes',
-			label    : 'Cotizaciones',
-			icon     : '📝',
+			label    : 'Administrador',
+			icon     : '⚙️',
 			children : [
-				{ label : 'General',   href : resolve( '/dashboard/quotes' ), icon : '📝' },
+				{ label : 'Cotizaciones',   href : resolve( '/dashboard/quotes' ), icon : '📝' },
+				// { label : 'Usuarios',       href : resolve( '/dashboard/users' ),  icon : '👷🏼‍♂️' },
 			],
 		},
 	];
