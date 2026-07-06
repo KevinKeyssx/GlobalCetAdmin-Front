@@ -45,21 +45,26 @@ export const handle : Handle = async({ event, resolve }) => {
 			});
 
 			if ( !response.ok ) {
-				throw redirect( 302, path( '/login' ) );
+				await auth.api.signOut( { headers : event.request.headers } );
+				throw redirect( 302, `${ path( '/login' ) }?error=${ encodeURIComponent( `Error del servidor de validación: ${ response.status }` ) }` );
 			}
 
 			const responseText = await response.text();
-			const isValid      = responseText.trim() === 'true';
+			const responseTrim = responseText.trim();
 
-			if ( !isValid ) {
-				throw redirect( 302, path( '/login' ) );
+			if ( responseTrim !== 'true' ) {
+				await auth.api.signOut( { headers : event.request.headers } );
+				const errorQuery = responseTrim === 'false' ? 'no_permission' : `Respuesta inesperada del servidor: ${ responseTrim.slice( 0, 50 ) }`;
+				throw redirect( 302, `${ path( '/login' ) }?error=${ encodeURIComponent( errorQuery ) }` );
 			}
 		} catch ( error ) {
 			if ( error && typeof error === 'object' && 'status' in error && ( error as { status : number } ).status === 302 ) {
 				throw error;
 			}
 
-			throw redirect( 302, path( '/login' ) );
+			await auth.api.signOut( { headers : event.request.headers } );
+			const msg = error instanceof Error ? error.message : String( error );
+			throw redirect( 302, `${ path( '/login' ) }?error=${ encodeURIComponent( `Error de validación: ${ msg }` ) }` );
 		}
 	}
 
