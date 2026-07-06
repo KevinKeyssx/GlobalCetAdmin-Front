@@ -1,5 +1,22 @@
 <script lang="ts">
-	import AuthButton from '$lib/components/shared/AuthButton.svelte';
+	import { page }       from '$app/state';
+	import toast          from 'svelte-french-toast';
+	import AuthButton     from '$lib/components/shared/AuthButton.svelte';
+
+	$effect( () => {
+		const errorParam = page.url.searchParams.get( 'error' );
+		if ( errorParam ) {
+			if ( errorParam === 'no_permission' ) {
+				toast.error( 'No tienes permisos para acceder a la aplicación.' );
+			} else {
+				toast.error( errorParam );
+			}
+
+			const newUrl = new URL( window.location.href );
+			newUrl.searchParams.delete( 'error' );
+			window.history.replaceState( {}, '', newUrl );
+		}
+	} );
 </script>
 
 <svelte:head>
